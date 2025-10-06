@@ -25,10 +25,8 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       z-index: 5;
     }
-    #settingsBtn {
-      cursor: pointer;
-      font-size: 22px;
-    }
+    #settingsBtn { cursor: pointer; font-size: 22px; }
+
     .screen {
       flex: 1;
       display: none;
@@ -40,27 +38,14 @@
     }
     .active { display: flex; }
 
-    h2 {
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
+    h2 { font-size: 22px; margin-bottom: 20px; }
 
     .picker {
-      width: 280px;
-      height: 180px;
-      perspective: 800px;
+      width: 260px;
+      height: 200px;
+      perspective: 1000px;
       overflow: hidden;
       position: relative;
-    }
-
-    /* подсветка для глубины */
-    .picker::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.15), transparent 40%, transparent 60%, rgba(0,0,0,0.15));
-      pointer-events: none;
-      z-index: 2;
     }
 
     .wheel {
@@ -69,31 +54,37 @@
       left: 50%;
       transform-style: preserve-3d;
       transform: translate(-50%, -50%) rotateX(0deg);
-      transition: transform 0.1s ease-out;
     }
 
     .item {
       position: absolute;
+      top: 0;
       left: 0;
       width: 100%;
-      height: 40px;
-      line-height: 40px;
       text-align: center;
       font-size: 18px;
       color: #888;
+      height: 40px;
+      line-height: 40px;
       backface-visibility: hidden;
-      transform-origin: center center -80px;
-      transition: transform 0.2s, color 0.2s, font-size 0.2s;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: color 0.3s, font-size 0.3s;
     }
 
     .item.active {
       font-size: 22px;
-      color: #007aff;
       font-weight: 600;
-      text-shadow: 0 1px 4px rgba(0,122,255,0.3);
+      color: #007aff;
+      text-shadow: 0 1px 3px rgba(0,122,255,0.3);
     }
 
+    .picker::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, rgba(249,250,251,1), rgba(249,250,251,0.1) 40%, rgba(249,250,251,0.1) 60%, rgba(249,250,251,1));
+      z-index: 1;
+      pointer-events: none;
+    }
     .picker::after {
       content: "";
       position: absolute;
@@ -105,15 +96,10 @@
       border-bottom: 2px solid #007aff;
       margin-top: -20px;
       pointer-events: none;
-      z-index: 3;
+      z-index: 2;
     }
 
-    #resultText {
-      font-size: 26px;
-      font-weight: 600;
-      margin-top: 20px;
-    }
-
+    #resultText { font-size: 26px; font-weight: 600; margin-top: 20px; }
     button {
       padding: 12px 20px;
       font-size: 16px;
@@ -126,14 +112,11 @@
     }
     button:hover { background: #005ecb; }
 
-    /* Модальное окно */
+    /* Модалка */
     #settingsModal {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.6);
       justify-content: center;
       align-items: center;
@@ -159,14 +142,8 @@
       resize: vertical;
       white-space: pre;
     }
-    h4 {
-      margin: 15px 0 5px;
-      font-size: 16px;
-    }
-    .divider {
-      margin: 20px 0;
-      border-top: 1px solid #ddd;
-    }
+    h4 { margin: 15px 0 5px; font-size: 16px; }
+    .divider { margin: 20px 0; border-top: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -208,124 +185,123 @@
   <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script>
-    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-
     const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
     const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
-    let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
-    let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
+    let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
+    let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
 
     const clickSound = document.getElementById("clickSound");
 
-    function buildWheel(wheel, items){
-      wheel.innerHTML = '';
-      const angle = 360 / items.length;
-      items.forEach((txt, i) => {
-        const el = document.createElement('div');
-        el.className = 'item';
-        el.textContent = txt;
-        el.style.transform = `rotateX(${i * angle}deg) translateZ(80px)`;
+    function buildWheel(wheel, items) {
+      wheel.innerHTML = "";
+      const angleStep = 360 / items.length;
+      items.forEach((text, i) => {
+        const el = document.createElement("div");
+        el.className = "item";
+        el.textContent = text;
+        const angle = i * angleStep;
+        el.style.transform = `rotateX(${angle}deg) translateZ(90px)`;
         wheel.appendChild(el);
       });
     }
 
-    function spinWheel(wheel, velocity, items, onFinish){
+    function spinWheel(wheel, velocity, items, onFinish) {
       let rotation = 0;
-      const angle = 360 / items.length;
+      const angleStep = 360 / items.length;
       const damping = 0.97;
-      let lastClickAngle = 0;
+      let lastAngle = 0;
 
-      function animate(){
+      function animate() {
         velocity *= damping;
         rotation += velocity;
-        const currentAngle = ((rotation % angle) + angle) % angle;
-
-        if (Math.abs(currentAngle - lastClickAngle) > angle / 2) {
+        const normalized = ((rotation % 360) + 360) % 360;
+        const diff = Math.abs(normalized - lastAngle);
+        if (diff > angleStep / 2) {
           clickSound.currentTime = 0;
           clickSound.play();
-          lastClickAngle = currentAngle;
+          lastAngle = normalized;
         }
 
         wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
 
-        if (Math.abs(velocity) > 0.1) {
+        if (Math.abs(velocity) > 0.3) {
           requestAnimationFrame(animate);
         } else {
-          const index = Math.round(-rotation / angle) % items.length;
+          const index = Math.round(-rotation / angleStep) % items.length;
           const fixedIndex = (index + items.length) % items.length;
-          wheel.style.transform = `translate(-50%, -50%) rotateX(${-fixedIndex * angle}deg)`;
-          Array.from(wheel.children).forEach((el, i) => el.classList.toggle('active', i === fixedIndex));
+          const finalAngle = -fixedIndex * angleStep;
+          wheel.style.transform = `translate(-50%, -50%) rotateX(${finalAngle}deg)`;
+          Array.from(wheel.children).forEach((el, i) =>
+            el.classList.toggle("active", i === fixedIndex)
+          );
           onFinish?.(fixedIndex);
         }
       }
       animate();
     }
 
-    function enablePicker(picker, wheel, items, onSelect){
+    function enablePicker(picker, wheel, items, onSelect) {
       let startY = 0, lastY = 0, velocity = 0, lastTime = 0;
 
-      picker.addEventListener('touchstart', e => {
+      picker.addEventListener("touchstart", e => {
         e.stopPropagation();
         startY = lastY = e.touches[0].clientY;
         lastTime = performance.now();
       });
 
-      picker.addEventListener('touchmove', e => {
+      picker.addEventListener("touchmove", e => {
         e.stopPropagation();
         const y = e.touches[0].clientY;
-        const now = performance.now();
         const dy = y - lastY;
-        const dt = now - lastTime;
-        velocity = dy / dt * 20;
-        wheel.style.transform += ` rotateX(${dy * 0.5}deg)`;
+        const dt = performance.now() - lastTime;
+        velocity = dy / dt * 15;
+        wheel.style.transform += ` rotateX(${dy * 0.6}deg)`;
         lastY = y;
-        lastTime = now;
+        lastTime = performance.now();
       });
 
-      picker.addEventListener('touchend', e => {
+      picker.addEventListener("touchend", e => {
         e.stopPropagation();
         spinWheel(wheel, velocity, items, onSelect);
       });
     }
 
-    function showScreen(id){
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
     }
 
-    const wheel1 = document.getElementById('wheel1');
-    const wheel2 = document.getElementById('wheel2');
+    const wheel1 = document.getElementById("wheel1");
+    const wheel2 = document.getElementById("wheel2");
     buildWheel(wheel1, items1);
     buildWheel(wheel2, items2);
 
-    enablePicker(document.getElementById('picker1'), wheel1, items1, i => showScreen('screen2'));
-    enablePicker(document.getElementById('picker2'), wheel2, items2, i => {
-      document.getElementById('resultText').textContent = `${items1[i % items1.length]} + ${items2[i]}`;
-      showScreen('screen3');
+    enablePicker(document.getElementById("picker1"), wheel1, items1, i => showScreen("screen2"));
+    enablePicker(document.getElementById("picker2"), wheel2, items2, i => {
+      document.getElementById("resultText").textContent = `${items1[i % items1.length]} + ${items2[i]}`;
+      showScreen("screen3");
     });
 
-    document.getElementById('restart').onclick = () => showScreen('screen1');
+    document.getElementById("restart").onclick = () => showScreen("screen1");
 
-    // настройки
     const modal = document.getElementById("settingsModal");
     const listInput1 = document.getElementById("listInput1");
     const listInput2 = document.getElementById("listInput2");
-    const settingsBtn = document.getElementById("settingsBtn");
 
-    settingsBtn.onclick = () => {
+    document.getElementById("settingsBtn").onclick = () => {
       modal.style.display = "flex";
       listInput1.value = items1.join("\n");
       listInput2.value = items2.join("\n");
     };
-    modal.onclick = e => { if(e.target === modal) modal.style.display = "none"; };
+    modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
 
     document.getElementById("saveBtn1").onclick = () => {
-      items1 = listInput1.value.split("\n").map(v => v.trim()).filter(Boolean);
+      items1 = listInput1.value.split("\n").map(x => x.trim()).filter(Boolean);
       localStorage.setItem("slotItems1", JSON.stringify(items1));
       buildWheel(wheel1, items1);
     };
     document.getElementById("saveBtn2").onclick = () => {
-      items2 = listInput2.value.split("\n").map(v => v.trim()).filter(Boolean);
+      items2 = listInput2.value.split("\n").map(x => x.trim()).filter(Boolean);
       localStorage.setItem("slotItems2", JSON.stringify(items2));
       buildWheel(wheel2, items2);
     };
