@@ -464,6 +464,18 @@
       wheel.dataset.rotation = "0";
     }
 
+    function updateActiveItem(wheel, items) {
+      const rotation = parseFloat(wheel.dataset.rotation || "0");
+      const angleStep = 360 / items.length;
+      const normalizedRotation = ((rotation % 360) + 360) % 360;
+      const index = Math.round(normalizedRotation / angleStep) % items.length;
+      const activeIndex = (items.length - index) % items.length;
+      
+      Array.from(wheel.children).forEach((el, i) => {
+        el.classList.toggle("active", i === activeIndex);
+      });
+    }
+
     function spinWheel(wheel, velocity, items, onFinish, targetIndex = null) {
       let rotation = parseFloat(wheel.dataset.rotation || "0");
       const angleStep = 360 / items.length;
@@ -490,9 +502,7 @@
             requestAnimationFrame(animate);
           } else {
             wheel.dataset.rotation = current;
-            Array.from(wheel.children).forEach((el, i) => 
-              el.classList.toggle("active", i === targetIndex)
-            );
+            updateActiveItem(wheel, items);
             onFinish?.(targetIndex);
           }
         }
@@ -507,6 +517,8 @@
         wheel.style.transform = `translate(-50%,-50%) rotateX(${rotation}deg)`;
         wheel.dataset.rotation = rotation;
         
+        updateActiveItem(wheel, items);
+        
         if (Math.abs(velocity) > 0.3) {
           requestAnimationFrame(animate);
         } else {
@@ -515,9 +527,8 @@
           const finalAngle = -fixedIndex * angleStep;
           
           wheel.style.transform = `translate(-50%,-50%) rotateX(${finalAngle}deg)`;
-          Array.from(wheel.children).forEach((el, i) => 
-            el.classList.toggle("active", i === fixedIndex)
-          );
+          wheel.dataset.rotation = finalAngle;
+          updateActiveItem(wheel, items);
           onFinish?.(fixedIndex);
         }
       }
