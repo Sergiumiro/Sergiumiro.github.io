@@ -34,14 +34,15 @@
       flex-direction: column;
       text-align: center;
       position: relative;
+      padding: 0 20px;
     }
     .active { display: flex; }
 
     h2 { font-size: 22px; margin-bottom: 20px; }
 
     .picker {
-      width: 90%;
-      max-width: 380px;
+      width: 100%;
+      max-width: 480px;
       height: 260px;
       perspective: 1000px;
       overflow: hidden;
@@ -55,6 +56,7 @@
       left: 50%;
       transform-style: preserve-3d;
       transform: translate(-50%, -50%) rotateX(0deg);
+      width: 100%;
     }
 
     .item {
@@ -62,20 +64,18 @@
       top: 0;
       left: 0;
       width: 100%;
-      padding: 0 20px;
       box-sizing: border-box;
       text-align: center;
       font-size: 20px;
       color: #555;
       height: 60px;
-      line-height: 1.2;
       display: flex;
       align-items: center;
       justify-content: center;
       backface-visibility: hidden;
       white-space: normal;
       word-break: break-word;
-      text-align: center;
+      padding: 0 10px;
       transition: color 0.3s, font-size 0.3s;
     }
 
@@ -109,12 +109,23 @@
     }
 
     #resultText {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 600;
       margin-top: 20px;
       padding: 0 20px;
       text-align: center;
       word-break: break-word;
+      white-space: normal;
+      line-height: 1.4;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      max-width: 600px;
+    }
+
+    .fade-in {
+      opacity: 1 !important;
+      transform: scale(1) !important;
     }
 
     button {
@@ -250,17 +261,17 @@
       let rotation = parseFloat(wheel.dataset.rotation || "0");
       const angleStep = 360 / items.length;
       const damping = 0.97;
-      let lastAngle = 0;
+      const lastAngleRef = { value: 0 };
 
       function animate() {
         velocity *= damping;
         rotation += velocity;
         const normalized = ((rotation % 360) + 360) % 360;
-        const diff = Math.abs(normalized - lastAngle);
+        const diff = Math.abs(normalized - lastAngleRef.value);
         if (diff > angleStep / 2) {
           clickSound.currentTime = 0;
           clickSound.play();
-          lastAngle = normalized;
+          lastAngleRef.value = normalized;
         }
 
         wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
@@ -331,9 +342,11 @@
 
     enablePicker(document.getElementById("picker2"), wheel2, items2, i => {
       const selected2 = i;
-      document.getElementById("resultText").textContent =
-        `${items1[selected1]} — ${items2[selected2]}`;
+      const resultText = document.getElementById("resultText");
+      resultText.classList.remove("fade-in");
+      resultText.textContent = `${items1[selected1]} — ${items2[selected2]}`;
       showScreen("screen3");
+      setTimeout(() => resultText.classList.add("fade-in"), 100);
     });
 
     document.getElementById("restart").onclick = () => showScreen("screen1");
