@@ -1,31 +1,333 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Рулетка выбора</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Telegram Picker</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      background: #f9fafb;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      z-index: 5;
+    }
+    #settingsBtn { cursor: pointer; font-size: 22px; }
+
+    .screen {
+      flex: 1;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      position: relative;
+    }
+    .active { display: flex; }
+
+    h2 { font-size: 22px; margin-bottom: 20px; }
+
+    .picker {
+      width: 260px;
+      height: 200px;
+      perspective: 1000px;
+      overflow: hidden;
+      position: relative;
+      touch-action: none; /* исправлено: ограничиваем только колёса */
+    }
+
+    .wheel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-style: preserve-3d;
+      transform: translate(-50%, -50%) rotateX(0deg);
+    }
+
+    .item {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 18px;
+      color: #888;
+      height: 40px;
+      line-height: 40px;
+      backface-visibility: hidden;
+      transition: color 0.3s, font-size 0.3s;
+    }
+
+    .item.active {
+      font-size: 22px;
+      font-weight: 600;
+      color: #007aff;
+      text-shadow: 0 1px 3px rgba(0,122,255,0.3);
+    }
+
+    .picker::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, rgba(249,250,251,1), rgba(249,250,251,0.1) 40%, rgba(249,250,251,0.1) 60%, rgba(249,250,251,1));
+      z-index: 1;
+      pointer-events: none;
+    }
+    .picker::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 40px;
+      border-top: 2px solid #007aff;
+      border-bottom: 2px solid #007aff;
+      margin-top: -20px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    #resultText { font-size: 26px; font-weight: 600; margin-top: 20px; }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      border-radius: 10px;
+      border: none;
+      background: #007aff;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover { background: #005ecb; }
+
+    /* Модалка */
+    #settingsModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      width: 340px;
+      max-height: 80vh;
+      overflow: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+      resize: vertical;
+      white-space: pre;
+    }
+    h4 { margin: 15px 0 5px; font-size: 16px; }
+    .divider { margin: 20px 0; border-top: 1px solid #ddd; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="wheel-container" id="wheel1-container">
-      <div class="wheel" id="wheel1"></div>
-      <div class="indicator"></div>
-    </div>
-    <div class="wheel-container" id="wheel2-container">
-      <div class="wheel" id="wheel2"></div>
-      <div class="indicator"></div>
-    </div>
-    <button id="settings-btn">⚙️ Настройки</button>
+  <header>
+    <div id="settingsBtn">⚙️</div>
+  </header>
 
-    <div id="settings-modal" class="modal hidden">
+  <div class="screen active" id="screen1">
+    <h2>Выбор 1</h2>
+    <div class="picker" id="picker1"><div class="wheel" id="wheel1"></div></div>
+  </div>
+
+  <div class="screen" id="screen2">
+    <h2>Выбор 2</h2>
+    <div class="picker" id="picker2"><div class="wheel" id="wheel2"></div></div>
+  </div>
+
+  <div class="screen" id="screen3">
+    <h2>Результат</h2>
+    <div id="resultText"></div>
+    <button id="restart">Заново</button>
+  </div>
+
+  <div id="settingsModal">
+    <div class="modal-content">
       <h3>Редактировать списки</h3>
-      <textarea id="list1-input" placeholder="Введите варианты, разделённые переносом строки"></textarea>
-      <textarea id="list2-input" placeholder="Введите варианты, разделённые переносом строки"></textarea>
-      <button id="save-settings">Сохранить</button>
-      <button id="close-modal">Закрыть</button>
+      <h4>Список 1</h4>
+      <textarea id="listInput1"></textarea>
+      <button id="saveBtn1">💾 Сохранить список 1</button>
+      <button id="resetBtn1">🔄 Сбросить список 1</button>
+      <div class="divider"></div>
+      <h4>Список 2</h4>
+      <textarea id="listInput2"></textarea>
+      <button id="saveBtn2">💾 Сохранить список 2</button>
+      <button id="resetBtn2">🔄 Сбросить список 2</button>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+  <script>
+    const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
+    const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
+    let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
+    let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
+
+    const clickSound = document.getElementById("clickSound");
+
+    function buildWheel(wheel, items) {
+      wheel.innerHTML = "";
+      const angleStep = 360 / items.length;
+      items.forEach((text, i) => {
+        const el = document.createElement("div");
+        el.className = "item";
+        el.textContent = text;
+        const angle = i * angleStep;
+        el.style.transform = `rotateX(${angle}deg) translateZ(90px)`;
+        wheel.appendChild(el);
+      });
+    }
+
+    function spinWheel(wheel, velocity, items, onFinish) {
+      let rotation = parseFloat(wheel.dataset.rotation || "0");
+      const angleStep = 360 / items.length;
+      const damping = 0.97;
+      let lastAngle = 0;
+
+      function animate() {
+        velocity *= damping;
+        rotation += velocity;
+        const normalized = ((rotation % 360) + 360) % 360;
+        const diff = Math.abs(normalized - lastAngle);
+        if (diff > angleStep / 2) {
+          clickSound.currentTime = 0;
+          clickSound.play();
+          lastAngle = normalized;
+        }
+
+        wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
+        wheel.dataset.rotation = rotation;
+
+        if (Math.abs(velocity) > 0.3) {
+          requestAnimationFrame(animate);
+        } else {
+          const index = Math.round(-rotation / angleStep) % items.length;
+          const fixedIndex = (index + items.length) % items.length;
+          const finalAngle = -fixedIndex * angleStep;
+          wheel.style.transform = `translate(-50%, -50%) rotateX(${finalAngle}deg)`;
+          wheel.dataset.rotation = finalAngle;
+          Array.from(wheel.children).forEach((el, i) =>
+            el.classList.toggle("active", i === fixedIndex)
+          );
+          onFinish?.(fixedIndex);
+        }
+      }
+      animate();
+    }
+
+    function enablePicker(picker, wheel, items, onSelect) {
+      let startY = 0, lastY = 0, velocity = 0, lastTime = 0;
+      let currentRotation = parseFloat(wheel.dataset.rotation || "0");
+
+      picker.addEventListener("touchstart", e => {
+        e.stopPropagation();
+        startY = lastY = e.touches[0].clientY;
+        lastTime = performance.now();
+      });
+
+      picker.addEventListener("touchmove", e => {
+        e.stopPropagation();
+        const y = e.touches[0].clientY;
+        const dy = y - lastY;
+        currentRotation += dy * 0.6;
+        wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
+        wheel.dataset.rotation = currentRotation;
+        const dt = performance.now() - lastTime;
+        velocity = dy / dt * 15;
+        lastY = y;
+        lastTime = performance.now();
+      });
+
+      picker.addEventListener("touchend", e => {
+        e.stopPropagation();
+        spinWheel(wheel, velocity, items, onSelect);
+      });
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    const wheel1 = document.getElementById("wheel1");
+    const wheel2 = document.getElementById("wheel2");
+    buildWheel(wheel1, items1);
+    buildWheel(wheel2, items2);
+
+    let selected1 = null;
+
+    enablePicker(document.getElementById("picker1"), wheel1, items1, i => {
+      selected1 = i;
+      showScreen("screen2");
+    });
+
+    enablePicker(document.getElementById("picker2"), wheel2, items2, i => {
+      const selected2 = i;
+      document.getElementById("resultText").textContent =
+        `${items1[selected1]} + ${items2[selected2]}`;
+      showScreen("screen3");
+    });
+
+    document.getElementById("restart").onclick = () => showScreen("screen1");
+
+    const modal = document.getElementById("settingsModal");
+    const listInput1 = document.getElementById("listInput1");
+    const listInput2 = document.getElementById("listInput2");
+
+    document.getElementById("settingsBtn").onclick = () => {
+      modal.style.display = "flex";
+      listInput1.value = items1.join("\n");
+      listInput2.value = items2.join("\n");
+    };
+    modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+    document.getElementById("saveBtn1").onclick = () => {
+      items1 = listInput1.value.split("\n").map(x => x.trim()).filter(Boolean);
+      localStorage.setItem("slotItems1", JSON.stringify(items1));
+      buildWheel(wheel1, items1);
+    };
+    document.getElementById("saveBtn2").onclick = () => {
+      items2 = listInput2.value.split("\n").map(x => x.trim()).filter(Boolean);
+      localStorage.setItem("slotItems2", JSON.stringify(items2));
+      buildWheel(wheel2, items2);
+    };
+    document.getElementById("resetBtn1").onclick = () => {
+      items1 = [...defaultItems1];
+      localStorage.removeItem("slotItems1");
+      buildWheel(wheel1, items1);
+    };
+    document.getElementById("resetBtn2").onclick = () => {
+      items2 = [...defaultItems2];
+      localStorage.removeItem("slotItems2");
+      buildWheel(wheel2, items2);
+    };
+  </script>
 </body>
 </html>
