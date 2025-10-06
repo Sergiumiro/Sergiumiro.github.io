@@ -1,77 +1,79 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Telegram WebApp Slots</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Web Picker</title>
 <style>
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: #f9fafb;
+    color: #111;
     display: flex;
     flex-direction: column;
     height: 100vh;
-    color: #111;
     overflow: hidden;
   }
   header {
     display: flex;
     justify-content: flex-end;
-    align-items: center;
-    padding: 12px;
-    background: #fff;
+    padding: 12px 20px;
     border-bottom: 1px solid #ddd;
+    background: #fff;
     font-size: 22px;
   }
-  #settingsBtn { cursor: pointer; }
-
   .screen {
     flex: 1;
     display: none;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
-    padding: 20px;
   }
   .active { display: flex; }
 
   h2 {
     font-size: 22px;
     margin-bottom: 20px;
-    color: #111;
   }
 
-  .slot-wrapper {
+  .picker {
     position: relative;
-    width: 100%;
-    max-width: 280px;
-    height: 200px;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    height: 180px;
+    width: 260px;
+    overflow: hidden;
+    perspective: 1000px;
   }
 
-  .slot-item {
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .wheel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .item {
+    position: absolute;
+    left: 50%;
+    transform-origin: center center -80px;
     font-size: 18px;
     color: #555;
-    transition: all 0.2s ease;
+    text-align: center;
+    width: 100%;
+    transition: all 0.3s ease;
   }
-  .slot-item.active {
+  .item.active {
+    color: #007aff;
     font-size: 22px;
     font-weight: 600;
-    color: #007aff;
   }
 
   .highlight {
     position: absolute;
     top: 50%;
-    left: 0;
-    right: 0;
+    left: 0; right: 0;
     height: 40px;
     margin-top: -20px;
     border-top: 2px solid #007aff;
@@ -79,41 +81,23 @@
     pointer-events: none;
   }
 
-  .slot-wrapper::before, .slot-wrapper::after {
-    content: "";
-    position: absolute;
-    left: 0; right: 0;
-    height: 50%;
-    pointer-events: none;
-  }
-  .slot-wrapper::before {
-    top: 0;
-    background: linear-gradient(to bottom, rgba(249,250,251,1), rgba(249,250,251,0));
-  }
-  .slot-wrapper::after {
-    bottom: 0;
-    background: linear-gradient(to top, rgba(249,250,251,1), rgba(249,250,251,0));
-  }
-
   #resultText {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 600;
     margin-top: 20px;
   }
 
   button {
-    padding: 12px 20px;
-    font-size: 16px;
     margin-top: 20px;
-    border-radius: 10px;
+    padding: 12px 20px;
     border: none;
+    border-radius: 12px;
     background: #007aff;
     color: #fff;
-    cursor: pointer;
+    font-size: 16px;
   }
   button:hover { background: #005ecb; }
 
-  /* --- Модалка --- */
   #settingsModal {
     display: none;
     position: fixed;
@@ -126,9 +110,7 @@
     background: #fff;
     padding: 20px;
     border-radius: 14px;
-    width: 340px;
-    max-height: 80vh;
-    overflow: auto;
+    width: 320px;
   }
   textarea {
     width: 100%;
@@ -139,113 +121,88 @@
     border: 1px solid #ccc;
     font-family: inherit;
   }
-  h4 { margin: 15px 0 5px; font-size: 16px; }
-  .divider { margin: 20px 0; border-top: 1px solid #ddd; }
+  h4 { margin: 12px 0 5px; }
+  .divider { margin: 16px 0; border-top: 1px solid #ddd; }
 </style>
 </head>
 <body>
-  <header>
-    <div id="settingsBtn">⚙️</div>
-  </header>
+<header><div id="settingsBtn">⚙️</div></header>
 
-  <!-- Экран 1 -->
-  <div class="screen active" id="screen1">
-    <h2>Выбор 1</h2>
-    <div class="slot-wrapper" id="wrapper1">
-      <div id="slot1"></div>
-      <div class="highlight"></div>
-    </div>
+<div class="screen active" id="screen1">
+  <h2>Выбор 1</h2>
+  <div class="picker" id="picker1">
+    <div class="wheel" id="wheel1"></div>
+    <div class="highlight"></div>
   </div>
+</div>
 
-  <!-- Экран 2 -->
-  <div class="screen" id="screen2">
-    <h2>Выбор 2</h2>
-    <div class="slot-wrapper" id="wrapper2">
-      <div id="slot2"></div>
-      <div class="highlight"></div>
-    </div>
+<div class="screen" id="screen2">
+  <h2>Выбор 2</h2>
+  <div class="picker" id="picker2">
+    <div class="wheel" id="wheel2"></div>
+    <div class="highlight"></div>
   </div>
+</div>
 
-  <!-- Экран 3 -->
-  <div class="screen" id="screen3">
-    <h2>Результат</h2>
-    <div id="resultText"></div>
-    <button id="restart">Заново</button>
+<div class="screen" id="screen3">
+  <h2>Результат</h2>
+  <div id="resultText"></div>
+  <button id="restart">Заново</button>
+</div>
+
+<div id="settingsModal">
+  <div class="modal-content">
+    <h3>Редактировать списки</h3>
+    <h4>Список 1</h4>
+    <textarea id="listInput1"></textarea>
+    <button id="saveBtn1">Сохранить</button>
+    <button id="resetBtn1">Сбросить</button>
+    <div class="divider"></div>
+    <h4>Список 2</h4>
+    <textarea id="listInput2"></textarea>
+    <button id="saveBtn2">Сохранить</button>
+    <button id="resetBtn2">Сбросить</button>
   </div>
+</div>
 
-  <!-- Настройки -->
-  <div id="settingsModal">
-    <div class="modal-content">
-      <h3>Редактировать списки</h3>
-      <h4>Список 1</h4>
-      <textarea id="listInput1"></textarea>
-      <button id="saveBtn1">Сохранить</button>
-      <button id="resetBtn1">Сбросить</button>
-
-      <div class="divider"></div>
-      <h4>Список 2</h4>
-      <textarea id="listInput2"></textarea>
-      <button id="saveBtn2">Сохранить</button>
-      <button id="resetBtn2">Сбросить</button>
-    </div>
-  </div>
-
-  <!-- Щелчок -->
-  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+<audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
 
 <script>
-const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
-const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
+const defaultItems1 = ["Before Breakfast", "After Breakfast", "Before Lunch", "After Lunch", "Before Dinner", "After Dinner"];
+const defaultItems2 = ["January 2017", "February 2017", "March 2017", "April 2017", "May 2017"];
+let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
+let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
 
-let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
-let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
-let choice1 = 0, choice2 = 0;
-
-const slot1 = document.getElementById("slot1");
-const slot2 = document.getElementById("slot2");
-const wrapper1 = document.getElementById("wrapper1");
-const wrapper2 = document.getElementById("wrapper2");
-const resultText = document.getElementById("resultText");
+let current1 = 0, current2 = 0;
 const clickSound = document.getElementById("clickSound");
 
-function renderSlot(container, items){
-  container.innerHTML = '';
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'slot-item';
-    div.textContent = item;
-    container.appendChild(div);
+function buildWheel(wheel, items){
+  wheel.innerHTML = '';
+  const angle = 360 / items.length;
+  items.forEach((txt, i) => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.textContent = txt;
+    el.style.transform = `rotateX(${i * angle}deg) translateZ(80px)`;
+    wheel.appendChild(el);
   });
 }
 
-function highlightSlot(container){
-  const items = Array.from(container.children);
-  const center = container.clientHeight / 2;
-  let closestIdx = 0, minDist = Infinity;
-  items.forEach((el, idx) => {
-    const dist = Math.abs((el.offsetTop + el.offsetHeight/2) - center);
-    el.classList.remove('active');
-    if (dist < minDist) { minDist = dist; closestIdx = idx; }
+function rotateWheel(wheel, index, items){
+  const angle = 360 / items.length;
+  const rotation = -index * angle;
+  wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
+  Array.from(wheel.children).forEach((el, i) => {
+    el.classList.toggle('active', i === index);
   });
-  items[closestIdx].classList.add('active');
-  return closestIdx;
+  clickSound.currentTime = 0;
+  clickSound.play();
 }
 
-function animateRandomChoice(wrapper, container, items) {
-  const randomIdx = Math.floor(Math.random() * items.length);
-  const el = container.children[randomIdx];
-  const target = el.offsetTop - wrapper.clientHeight/2 + el.offsetHeight/2;
-
-  wrapper.scrollTo({ top: target + Math.random()*50 - 25, behavior: 'smooth' });
-  setTimeout(() => {
-    wrapper.scrollTo({ top: target, behavior: 'smooth' });
-    setTimeout(() => {
-      highlightSlot(container);
-      clickSound.currentTime = 0;
-      clickSound.play();
-    }, 300);
-  }, 500);
-  return randomIdx;
+function spinToRandom(wheel, items){
+  const randomIndex = Math.floor(Math.random() * items.length);
+  rotateWheel(wheel, randomIndex, items);
+  return randomIndex;
 }
 
 function showScreen(id){
@@ -253,62 +210,55 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
 }
 
-renderSlot(slot1, items1);
-renderSlot(slot2, items2);
+const wheel1 = document.getElementById('wheel1');
+const wheel2 = document.getElementById('wheel2');
+buildWheel(wheel1, items1);
+buildWheel(wheel2, items2);
+rotateWheel(wheel1, 0, items1);
+rotateWheel(wheel2, 0, items2);
 
-wrapper1.addEventListener('scroll', () => highlightSlot(slot1));
-wrapper2.addEventListener('scroll', () => highlightSlot(slot2));
-
-wrapper1.addEventListener('touchend', () => {
-  setTimeout(() => {
-    choice1 = animateRandomChoice(wrapper1, slot1, items1);
-    setTimeout(() => showScreen('screen2'), 1000);
-  }, 150);
+document.getElementById('picker1').addEventListener('click', () => {
+  current1 = spinToRandom(wheel1, items1);
+  setTimeout(() => showScreen('screen2'), 1000);
 });
-
-wrapper2.addEventListener('touchend', () => {
+document.getElementById('picker2').addEventListener('click', () => {
+  current2 = spinToRandom(wheel2, items2);
   setTimeout(() => {
-    choice2 = animateRandomChoice(wrapper2, slot2, items2);
-    setTimeout(() => {
-      resultText.textContent = items1[choice1] + " + " + items2[choice2];
-      showScreen('screen3');
-    }, 1000);
-  }, 150);
+    document.getElementById('resultText').textContent = `${items1[current1]} + ${items2[current2]}`;
+    showScreen('screen3');
+  }, 1000);
 });
 
 document.getElementById('restart').onclick = () => showScreen('screen1');
 
-// --- настройки ---
+// настройки
 const modal = document.getElementById('settingsModal');
-const listInput1 = document.getElementById('listInput1');
-const listInput2 = document.getElementById('listInput2');
-
 document.getElementById('settingsBtn').onclick = () => {
-  listInput1.value = items1.join("\n");
-  listInput2.value = items2.join("\n");
+  document.getElementById('listInput1').value = items1.join("\n");
+  document.getElementById('listInput2').value = items2.join("\n");
   modal.style.display = "flex";
 };
-modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = "none"; });
+modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
 
 document.getElementById('saveBtn1').onclick = () => {
-  items1 = listInput1.value.split("\n").filter(v => v.trim());
-  localStorage.setItem("slotItems1", JSON.stringify(items1));
-  renderSlot(slot1, items1);
+  items1 = document.getElementById('listInput1').value.split("\n").filter(v => v.trim());
+  localStorage.setItem('slotItems1', JSON.stringify(items1));
+  buildWheel(wheel1, items1);
 };
 document.getElementById('saveBtn2').onclick = () => {
-  items2 = listInput2.value.split("\n").filter(v => v.trim());
-  localStorage.setItem("slotItems2", JSON.stringify(items2));
-  renderSlot(slot2, items2);
+  items2 = document.getElementById('listInput2').value.split("\n").filter(v => v.trim());
+  localStorage.setItem('slotItems2', JSON.stringify(items2));
+  buildWheel(wheel2, items2);
 };
 document.getElementById('resetBtn1').onclick = () => {
   items1 = [...defaultItems1];
-  localStorage.removeItem("slotItems1");
-  renderSlot(slot1, items1);
+  localStorage.removeItem('slotItems1');
+  buildWheel(wheel1, items1);
 };
 document.getElementById('resetBtn2').onclick = () => {
   items2 = [...defaultItems2];
-  localStorage.removeItem("slotItems2");
-  renderSlot(slot2, items2);
+  localStorage.removeItem('slotItems2');
+  buildWheel(wheel2, items2);
 };
 </script>
 </body>
