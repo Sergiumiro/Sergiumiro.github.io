@@ -1,25 +1,36 @@
 body {
-  font-family: sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
   margin: 0;
-  background-color: #f0f0f0;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+  color: white;
+  overflow: hidden;
 }
 
 .container {
   text-align: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .wheel-container {
   height: 200px;
   width: 200px;
   overflow: hidden;
-  border: 2px solid #ccc;
+  border-radius: 50%;
   margin: 20px auto;
   position: relative;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: grab;
 }
@@ -37,13 +48,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid #eee;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 button {
   margin: 10px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   font-size: 16px;
+  border: none;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .modal {
@@ -51,11 +77,13 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  padding: 20px;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  background: rgba(30, 30, 40, 0.95);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
   z-index: 1000;
+  width: 400px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hidden {
@@ -66,4 +94,14 @@ textarea {
   width: 100%;
   height: 100px;
   margin: 10px 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+h3 {
+  margin-top: 0;
+  color: #fff;
 }
