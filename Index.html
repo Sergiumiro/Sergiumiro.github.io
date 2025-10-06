@@ -24,7 +24,8 @@ header{display:flex;justify-content:flex-end;align-items:center;padding:12px 16p
 h2{font-size:22px;margin-bottom:20px;}
 .picker{width:100%;max-width:var(--picker-max-width);height:320px;perspective:1800px;position:relative;overflow:hidden;background:var(--white);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.08);touch-action:none;}
 .wheel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotateX(0deg);transform-style:preserve-3d;width:100%;height:100%;}
-.item{position:absolute;top:50%;left:0;width:100%;height:var(--item-height);margin-top:calc(var(--item-height)/-2);transform-style:preserve-3d;}
+.item{position:absolute;top:50%;left:0;width:100%;height:var(--item-height);margin-top:calc(var(--item-height)/-2);transform-style:preserve-3d;opacity:0;transition:opacity 0.2s;}
+.item.active{opacity:1;}
 .item-inner{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:18px;color:#555;padding:0 18px;box-sizing:border-box;text-align:center;white-space:normal;line-height:1.3;transform-style:preserve-3d;}
 @keyframes pulse{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
 .item.active .item-inner{font-size:20px;font-weight:600;color:var(--blue);animation:pulse 0.6s ease 2;}
@@ -103,7 +104,6 @@ function buildWheel(wheel,items){
     el.style.transform=`rotateX(${angle}deg) translateZ(${radius}px)`;
     const inner=document.createElement("div");
     inner.className="item-inner";
-    inner.style.transform=`rotateX(${-angle}deg)`;
     inner.textContent=text;
     el.appendChild(inner);
     wheel.appendChild(el);
@@ -125,7 +125,11 @@ function spinWheel(wheel,velocity,items,onFinish,targetIndex=null){
       wheel.style.transform=`translate(-50%,-50%) rotateX(${current}deg)`;
       if(frame%8===0){clickSound.currentTime=0;clickSound.play();}
       if(frame<totalFrames) requestAnimationFrame(animate);
-      else{wheel.dataset.rotation=current;Array.from(wheel.children).forEach((el,i)=>el.classList.toggle("active",i===targetIndex));onFinish?.(targetIndex);}
+      else{
+        wheel.dataset.rotation=current;
+        Array.from(wheel.children).forEach((el,i)=>el.classList.toggle("active",i===targetIndex));
+        onFinish?.(targetIndex);
+      }
     }
     animate(); return;
   }
@@ -192,7 +196,7 @@ document.getElementById("saveBtn2").onclick=()=>{items2=listInput2.value.split("
 document.getElementById("resetBtn1").onclick=()=>{items1=[...defaultItems1];localStorage.removeItem("slotItems1");buildWheel(wheel1,items1);};
 document.getElementById("resetBtn2").onclick=()=>{items2=[...defaultItems2];localStorage.removeItem("slotItems2");buildWheel(wheel2,items2);};
 
-// Кнопка "Поделиться в Telegram" через картинку
+// Кнопка "Поделиться в Telegram"
 document.getElementById("shareBtn").onclick=()=>{
   const card=document.getElementById("resultCard");
   html2canvas(card).then(canvas=>{
