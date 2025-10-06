@@ -643,8 +643,8 @@
     
     document.getElementById("settingsBtn").onclick = () => {
       modal.style.display = "flex";
-      listInput1.value = items1.join("\n");
-      listInput2.value = items2.join("\n");
+      listInput1.value = items1.slice(1).join("\n"); // Исключаем первый пустой элемент
+      listInput2.value = items2.slice(1).join("\n"); // Исключаем первый пустой элемент
     };
     
     modal.onclick = e => {
@@ -652,14 +652,18 @@
     };
     
     document.getElementById("saveBtn1").onclick = () => {
-      items1 = listInput1.value.split("\n").map(x => x.trim()).filter(x => x);
+      items1 = listInput1.value.split("\n")
+        .map(x => x.trim())
+        .filter(x => x); // Убираем пустые строки
       items1 = ["", ...items1]; // Добавляем пустой элемент в начало
       localStorage.setItem("slotItems1", JSON.stringify(items1));
       buildWheel(wheel1, items1);
     };
     
     document.getElementById("saveBtn2").onclick = () => {
-      items2 = listInput2.value.split("\n").map(x => x.trim()).filter(x => x);
+      items2 = listInput2.value.split("\n")
+        .map(x => x.trim())
+        .filter(x => x); // Убираем пустые строки
       items2 = ["", ...items2]; // Добавляем пустой элемент в начало
       localStorage.setItem("slotItems2", JSON.stringify(items2));
       buildWheel(wheel2, items2);
