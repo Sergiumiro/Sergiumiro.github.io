@@ -1,417 +1,207 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Идея для встречи 🎲</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
-  :root {
-    --picker-max-width: 640px;
-    --item-height: 64px;
-    --blue: #007aff;
-    --light-bg: #f5f8ff;
-    --white: #fff;
-    --shadow: 0 8px 24px rgba(0,0,0,0.08);
-    --radius: 14px;
-  }
-
-  body {
-    margin:0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--light-bg);
-    color:#111;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
-  }
-
-  header {
-    display:flex;
-    justify-content:flex-end;
-    align-items:center;
-    padding:12px 16px;
-    background: var(--white);
-    border-bottom:1px solid #e5e5e5;
-    box-shadow: var(--shadow);
-    z-index:5;
-  }
-  #settingsBtn { font-size:22px; cursor:pointer; }
-
-  .screen {
-    flex:1;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    padding:20px;
-    text-align:center;
-    animation: fadein 0.4s ease;
-  }
-  .screen.active { display:flex; }
-
-  @keyframes fadein { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
-
-  h2 { font-size:22px; margin-bottom:20px; }
-
-  /* Пикер */
-  .picker {
-    width:100%;
-    max-width:var(--picker-max-width);
-    height:320px;
-    perspective:1800px;
-    position:relative;
-    overflow:hidden;
-    background: var(--white);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    touch-action:none;
-  }
-
-  .wheel {
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%) rotateX(0deg);
-    transform-style:preserve-3d;
-    width:100%;
-    height:100%;
-  }
-
-  .item {
-    position:absolute;
-    top:50%;
-    left:0;
-    width:100%;
-    height:var(--item-height);
-    margin-top:calc(var(--item-height)/-2);
-    transform-style:preserve-3d;
-  }
-
-  .item-inner {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:100%;
-    height:100%;
-    font-size:18px;
-    color:#555;
-    padding:0 18px;
-    box-sizing:border-box;
-    text-align:center;
-    white-space:normal;
-    line-height:1.3;
-    transform-style:preserve-3d;
-  }
-
-  .item.active .item-inner {
-    font-size:20px;
-    font-weight:600;
-    color:var(--blue);
-  }
-
-  .picker::after {
-    content:"";
-    position:absolute;
-    left:0; right:0;
-    top:50%;
-    height:var(--item-height);
-    margin-top:calc(var(--item-height)/-2);
-    border-top:2px solid rgba(0,122,255,0.2);
-    border-bottom:2px solid rgba(0,122,255,0.2);
-    pointer-events:none;
-  }
-
-  #resultText {
-    max-width:900px;
-    width:100%;
-    padding:16px;
-    background: var(--white);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    font-size:24px;
-    font-weight:600;
-    text-align:center;
-    word-break:break-word;
-    line-height:1.4;
-    opacity:0;
-    transform:scale(0.97);
-    transition:opacity .6s ease, transform .6s ease;
-  }
-  .fade-in { opacity:1!important; transform:scale(1)!important; }
-
-  button {
-    margin-top:18px;
-    padding:12px 22px;
-    border-radius:10px;
-    border:0;
-    font-size:16px;
-    cursor:pointer;
-    background:var(--blue);
-    color:#fff;
-    box-shadow:0 4px 14px rgba(0,122,255,0.3);
-    transition:background .2s, transform .1s;
-  }
-  button:hover { background:#005fe0; }
-  button:active { transform:scale(0.98); }
-
-  .random-btn {
-    margin-top:14px;
-    background:#fff;
-    color:var(--blue);
-    border:1px solid var(--blue);
-    box-shadow:none;
-  }
-  .random-btn:hover { background:rgba(0,122,255,0.06); }
-
-  #settingsModal {
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.5);
-    align-items:center;
-    justify-content:center;
-    z-index:10;
-  }
-  .modal-content {
-    background:#fff;
-    padding:20px;
-    width:360px;
-    border-radius:12px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.2);
-    overflow:auto;
-  }
-  textarea {
-    width:100%;
-    height:100px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    padding:8px;
-    font-family:inherit;
-  }
-  .divider { margin:16px 0; border-top:1px solid #eee; }
+:root{
+  --picker-max-width:640px;
+  --item-height:64px;
+  --blue:#007aff;
+  --light-bg:#f5f8ff;
+  --white:#fff;
+  --shadow:0 8px 24px rgba(0,0,0,0.08);
+  --radius:14px;
+}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--light-bg);color:#111;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+header{display:flex;justify-content:flex-end;align-items:center;padding:12px 16px;background:var(--white);border-bottom:1px solid #e5e5e5;box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:5;}
+#settingsBtn{font-size:22px;cursor:pointer;}
+.screen{flex:1;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;text-align:center;animation:fadein 0.4s ease;}
+.screen.active{display:flex;}
+@keyframes fadein{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+h2{font-size:22px;margin-bottom:20px;}
+.picker{width:100%;max-width:var(--picker-max-width);height:320px;perspective:1800px;position:relative;overflow:hidden;background:var(--white);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.08);touch-action:none;}
+.wheel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotateX(0deg);transform-style:preserve-3d;width:100%;height:100%;}
+.item{position:absolute;top:50%;left:0;width:100%;height:var(--item-height);margin-top:calc(var(--item-height)/-2);transform-style:preserve-3d;}
+.item-inner{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:18px;color:#555;padding:0 18px;box-sizing:border-box;text-align:center;white-space:normal;line-height:1.3;transform-style:preserve-3d;}
+@keyframes pulse{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
+.item.active .item-inner{font-size:20px;font-weight:600;color:var(--blue);animation:pulse 0.6s ease 2;}
+.picker::after{content:"";position:absolute;left:0;right:0;top:50%;height:var(--item-height);margin-top:calc(var(--item-height)/-2);border-top:2px solid rgba(0,122,255,0.2);border-bottom:2px solid rgba(0,122,255,0.2);pointer-events:none;}
+#resultCard{background:#fff;padding:20px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.1);text-align:center;max-width:500px;margin:0 auto;}
+#resultText{font-size:24px;font-weight:600;margin-top:10px;word-break:break-word;line-height:1.4;}
+button{margin-top:18px;padding:12px 22px;border-radius:10px;border:0;font-size:16px;cursor:pointer;background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(0,122,255,0.3);transition:background .2s, transform .1s;}
+button:hover{background:#005fe0;}
+button:active{transform:scale(0.98);}
+.random-btn{margin-top:14px;background:#fff;color:var(--blue);border:1px solid var(--blue);box-shadow:none;}
+.random-btn:hover{background:rgba(0,122,255,0.06);}
+#shareBtn{background:#0088cc;box-shadow:0 4px 14px rgba(0,136,204,0.3);}
+#shareBtn:hover{background:#0077b5;}
+#settingsModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:10;}
+.modal-content{background:#fff;padding:20px;width:360px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.2);overflow:auto;}
+textarea{width:100%;height:100px;border:1px solid #ddd;border-radius:8px;padding:8px;font-family:inherit;}
+.divider{margin:16px 0;border-top:1px solid #eee;}
 </style>
 </head>
 <body>
-  <header><div id="settingsBtn">⚙️</div></header>
+<header><div id="settingsBtn">⚙️</div></header>
 
-  <div class="screen active" id="screen1">
-    <h2>Выбери место</h2>
-    <div class="picker" id="picker1"><div class="wheel" id="wheel1"></div></div>
-    <button class="random-btn" id="random1">🎲 Случайный выбор</button>
-  </div>
+<div class="screen active" id="screen1">
+  <h2>Выбери место</h2>
+  <div class="picker" id="picker1"><div class="wheel" id="wheel1"></div></div>
+  <button class="random-btn" id="random1">🎲 Случайный выбор</button>
+</div>
 
-  <div class="screen" id="screen2">
-    <h2>Выбери занятие</h2>
-    <div class="picker" id="picker2"><div class="wheel" id="wheel2"></div></div>
-    <button class="random-btn" id="random2">🎲 Случайный выбор</button>
-  </div>
+<div class="screen" id="screen2">
+  <h2>Выбери занятие</h2>
+  <div class="picker" id="picker2"><div class="wheel" id="wheel2"></div></div>
+  <button class="random-btn" id="random2">🎲 Случайный выбор</button>
+</div>
 
-  <div class="screen" id="screen3">
-    <h2>Идея для встречи</h2>
+<div class="screen" id="screen3">
+  <div id="resultCard">
+    <h3>Идея для встречи</h3>
     <div id="resultText"></div>
-    <button id="restart">Заново</button>
   </div>
+  <button id="shareBtn">📤 Поделиться в Telegram</button>
+  <button id="restart">🔄 Заново</button>
+</div>
 
-  <div id="settingsModal">
-    <div class="modal-content">
-      <h3>Редактировать списки</h3>
-      <h4>Список мест</h4>
-      <textarea id="listInput1"></textarea>
-      <button id="saveBtn1">💾 Сохранить</button>
-      <button id="resetBtn1">🔄 Сбросить</button>
-      <div class="divider"></div>
-      <h4>Список занятий</h4>
-      <textarea id="listInput2"></textarea>
-      <button id="saveBtn2">💾 Сохранить</button>
-      <button id="resetBtn2">🔄 Сбросить</button>
-    </div>
+<div id="settingsModal">
+  <div class="modal-content">
+    <h3>Редактировать списки</h3>
+    <h4>Список мест</h4>
+    <textarea id="listInput1"></textarea>
+    <button id="saveBtn1">💾 Сохранить</button>
+    <button id="resetBtn1">🔄 Сбросить</button>
+    <div class="divider"></div>
+    <h4>Список занятий</h4>
+    <textarea id="listInput2"></textarea>
+    <button id="saveBtn2">💾 Сохранить</button>
+    <button id="resetBtn2">🔄 Сбросить</button>
   </div>
+</div>
 
-  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
-  <script>
-    const defaultItems1 = ["", "🌇 Крыша", "🌳 Парк", "🌊 Море", "🌆 Другой город", "🏞️ Лес", "🍽️ Ресторан", "🎢 Парк аттракционов", "🏖️ Пляж", "🏰 Замок"];
-    const defaultItems2 = ["", "🚶 Прогулка", "📸 Фото", "🍷 Ужин", "🎬 Кино", "🎶 Концерт", "🍕 Пикник", "🎮 Игры", "🧺 Завтрак", "🕯️ Романтический вечер"];
-    let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
-    let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
+<script>
+const defaultItems1=["","🌇 Крыша","🌳 Парк","🌊 Море","🌆 Другой город","🏞️ Лес","🍽️ Ресторан","🎢 Парк аттракционов","🏖️ Пляж","🏰 Замок"];
+const defaultItems2=["","🚶 Прогулка","📸 Фото","🍷 Ужин","🎬 Кино","🎶 Концерт","🍕 Пикник","🎮 Игры","🧺 Завтрак","🕯️ Романтический вечер"];
+let items1=JSON.parse(localStorage.getItem("slotItems1"))||[...defaultItems1];
+let items2=JSON.parse(localStorage.getItem("slotItems2"))||[...defaultItems2];
+const clickSound=document.getElementById("clickSound");
 
-    const clickSound = document.getElementById("clickSound");
+function buildWheel(wheel,items){
+  wheel.innerHTML="";
+  const radius=140;
+  const angleStep=360/items.length;
+  items.forEach((text,i)=>{
+    const el=document.createElement("div");
+    el.className="item";
+    const angle=i*angleStep;
+    el.style.transform=`rotateX(${angle}deg) translateZ(${radius}px)`;
+    const inner=document.createElement("div");
+    inner.className="item-inner";
+    inner.style.transform=`rotateX(${-angle}deg)`;
+    inner.textContent=text;
+    el.appendChild(inner);
+    wheel.appendChild(el);
+  });
+  wheel.dataset.rotation="0";
+}
 
-    function buildWheel(wheel, items) {
-      wheel.innerHTML = "";
-      const radius = 140;
-      const angleStep = 360 / items.length;
-      items.forEach((text, i) => {
-        const el = document.createElement("div");
-        el.className = "item";
-        const angle = i * angleStep;
-        el.style.transform = `rotateX(${angle}deg) translateZ(${radius}px)`;
-        const inner = document.createElement("div");
-        inner.className = "item-inner";
-        inner.style.transform = `rotateX(${-angle}deg)`;
-        inner.textContent = text;
-        el.appendChild(inner);
-        wheel.appendChild(el);
-      });
-      wheel.dataset.rotation = "0";
+function spinWheel(wheel,velocity,items,onFinish,targetIndex=null){
+  let rotation=parseFloat(wheel.dataset.rotation||"0");const angleStep=360/items.length;
+  if(targetIndex!==null){
+    const extraSpins=3+Math.random()*2;
+    const finalAngle=-targetIndex*angleStep-extraSpins*360;
+    let frame=0,totalFrames=80,startAngle=rotation;
+    function animate(){
+      frame++;
+      const progress=frame/totalFrames;
+      const ease=1-Math.pow(1-progress,3);
+      const current=startAngle+(finalAngle-startAngle)*ease;
+      wheel.style.transform=`translate(-50%,-50%) rotateX(${current}deg)`;
+      if(frame%8===0){clickSound.currentTime=0;clickSound.play();}
+      if(frame<totalFrames) requestAnimationFrame(animate);
+      else{wheel.dataset.rotation=current;Array.from(wheel.children).forEach((el,i)=>el.classList.toggle("active",i===targetIndex));onFinish?.(targetIndex);}
     }
-
-    function spinWheel(wheel, velocity, items, onFinish, targetIndex=null) {
-      let rotation = parseFloat(wheel.dataset.rotation || "0");
-      const angleStep = 360 / items.length;
-      const damping = 0.97;
-
-      // Если есть целевой индекс (для случайного выбора)
-      if (targetIndex !== null) {
-        const extraSpins = 3 + Math.random() * 2;
-        const finalAngle = -targetIndex * angleStep - extraSpins * 360;
-        let frame = 0;
-        const totalFrames = 80;
-        const startAngle = rotation;
-
-        function animate() {
-          frame++;
-          const progress = frame / totalFrames;
-          const ease = 1 - Math.pow(1 - progress, 3);
-          const current = startAngle + (finalAngle - startAngle) * ease;
-          wheel.style.transform = `translate(-50%,-50%) rotateX(${current}deg)`;
-          clickSound.currentTime = 0;
-          if (frame % 8 === 0) clickSound.play();
-          if (frame < totalFrames) requestAnimationFrame(animate);
-          else {
-            wheel.dataset.rotation = current;
-            Array.from(wheel.children).forEach((el, i) =>
-              el.classList.toggle("active", i === targetIndex)
-            );
-            onFinish?.(targetIndex);
-          }
-        }
-        animate();
-        return;
-      }
-
-      function animate() {
-        velocity *= damping;
-        rotation += velocity;
-        wheel.style.transform = `translate(-50%,-50%) rotateX(${rotation}deg)`;
-        wheel.dataset.rotation = rotation;
-        if (Math.abs(velocity) > 0.3) requestAnimationFrame(animate);
-        else {
-          const index = Math.round(-rotation / angleStep) % items.length;
-          const fixedIndex = (index + items.length) % items.length;
-          const finalAngle = -fixedIndex * angleStep;
-          wheel.style.transform = `translate(-50%,-50%) rotateX(${finalAngle}deg)`;
-          Array.from(wheel.children).forEach((el, i) =>
-            el.classList.toggle("active", i === fixedIndex)
-          );
-          onFinish?.(fixedIndex);
-        }
-      }
-      animate();
+    animate(); return;
+  }
+  const damping=0.97;
+  function animate(){
+    velocity*=damping;rotation+=velocity;wheel.style.transform=`translate(-50%,-50%) rotateX(${rotation}deg)`;wheel.dataset.rotation=rotation;
+    if(Math.abs(velocity)>0.3) requestAnimationFrame(animate);
+    else{
+      const index=Math.round(-rotation/angleStep)%items.length;
+      const fixedIndex=(index+items.length)%items.length;
+      const finalAngle=-fixedIndex*angleStep;
+      wheel.style.transform=`translate(-50%,-50%) rotateX(${finalAngle}deg)`;
+      Array.from(wheel.children).forEach((el,i)=>el.classList.toggle("active",i===fixedIndex));
+      onFinish?.(fixedIndex);
     }
+  }
+  animate();
+}
 
-    function enablePicker(picker, wheel, items, onSelect) {
-      let startY = 0, lastY = 0, velocity = 0, lastTime = 0, dragging = false;
-      let rotation = 0;
+function enablePicker(picker,wheel,items,onSelect){
+  let startY=0,lastY=0,velocity=0,lastTime=0,dragging=false,rotation=0;
+  picker.addEventListener("touchstart",e=>{dragging=true; startY=lastY=e.touches[0].clientY; lastTime=performance.now();});
+  picker.addEventListener("touchmove",e=>{
+    if(!dragging) return;
+    const y=e.touches[0].clientY;
+    const dy=y-lastY;
+    rotation-=dy*0.6;
+    wheel.style.transform=`translate(-50%,-50%) rotateX(${rotation}deg)`;
+    velocity=dy/(performance.now()-lastTime)*15;
+    lastY=y; lastTime=performance.now();
+  });
+  picker.addEventListener("touchend",()=>{dragging=false; spinWheel(wheel,velocity,items,onSelect);});
+}
 
-      picker.addEventListener("touchstart", e => {
-        dragging = true;
-        startY = lastY = e.touches[0].clientY;
-        lastTime = performance.now();
-      });
-      picker.addEventListener("touchmove", e => {
-        if(!dragging) return;
-        const y = e.touches[0].clientY;
-        const dy = y - lastY;
-        rotation -= dy * 0.6;
-        wheel.style.transform = `translate(-50%,-50%) rotateX(${rotation}deg)`;
-        const dt = performance.now() - lastTime;
-        velocity = dy / dt * 15;
-        lastY = y;
-        lastTime = performance.now();
-      });
-      picker.addEventListener("touchend", () => {
-        dragging = false;
-        spinWheel(wheel, velocity, items, onSelect);
-      });
-    }
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
 
-    function showScreen(id) {
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
-    }
+const wheel1=document.getElementById("wheel1");
+const wheel2=document.getElementById("wheel2");
+buildWheel(wheel1,items1);
+buildWheel(wheel2,items2);
 
-    const wheel1 = document.getElementById("wheel1");
-    const wheel2 = document.getElementById("wheel2");
-    buildWheel(wheel1, items1);
-    buildWheel(wheel2, items2);
+let selected1=0;
+enablePicker(document.getElementById("picker1"),wheel1,items1,i=>{selected1=i; showScreen("screen2");});
+enablePicker(document.getElementById("picker2"),wheel2,items2,i=>{
+  const selected2=i;
+  const result=`${items1[selected1]||"❓"} — ${items2[selected2]||"❓"}`;
+  document.getElementById("resultText").textContent=result;
+  showScreen("screen3");
+});
 
-    let selected1 = 0;
-    enablePicker(document.getElementById("picker1"), wheel1, items1, i => {
-      selected1 = i;
-      showScreen("screen2");
-    });
-    enablePicker(document.getElementById("picker2"), wheel2, items2, i => {
-      const selected2 = i;
-      const result = `${items1[selected1] || "❓"} — ${items2[selected2] || "❓"}`;
-      const resultText = document.getElementById("resultText");
-      resultText.textContent = result;
-      showScreen("screen3");
-      setTimeout(() => resultText.classList.add("fade-in"), 50);
-    });
+document.getElementById("restart").onclick=()=>{showScreen("screen1");};
 
-    document.getElementById("restart").onclick = () => {
-      document.getElementById("resultText").classList.remove("fade-in");
-      showScreen("screen1");
-    };
+document.getElementById("random1").onclick=()=>{const i=Math.floor(Math.random()*(items1.length-1))+1; spinWheel(wheel1,0,items1,idx=>{selected1=idx; showScreen("screen2");},i);};
+document.getElementById("random2").onclick=()=>{const i=Math.floor(Math.random()*(items2.length-1))+1; spinWheel(wheel2,0,items2,idx=>{document.getElementById("resultText").textContent=`${items1[selected1]} — ${items2[idx]}`; showScreen("screen3");},i);};
 
-    // 🎲 случайный выбор с вращением
-    document.getElementById("random1").onclick = () => {
-      const i = Math.floor(Math.random() * (items1.length - 1)) + 1;
-      spinWheel(wheel1, 0, items1, idx => {
-        selected1 = idx;
-        showScreen("screen2");
-      }, i);
-    };
+// ⚙️ Модалка
+const modal=document.getElementById("settingsModal");
+const listInput1=document.getElementById("listInput1");
+const listInput2=document.getElementById("listInput2");
+document.getElementById("settingsBtn").onclick=()=>{modal.style.display="flex"; listInput1.value=items1.join("\n"); listInput2.value=items2.join("\n");};
+modal.onclick=e=>{if(e.target===modal) modal.style.display="none";};
+document.getElementById("saveBtn1").onclick=()=>{items1=listInput1.value.split("\n").map(x=>x.trim());localStorage.setItem("slotItems1",JSON.stringify(items1)); buildWheel(wheel1,items1);};
+document.getElementById("saveBtn2").onclick=()=>{items2=listInput2.value.split("\n").map(x=>x.trim());localStorage.setItem("slotItems2",JSON.stringify(items2)); buildWheel(wheel2,items2);};
+document.getElementById("resetBtn1").onclick=()=>{items1=[...defaultItems1];localStorage.removeItem("slotItems1");buildWheel(wheel1,items1);};
+document.getElementById("resetBtn2").onclick=()=>{items2=[...defaultItems2];localStorage.removeItem("slotItems2");buildWheel(wheel2,items2);};
 
-    document.getElementById("random2").onclick = () => {
-      const i = Math.floor(Math.random() * (items2.length - 1)) + 1;
-      spinWheel(wheel2, 0, items2, idx => {
-        const result = `${items1[selected1]} — ${items2[idx]}`;
-        const resultText = document.getElementById("resultText");
-        resultText.textContent = result;
-        showScreen("screen3");
-        setTimeout(() => resultText.classList.add("fade-in"), 50);
-      }, i);
-    };
-
-    // ⚙️ модалка
-    const modal = document.getElementById("settingsModal");
-    const listInput1 = document.getElementById("listInput1");
-    const listInput2 = document.getElementById("listInput2");
-    document.getElementById("settingsBtn").onclick = () => {
-      modal.style.display = "flex";
-      listInput1.value = items1.join("\n");
-      listInput2.value = items2.join("\n");
-    };
-    modal.onclick = e => { if(e.target===modal) modal.style.display="none"; };
-    document.getElementById("saveBtn1").onclick = () => {
-      items1 = listInput1.value.split("\n").map(x=>x.trim());
-      localStorage.setItem("slotItems1", JSON.stringify(items1));
-      buildWheel(wheel1, items1);
-    };
-    document.getElementById("saveBtn2").onclick = () => {
-      items2 = listInput2.value.split("\n").map(x=>x.trim());
-      localStorage.setItem("slotItems2", JSON.stringify(items2));
-      buildWheel(wheel2, items2);
-    };
-    document.getElementById("resetBtn1").onclick = () => {
-      items1=[...defaultItems1]; localStorage.removeItem("slotItems1"); buildWheel(wheel1, items1);
-    };
-    document.getElementById("resetBtn2").onclick = () => {
-      items2=[...defaultItems2]; localStorage.removeItem("slotItems2"); buildWheel(wheel2, items2);
-    };
-  </script>
+// Кнопка "Поделиться в Telegram" через картинку
+document.getElementById("shareBtn").onclick=()=>{
+  const card=document.getElementById("resultCard");
+  html2canvas(card).then(canvas=>{
+    const imgData=canvas.toDataURL("image/png");
+    const win=window.open("", "_blank");
+    win.document.write("<p>Скопируйте изображение и вставьте в Telegram:</p>");
+    win.document.write(`<img src="${imgData}" style="max-width:100%"/>`);
+  });
+};
+</script>
 </body>
 </html>
