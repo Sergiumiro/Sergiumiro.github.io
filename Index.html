@@ -1,308 +1,338 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>iOS Picker WebApp</title>
-<style>
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f9fafb;
-    color: #111;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-  }
-  header {
-    display: flex;
-    justify-content: flex-end;
-    padding: 12px 20px;
-    border-bottom: 1px solid #ddd;
-    background: #fff;
-    font-size: 22px;
-  }
-  .screen {
-    flex: 1;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  .active { display: flex; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Telegram WebApp Picker</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      background: #f9fafb;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+    }
+    header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    #settingsBtn {
+      cursor: pointer;
+      font-size: 22px;
+    }
+    .screen {
+      flex: 1;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+    }
+    .active {
+      display: flex;
+    }
+    h2 {
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
 
-  h2 { font-size: 22px; margin-bottom: 20px; }
+    .picker {
+      width: 280px;
+      height: 180px;
+      perspective: 800px;
+      overflow: hidden;
+      position: relative;
+    }
+    .wheel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-style: preserve-3d;
+      transform: translate(-50%, -50%) rotateX(0deg);
+      transition: transform 0.3s ease-out;
+    }
+    .item {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      line-height: 40px;
+      text-align: center;
+      font-size: 18px;
+      color: #888;
+      backface-visibility: hidden;
+      transform-origin: center center -80px;
+    }
+    .item.active {
+      font-size: 22px;
+      color: #007aff;
+      font-weight: 600;
+    }
+    .picker::before,
+    .picker::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 40px;
+      border-top: 2px solid #007aff;
+      border-bottom: 2px solid #007aff;
+      top: 50%;
+      margin-top: -20px;
+      pointer-events: none;
+    }
 
-  .picker {
-    position: relative;
-    height: 180px;
-    width: 260px;
-    overflow: hidden;
-    perspective: 1000px;
-    touch-action: none;
-  }
+    #resultText {
+      font-size: 26px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      border-radius: 10px;
+      border: none;
+      background: #007aff;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005ecb;
+    }
 
-  .wheel {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-style: preserve-3d;
-    transform-origin: center center;
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .item {
-    position: absolute;
-    left: 50%;
-    transform-origin: center center -80px;
-    font-size: 18px;
-    color: #555;
-    text-align: center;
-    width: 100%;
-    transition: all 0.3s ease;
-  }
-  .item.active {
-    color: #007aff;
-    font-size: 22px;
-    font-weight: 600;
-  }
-
-  .highlight {
-    position: absolute;
-    top: 50%;
-    left: 0; right: 0;
-    height: 40px;
-    margin-top: -20px;
-    border-top: 2px solid #007aff;
-    border-bottom: 2px solid #007aff;
-    pointer-events: none;
-  }
-
-  #resultText {
-    font-size: 24px;
-    font-weight: 600;
-    margin-top: 20px;
-  }
-
-  button {
-    margin-top: 20px;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 12px;
-    background: #007aff;
-    color: #fff;
-    font-size: 16px;
-  }
-  button:hover { background: #005ecb; }
-
-  #settingsModal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
-    justify-content: center;
-    align-items: center;
-  }
-  .modal-content {
-    background: #fff;
-    padding: 20px;
-    border-radius: 14px;
-    width: 320px;
-  }
-  textarea {
-    width: 100%;
-    height: 100px;
-    margin-top: 8px;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-family: inherit;
-  }
-  h4 { margin: 12px 0 5px; }
-  .divider { margin: 16px 0; border-top: 1px solid #ddd; }
-</style>
+    /* Модальное окно */
+    #settingsModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      width: 340px;
+      max-height: 80vh;
+      overflow: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+    }
+    h4 {
+      margin: 15px 0 5px;
+      font-size: 16px;
+    }
+    .divider {
+      margin: 20px 0;
+      border-top: 1px solid #ddd;
+    }
+  </style>
 </head>
 <body>
-<header><div id="settingsBtn">⚙️</div></header>
+  <header>
+    <div id="settingsBtn">⚙️</div>
+  </header>
 
-<div class="screen active" id="screen1">
-  <h2>Выбор 1</h2>
-  <div class="picker" id="picker1">
-    <div class="wheel" id="wheel1"></div>
-    <div class="highlight"></div>
+  <!-- Экран 1 -->
+  <div class="screen active" id="screen1">
+    <h2>Выбор 1</h2>
+    <div class="picker" id="picker1">
+      <div class="wheel" id="wheel1"></div>
+    </div>
   </div>
-</div>
 
-<div class="screen" id="screen2">
-  <h2>Выбор 2</h2>
-  <div class="picker" id="picker2">
-    <div class="wheel" id="wheel2"></div>
-    <div class="highlight"></div>
+  <!-- Экран 2 -->
+  <div class="screen" id="screen2">
+    <h2>Выбор 2</h2>
+    <div class="picker" id="picker2">
+      <div class="wheel" id="wheel2"></div>
+    </div>
   </div>
-</div>
 
-<div class="screen" id="screen3">
-  <h2>Результат</h2>
-  <div id="resultText"></div>
-  <button id="restart">Заново</button>
-</div>
-
-<div id="settingsModal">
-  <div class="modal-content">
-    <h3>Редактировать списки</h3>
-    <h4>Список 1</h4>
-    <textarea id="listInput1"></textarea>
-    <button id="saveBtn1">Сохранить</button>
-    <button id="resetBtn1">Сбросить</button>
-    <div class="divider"></div>
-    <h4>Список 2</h4>
-    <textarea id="listInput2"></textarea>
-    <button id="saveBtn2">Сохранить</button>
-    <button id="resetBtn2">Сбросить</button>
+  <!-- Экран 3 -->
+  <div class="screen" id="screen3">
+    <h2>Результат</h2>
+    <div id="resultText"></div>
+    <button id="restart">Заново</button>
   </div>
-</div>
 
-<audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <!-- Модалка -->
+  <div id="settingsModal">
+    <div class="modal-content">
+      <h3>Редактировать списки</h3>
+      <h4>Список 1</h4>
+      <textarea id="listInput1"></textarea>
+      <button id="saveBtn1">Сохранить список 1</button>
+      <button id="resetBtn1">Сбросить список 1</button>
+      <div class="divider"></div>
+      <h4>Список 2</h4>
+      <textarea id="listInput2"></textarea>
+      <button id="saveBtn2">Сохранить список 2</button>
+      <button id="resetBtn2">Сбросить список 2</button>
+    </div>
+  </div>
 
-<script>
-const defaultItems1 = ["Before Breakfast", "After Breakfast", "Before Lunch", "After Lunch", "Before Dinner", "After Dinner"];
-const defaultItems2 = ["January 2017", "February 2017", "March 2017", "April 2017", "May 2017"];
-let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
-let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
+  <!-- Звук -->
+  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
-const clickSound = document.getElementById("clickSound");
+  <script>
+    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-function buildWheel(wheel, items){
-  wheel.innerHTML = '';
-  const angle = 360 / items.length;
-  items.forEach((txt, i) => {
-    const el = document.createElement('div');
-    el.className = 'item';
-    el.textContent = txt;
-    el.style.transform = `rotateX(${i * angle}deg) translateZ(80px)`;
-    wheel.appendChild(el);
-  });
-}
+    const defaultItems1 = ["Before Breakfast", "After Breakfast", "Before Lunch", "After Lunch", "Before Dinner", "After Dinner"];
+    const defaultItems2 = ["January 2017", "February 2017", "March 2017", "April 2017", "May 2017"];
 
-function rotateWheel(wheel, index, items){
-  const angle = 360 / items.length;
-  const rotation = -index * angle;
-  wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
-  Array.from(wheel.children).forEach((el, i) => {
-    el.classList.toggle('active', i === index);
-  });
-  clickSound.currentTime = 0;
-  clickSound.play();
-}
+    let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
+    let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
 
-function spinToRandom(wheel, items){
-  const randomIndex = Math.floor(Math.random() * items.length);
-  rotateWheel(wheel, randomIndex, items);
-  return randomIndex;
-}
+    const clickSound = document.getElementById("clickSound");
+    const wheel1 = document.getElementById("wheel1");
+    const wheel2 = document.getElementById("wheel2");
+    const picker1 = document.getElementById("picker1");
+    const picker2 = document.getElementById("picker2");
+    const resultText = document.getElementById("resultText");
 
-function enableTouchSpin(picker, wheel, items, onSelect){
-  let startY = 0, currentRotation = 0, velocity = 0, lastY = 0, lastTime = 0;
-  const angle = 360 / items.length;
+    function buildWheel(wheel, items){
+      wheel.innerHTML = '';
+      const angle = 360 / items.length;
+      items.forEach((txt, i) => {
+        const el = document.createElement('div');
+        el.className = 'item';
+        el.textContent = txt;
+        el.style.transform = `rotateX(${i * angle}deg) translateZ(80px)`;
+        wheel.appendChild(el);
+      });
+    }
 
-  function updateRotation(delta){
-    currentRotation += delta * 0.3;
-    wheel.style.transition = 'none';
-    wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
-  }
+    function rotateWheel(wheel, index, items){
+      const angle = 360 / items.length;
+      const rotation = -index * angle;
+      wheel.style.transition = 'transform 0.5s cubic-bezier(0.1, 0.9, 0.3, 1)';
+      wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
+      Array.from(wheel.children).forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
 
-  function snapToNearest(){
-    const index = Math.round(-currentRotation / angle) % items.length;
-    const fixedIndex = (index + items.length) % items.length;
-    rotateWheel(wheel, fixedIndex, items);
-    if(onSelect) onSelect(fixedIndex);
-  }
+    function enableTouchSpin(picker, wheel, items, onSelect){
+      let startY = 0, currentRotation = 0, velocity = 0, lastY = 0, lastTime = 0;
+      const angle = 360 / items.length;
 
-  picker.addEventListener('touchstart', e=>{
-    startY = e.touches[0].clientY;
-    lastY = startY;
-    lastTime = performance.now();
-    wheel.style.transition = 'none';
-  });
+      function updateRotation(delta){
+        currentRotation += delta * 0.3;
+        wheel.style.transition = 'none';
+        wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
+      }
 
-  picker.addEventListener('touchmove', e=>{
-    const y = e.touches[0].clientY;
-    const dy = y - lastY;
-    const now = performance.now();
-    velocity = dy / (now - lastTime);
-    updateRotation(dy);
-    lastY = y;
-    lastTime = now;
-  });
+      function snapToNearest(){
+        const index = Math.round(-currentRotation / angle) % items.length;
+        const fixedIndex = (index + items.length) % items.length;
+        rotateWheel(wheel, fixedIndex, items);
+        if(onSelect) onSelect(fixedIndex);
+      }
 
-  picker.addEventListener('touchend', ()=>{
-    const momentum = velocity * 600;
-    currentRotation += momentum;
-    wheel.style.transition = 'transform 0.8s cubic-bezier(0.1, 0.9, 0.3, 1)';
-    wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
-    setTimeout(snapToNearest, 900);
-  });
-}
+      picker.addEventListener('touchstart', e=>{
+        e.stopPropagation();
+        startY = e.touches[0].clientY;
+        lastY = startY;
+        lastTime = performance.now();
+        wheel.style.transition = 'none';
+      });
 
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+      picker.addEventListener('touchmove', e=>{
+        e.stopPropagation();
+        const y = e.touches[0].clientY;
+        const dy = y - lastY;
+        const now = performance.now();
+        velocity = dy / (now - lastTime);
+        updateRotation(dy);
+        lastY = y;
+        lastTime = now;
+      });
 
-// --- init wheels ---
-const wheel1 = document.getElementById('wheel1');
-const wheel2 = document.getElementById('wheel2');
-buildWheel(wheel1, items1);
-buildWheel(wheel2, items2);
+      picker.addEventListener('touchend', e=>{
+        e.stopPropagation();
+        const momentum = velocity * 600;
+        currentRotation += momentum;
+        wheel.style.transition = 'transform 0.8s cubic-bezier(0.1, 0.9, 0.3, 1)';
+        wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
+        setTimeout(snapToNearest, 900);
+      });
+    }
 
-let current1 = 0, current2 = 0;
-rotateWheel(wheel1, current1, items1);
-rotateWheel(wheel2, current2, items2);
+    // экраны
+    function showScreen(id){
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
 
-enableTouchSpin(document.getElementById('picker1'), wheel1, items1, i=>{
-  current1 = i;
-  setTimeout(()=>showScreen('screen2'), 600);
-});
-enableTouchSpin(document.getElementById('picker2'), wheel2, items2, i=>{
-  current2 = i;
-  setTimeout(()=>{
-    document.getElementById('resultText').textContent = `${items1[current1]} + ${items2[current2]}`;
-    showScreen('screen3');
-  }, 600);
-});
+    buildWheel(wheel1, items1);
+    buildWheel(wheel2, items2);
 
-document.getElementById('restart').onclick = () => showScreen('screen1');
+    enableTouchSpin(picker1, wheel1, items1, i => {
+      showScreen('screen2');
+    });
+    enableTouchSpin(picker2, wheel2, items2, i => {
+      resultText.textContent = items1[i % items1.length] + " + " + items2[i];
+      showScreen('screen3');
+    });
 
-// --- settings modal ---
-const modal = document.getElementById('settingsModal');
-document.getElementById('settingsBtn').onclick = () => {
-  document.getElementById('listInput1').value = items1.join("\n");
-  document.getElementById('listInput2').value = items2.join("\n");
-  modal.style.display = "flex";
-};
-modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+    document.getElementById("restart").onclick = () => showScreen("screen1");
 
-document.getElementById('saveBtn1').onclick = () => {
-  items1 = document.getElementById('listInput1').value.split("\n").filter(v=>v.trim());
-  localStorage.setItem('slotItems1', JSON.stringify(items1));
-  buildWheel(wheel1, items1);
-};
-document.getElementById('saveBtn2').onclick = () => {
-  items2 = document.getElementById('listInput2').value.split("\n").filter(v=>v.trim());
-  localStorage.setItem('slotItems2', JSON.stringify(items2));
-  buildWheel(wheel2, items2);
-};
-document.getElementById('resetBtn1').onclick = () => {
-  items1 = [...defaultItems1];
-  localStorage.removeItem('slotItems1');
-  buildWheel(wheel1, items1);
-};
-document.getElementById('resetBtn2').onclick = () => {
-  items2 = [...defaultItems2];
-  localStorage.removeItem('slotItems2');
-  buildWheel(wheel2, items2);
-};
-</script>
+    // настройки
+    const modal = document.getElementById("settingsModal");
+    const listInput1 = document.getElementById("listInput1");
+    const listInput2 = document.getElementById("listInput2");
+    const settingsBtn = document.getElementById("settingsBtn");
+
+    settingsBtn.onclick = () => {
+      modal.style.display = "flex";
+      listInput1.value = items1.join("\\n");
+      listInput2.value = items2.join("\\n");
+    };
+    modal.onclick = e => { if(e.target === modal) modal.style.display = "none"; };
+
+    document.getElementById("saveBtn1").onclick = () => {
+      items1 = listInput1.value.split("\\n").filter(Boolean);
+      localStorage.setItem("slotItems1", JSON.stringify(items1));
+      buildWheel(wheel1, items1);
+    };
+    document.getElementById("saveBtn2").onclick = () => {
+      items2 = listInput2.value.split("\\n").filter(Boolean);
+      localStorage.setItem("slotItems2", JSON.stringify(items2));
+      buildWheel(wheel2, items2);
+    };
+    document.getElementById("resetBtn1").onclick = () => {
+      items1 = [...defaultItems1];
+      localStorage.removeItem("slotItems1");
+      buildWheel(wheel1, items1);
+    };
+    document.getElementById("resetBtn2").onclick = () => {
+      items2 = [...defaultItems2];
+      localStorage.removeItem("slotItems2");
+      buildWheel(wheel2, items2);
+    };
+  </script>
 </body>
 </html>
