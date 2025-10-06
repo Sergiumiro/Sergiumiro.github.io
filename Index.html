@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Telegram Picker</title>
+  <title>Идея для встречи</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -40,12 +40,12 @@
     h2 { font-size: 22px; margin-bottom: 20px; }
 
     .picker {
-      width: 260px;
-      height: 200px;
+      width: 320px;
+      height: 240px;
       perspective: 1000px;
       overflow: hidden;
       position: relative;
-      touch-action: none; /* исправлено: ограничиваем только колёса */
+      touch-action: none;
     }
 
     .wheel {
@@ -62,16 +62,16 @@
       left: 0;
       width: 100%;
       text-align: center;
-      font-size: 18px;
+      font-size: 20px;
       color: #888;
-      height: 40px;
-      line-height: 40px;
+      height: 48px;
+      line-height: 48px;
       backface-visibility: hidden;
       transition: color 0.3s, font-size 0.3s;
     }
 
     .item.active {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 600;
       color: #007aff;
       text-shadow: 0 1px 3px rgba(0,122,255,0.3);
@@ -91,10 +91,10 @@
       left: 0;
       right: 0;
       top: 50%;
-      height: 40px;
+      height: 48px;
       border-top: 2px solid #007aff;
       border-bottom: 2px solid #007aff;
-      margin-top: -20px;
+      margin-top: -24px;
       pointer-events: none;
       z-index: 2;
     }
@@ -152,17 +152,17 @@
   </header>
 
   <div class="screen active" id="screen1">
-    <h2>Выбор 1</h2>
+    <h2>Выбери место</h2>
     <div class="picker" id="picker1"><div class="wheel" id="wheel1"></div></div>
   </div>
 
   <div class="screen" id="screen2">
-    <h2>Выбор 2</h2>
+    <h2>Выбери занятие</h2>
     <div class="picker" id="picker2"><div class="wheel" id="wheel2"></div></div>
   </div>
 
   <div class="screen" id="screen3">
-    <h2>Результат</h2>
+    <h2>Идея для встречи</h2>
     <div id="resultText"></div>
     <button id="restart">Заново</button>
   </div>
@@ -170,23 +170,47 @@
   <div id="settingsModal">
     <div class="modal-content">
       <h3>Редактировать списки</h3>
-      <h4>Список 1</h4>
+      <h4>Список мест</h4>
       <textarea id="listInput1"></textarea>
-      <button id="saveBtn1">💾 Сохранить список 1</button>
-      <button id="resetBtn1">🔄 Сбросить список 1</button>
+      <button id="saveBtn1">💾 Сохранить</button>
+      <button id="resetBtn1">🔄 Сбросить</button>
       <div class="divider"></div>
-      <h4>Список 2</h4>
+      <h4>Список занятий</h4>
       <textarea id="listInput2"></textarea>
-      <button id="saveBtn2">💾 Сохранить список 2</button>
-      <button id="resetBtn2">🔄 Сбросить список 2</button>
+      <button id="saveBtn2">💾 Сохранить</button>
+      <button id="resetBtn2">🔄 Сбросить</button>
     </div>
   </div>
 
   <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script>
-    const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
-    const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
+    const defaultItems1 = [
+      "🌇 Крыша",
+      "🌳 Парк",
+      "🌊 Море",
+      "🌆 Другой город",
+      "🏞️ Лес",
+      "🍽️ Ресторан",
+      "🎢 Аттракцион",
+      "🏖️ Пляж",
+      "🏰 Замок",
+      "🪩 Клуб"
+    ];
+
+    const defaultItems2 = [
+      "🚶 Прогулка",
+      "📸 Фото",
+      "🍷 Ужин",
+      "🎬 Кино",
+      "🎶 Концерт",
+      "🍕 Пикник",
+      "🎮 Игры",
+      "🧺 Завтрак",
+      "🧭 Квест",
+      "🕯️ Романтический вечер"
+    ];
+
     let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
     let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
 
@@ -200,7 +224,7 @@
         el.className = "item";
         el.textContent = text;
         const angle = i * angleStep;
-        el.style.transform = `rotateX(${angle}deg) translateZ(90px)`;
+        el.style.transform = `rotateX(${angle}deg) translateZ(110px)`;
         wheel.appendChild(el);
       });
     }
@@ -256,7 +280,7 @@
         e.stopPropagation();
         const y = e.touches[0].clientY;
         const dy = y - lastY;
-        currentRotation += dy * 0.6;
+        currentRotation -= dy * 0.6;
         wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
         wheel.dataset.rotation = currentRotation;
         const dt = performance.now() - lastTime;
@@ -291,7 +315,7 @@
     enablePicker(document.getElementById("picker2"), wheel2, items2, i => {
       const selected2 = i;
       document.getElementById("resultText").textContent =
-        `${items1[selected1]} + ${items2[selected2]}`;
+        `${items1[selected1]} — ${items2[selected2]}`;
       showScreen("screen3");
     });
 
