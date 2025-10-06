@@ -16,8 +16,10 @@
     #resultText { font-size: 24px; font-weight: bold; margin-top: 20px; }
     /* Модалка */
     #settingsModal { display: none; position: fixed; top: 0; left: 0; right:0; bottom:0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
-    .modal-content { background:#fff; padding:20px; border-radius:10px; width:300px; }
+    .modal-content { background:#fff; padding:20px; border-radius:10px; width:340px; }
     textarea { width:100%; height:100px; margin-top:10px; }
+    h4 { margin: 10px 0 0; }
+    .divider { margin: 15px 0; border-top: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -37,16 +39,27 @@
     <button id="restart">Заново</button>
   </div>  <!-- Модалка -->  <div id="settingsModal">
     <div class="modal-content">
-      <h3>Редактировать список</h3>
-      <small>Каждый вариант с новой строки</small>
-      <textarea id="listInput"></textarea>
-      <button id="saveBtn">Сохранить</button>
-    </div>
+      <h3>Редактировать списки</h3><h4>Список 1</h4>
+  <textarea id="listInput1"></textarea>
+  <button id="saveBtn1">Сохранить список 1</button>
+  <button id="resetBtn1">Сбросить список 1</button>
+
+  <div class="divider"></div>
+
+  <h4>Список 2</h4>
+  <textarea id="listInput2"></textarea>
+  <button id="saveBtn2">Сохранить список 2</button>
+  <button id="resetBtn2">Сбросить список 2</button>
+</div>
+
   </div><script>
-  // Загружаем список из localStorage или используем стандартный
-  let items = JSON.parse(localStorage.getItem("slotItems")) || [
-    "🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"
-  ];
+  // Стандартные списки
+  const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
+  const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
+
+  // Загружаем списки из localStorage или используем стандартные
+  let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
+  let items2 = JSON.parse(localStorage.getItem("slotItems2")) || [...defaultItems2];
 
   let choice1, choice2;
 
@@ -55,8 +68,8 @@
   const resultText = document.getElementById("resultText");
 
   function renderSlots(){
-    slot1.innerHTML = items.map(i => `<div class='slot-item'>${i}</div>`).join("");
-    slot2.innerHTML = items.map(i => `<div class='slot-item'>${i}</div>`).join("");
+    slot1.innerHTML = items1.map(i => `<div class='slot-item'>${i}</div>`).join("");
+    slot2.innerHTML = items2.map(i => `<div class='slot-item'>${i}</div>`).join("");
   }
   renderSlots();
 
@@ -66,16 +79,16 @@
   }
 
   document.getElementById("next1").onclick = () => {
-    choice1 = Math.floor(Math.random() * items.length);
+    choice1 = Math.floor(Math.random() * items1.length);
     slot1.style.transform = `translateY(-${choice1 * 60}px)`;
     setTimeout(() => showScreen("screen2"), 1000);
   };
 
   document.getElementById("next2").onclick = () => {
-    choice2 = Math.floor(Math.random() * items.length);
+    choice2 = Math.floor(Math.random() * items2.length);
     slot2.style.transform = `translateY(-${choice2 * 60}px)`;
     setTimeout(() => {
-      resultText.textContent = items[choice1] + " + " + items[choice2];
+      resultText.textContent = items1[choice1] + " + " + items2[choice2];
       showScreen("screen3");
     }, 1000);
   };
@@ -88,18 +101,41 @@
 
   // Настройки
   const modal = document.getElementById("settingsModal");
-  const listInput = document.getElementById("listInput");
+  const listInput1 = document.getElementById("listInput1");
+  const listInput2 = document.getElementById("listInput2");
 
   document.getElementById("settingsBtn").onclick = () => {
-    listInput.value = items.join("\n");
+    listInput1.value = items1.join("\n");
+    listInput2.value = items2.join("\n");
     modal.style.display = "flex";
   };
 
-  document.getElementById("saveBtn").onclick = () => {
-    items = listInput.value.split("\n").map(i => i.trim()).filter(Boolean);
-    localStorage.setItem("slotItems", JSON.stringify(items));
+  document.getElementById("saveBtn1").onclick = () => {
+    items1 = listInput1.value.split("\n").map(i => i.trim()).filter(Boolean);
+    localStorage.setItem("slotItems1", JSON.stringify(items1));
     renderSlots();
     modal.style.display = "none";
+  };
+
+  document.getElementById("saveBtn2").onclick = () => {
+    items2 = listInput2.value.split("\n").map(i => i.trim()).filter(Boolean);
+    localStorage.setItem("slotItems2", JSON.stringify(items2));
+    renderSlots();
+    modal.style.display = "none";
+  };
+
+  document.getElementById("resetBtn1").onclick = () => {
+    items1 = [...defaultItems1];
+    localStorage.setItem("slotItems1", JSON.stringify(items1));
+    listInput1.value = items1.join("\n");
+    renderSlots();
+  };
+
+  document.getElementById("resetBtn2").onclick = () => {
+    items2 = [...defaultItems2];
+    localStorage.setItem("slotItems2", JSON.stringify(items2));
+    listInput2.value = items2.join("\n");
+    renderSlots();
   };
 
   modal.onclick = (e) => { if(e.target === modal) modal.style.display = "none"; };
