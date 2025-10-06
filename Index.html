@@ -40,8 +40,9 @@
     h2 { font-size: 22px; margin-bottom: 20px; }
 
     .picker {
-      width: 320px;
-      height: 240px;
+      width: 90%;
+      max-width: 380px;
+      height: 260px;
       perspective: 1000px;
       overflow: hidden;
       position: relative;
@@ -61,12 +62,20 @@
       top: 0;
       left: 0;
       width: 100%;
+      padding: 0 20px;
+      box-sizing: border-box;
       text-align: center;
       font-size: 20px;
-      color: #888;
-      height: 48px;
-      line-height: 48px;
+      color: #555;
+      height: 60px;
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       backface-visibility: hidden;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
       transition: color 0.3s, font-size 0.3s;
     }
 
@@ -91,15 +100,23 @@
       left: 0;
       right: 0;
       top: 50%;
-      height: 48px;
+      height: 60px;
       border-top: 2px solid #007aff;
       border-bottom: 2px solid #007aff;
-      margin-top: -24px;
+      margin-top: -30px;
       pointer-events: none;
       z-index: 2;
     }
 
-    #resultText { font-size: 26px; font-weight: 600; margin-top: 20px; }
+    #resultText {
+      font-size: 26px;
+      font-weight: 600;
+      margin-top: 20px;
+      padding: 0 20px;
+      text-align: center;
+      word-break: break-word;
+    }
+
     button {
       padding: 12px 20px;
       font-size: 16px;
@@ -186,29 +203,29 @@
 
   <script>
     const defaultItems1 = [
-      "🌇 Крыша",
-      "🌳 Парк",
-      "🌊 Море",
-      "🌆 Другой город",
-      "🏞️ Лес",
-      "🍽️ Ресторан",
-      "🎢 Аттракцион",
-      "🏖️ Пляж",
-      "🏰 Замок",
-      "🪩 Клуб"
+      "🌇 Крыша высотного дома с видом на закат",
+      "🌳 Прогулка по парку с кофе",
+      "🌊 Поездка на море или набережную",
+      "🌆 Маленький город рядом для мини-путешествия",
+      "🏞️ Поход в лес или прогулка по тропам",
+      "🍽️ Уютный ресторан с террасой",
+      "🎢 Парк аттракционов",
+      "🏖️ Пляж с пледом и фруктами",
+      "🏰 Старый замок или усадьба",
+      "🪩 Клуб или лаунж"
     ];
 
     const defaultItems2 = [
       "🚶 Прогулка",
-      "📸 Фото",
+      "📸 Фотосессия",
       "🍷 Ужин",
       "🎬 Кино",
       "🎶 Концерт",
       "🍕 Пикник",
-      "🎮 Игры",
-      "🧺 Завтрак",
-      "🧭 Квест",
-      "🕯️ Романтический вечер"
+      "🎮 Игры настольные или VR",
+      "🧺 Завтрак на природе",
+      "🧭 Квест по городу",
+      "🕯️ Романтический вечер с вином"
     ];
 
     let items1 = JSON.parse(localStorage.getItem("slotItems1")) || [...defaultItems1];
@@ -224,7 +241,7 @@
         el.className = "item";
         el.textContent = text;
         const angle = i * angleStep;
-        el.style.transform = `rotateX(${angle}deg) translateZ(110px)`;
+        el.style.transform = `rotateX(${angle}deg) translateZ(130px)`;
         wheel.appendChild(el);
       });
     }
