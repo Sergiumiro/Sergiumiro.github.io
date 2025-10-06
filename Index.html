@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Web Picker</title>
+<title>iOS Picker WebApp</title>
 <style>
   body {
     margin: 0;
@@ -32,10 +32,7 @@
   }
   .active { display: flex; }
 
-  h2 {
-    font-size: 22px;
-    margin-bottom: 20px;
-  }
+  h2 { font-size: 22px; margin-bottom: 20px; }
 
   .picker {
     position: relative;
@@ -43,6 +40,7 @@
     width: 260px;
     overflow: hidden;
     perspective: 1000px;
+    touch-action: none;
   }
 
   .wheel {
@@ -173,7 +171,6 @@ const defaultItems2 = ["January 2017", "February 2017", "March 2017", "April 201
 let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
 let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
 
-let current1 = 0, current2 = 0;
 const clickSound = document.getElementById("clickSound");
 
 function buildWheel(wheel, items){
@@ -205,33 +202,79 @@ function spinToRandom(wheel, items){
   return randomIndex;
 }
 
+function enableTouchSpin(picker, wheel, items, onSelect){
+  let startY = 0, currentRotation = 0, velocity = 0, lastY = 0, lastTime = 0;
+  const angle = 360 / items.length;
+
+  function updateRotation(delta){
+    currentRotation += delta * 0.3;
+    wheel.style.transition = 'none';
+    wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
+  }
+
+  function snapToNearest(){
+    const index = Math.round(-currentRotation / angle) % items.length;
+    const fixedIndex = (index + items.length) % items.length;
+    rotateWheel(wheel, fixedIndex, items);
+    if(onSelect) onSelect(fixedIndex);
+  }
+
+  picker.addEventListener('touchstart', e=>{
+    startY = e.touches[0].clientY;
+    lastY = startY;
+    lastTime = performance.now();
+    wheel.style.transition = 'none';
+  });
+
+  picker.addEventListener('touchmove', e=>{
+    const y = e.touches[0].clientY;
+    const dy = y - lastY;
+    const now = performance.now();
+    velocity = dy / (now - lastTime);
+    updateRotation(dy);
+    lastY = y;
+    lastTime = now;
+  });
+
+  picker.addEventListener('touchend', ()=>{
+    const momentum = velocity * 600;
+    currentRotation += momentum;
+    wheel.style.transition = 'transform 0.8s cubic-bezier(0.1, 0.9, 0.3, 1)';
+    wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
+    setTimeout(snapToNearest, 900);
+  });
+}
+
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
+// --- init wheels ---
 const wheel1 = document.getElementById('wheel1');
 const wheel2 = document.getElementById('wheel2');
 buildWheel(wheel1, items1);
 buildWheel(wheel2, items2);
-rotateWheel(wheel1, 0, items1);
-rotateWheel(wheel2, 0, items2);
 
-document.getElementById('picker1').addEventListener('click', () => {
-  current1 = spinToRandom(wheel1, items1);
-  setTimeout(() => showScreen('screen2'), 1000);
+let current1 = 0, current2 = 0;
+rotateWheel(wheel1, current1, items1);
+rotateWheel(wheel2, current2, items2);
+
+enableTouchSpin(document.getElementById('picker1'), wheel1, items1, i=>{
+  current1 = i;
+  setTimeout(()=>showScreen('screen2'), 600);
 });
-document.getElementById('picker2').addEventListener('click', () => {
-  current2 = spinToRandom(wheel2, items2);
-  setTimeout(() => {
+enableTouchSpin(document.getElementById('picker2'), wheel2, items2, i=>{
+  current2 = i;
+  setTimeout(()=>{
     document.getElementById('resultText').textContent = `${items1[current1]} + ${items2[current2]}`;
     showScreen('screen3');
-  }, 1000);
+  }, 600);
 });
 
 document.getElementById('restart').onclick = () => showScreen('screen1');
 
-// настройки
+// --- settings modal ---
 const modal = document.getElementById('settingsModal');
 document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('listInput1').value = items1.join("\n");
@@ -241,12 +284,12 @@ document.getElementById('settingsBtn').onclick = () => {
 modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
 
 document.getElementById('saveBtn1').onclick = () => {
-  items1 = document.getElementById('listInput1').value.split("\n").filter(v => v.trim());
+  items1 = document.getElementById('listInput1').value.split("\n").filter(v=>v.trim());
   localStorage.setItem('slotItems1', JSON.stringify(items1));
   buildWheel(wheel1, items1);
 };
 document.getElementById('saveBtn2').onclick = () => {
-  items2 = document.getElementById('listInput2').value.split("\n").filter(v => v.trim());
+  items2 = document.getElementById('listInput2').value.split("\n").filter(v=>v.trim());
   localStorage.setItem('slotItems2', JSON.stringify(items2));
   buildWheel(wheel2, items2);
 };
