@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Telegram WebApp Picker</title>
+  <title>Telegram Picker</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -35,9 +35,8 @@
       flex-direction: column;
       text-align: center;
     }
-    .active {
-      display: flex;
-    }
+    .active { display: flex; }
+
     h2 {
       font-size: 22px;
       margin-bottom: 20px;
@@ -56,7 +55,6 @@
       left: 50%;
       transform-style: preserve-3d;
       transform: translate(-50%, -50%) rotateX(0deg);
-      transition: transform 0.3s ease-out;
     }
     .item {
       position: absolute;
@@ -69,12 +67,14 @@
       color: #888;
       backface-visibility: hidden;
       transform-origin: center center -80px;
+      transition: transform 0.2s;
     }
     .item.active {
       font-size: 22px;
       color: #007aff;
       font-weight: 600;
     }
+
     .picker::before,
     .picker::after {
       content: "";
@@ -94,6 +94,7 @@
       font-weight: 600;
       margin-top: 20px;
     }
+
     button {
       padding: 12px 20px;
       font-size: 16px;
@@ -104,9 +105,7 @@
       color: #fff;
       cursor: pointer;
     }
-    button:hover {
-      background: #005ecb;
-    }
+    button:hover { background: #005ecb; }
 
     /* Модальное окно */
     #settingsModal {
@@ -153,30 +152,22 @@
     <div id="settingsBtn">⚙️</div>
   </header>
 
-  <!-- Экран 1 -->
   <div class="screen active" id="screen1">
     <h2>Выбор 1</h2>
-    <div class="picker" id="picker1">
-      <div class="wheel" id="wheel1"></div>
-    </div>
+    <div class="picker" id="picker1"><div class="wheel" id="wheel1"></div></div>
   </div>
 
-  <!-- Экран 2 -->
   <div class="screen" id="screen2">
     <h2>Выбор 2</h2>
-    <div class="picker" id="picker2">
-      <div class="wheel" id="wheel2"></div>
-    </div>
+    <div class="picker" id="picker2"><div class="wheel" id="wheel2"></div></div>
   </div>
 
-  <!-- Экран 3 -->
   <div class="screen" id="screen3">
     <h2>Результат</h2>
     <div id="resultText"></div>
     <button id="restart">Заново</button>
   </div>
 
-  <!-- Модалка -->
   <div id="settingsModal">
     <div class="modal-content">
       <h3>Редактировать списки</h3>
@@ -192,24 +183,17 @@
     </div>
   </div>
 
-  <!-- Звук -->
   <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script>
     document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-    const defaultItems1 = ["Before Breakfast", "After Breakfast", "Before Lunch", "After Lunch", "Before Dinner", "After Dinner"];
-    const defaultItems2 = ["January 2017", "February 2017", "March 2017", "April 2017", "May 2017"];
-
+    const defaultItems1 = ["🍎 Яблоко", "🍌 Банан", "🍇 Виноград", "🍊 Апельсин", "🍉 Арбуз"];
+    const defaultItems2 = ["🚗 Машина", "🚲 Велосипед", "✈️ Самолет", "🛳️ Корабль", "🚌 Автобус"];
     let items1 = JSON.parse(localStorage.getItem('slotItems1')) || [...defaultItems1];
     let items2 = JSON.parse(localStorage.getItem('slotItems2')) || [...defaultItems2];
 
     const clickSound = document.getElementById("clickSound");
-    const wheel1 = document.getElementById("wheel1");
-    const wheel2 = document.getElementById("wheel2");
-    const picker1 = document.getElementById("picker1");
-    const picker2 = document.getElementById("picker2");
-    const resultText = document.getElementById("resultText");
 
     function buildWheel(wheel, items){
       wheel.innerHTML = '';
@@ -223,82 +207,82 @@
       });
     }
 
-    function rotateWheel(wheel, index, items){
+    function spinWheel(wheel, velocity, items, onFinish){
+      let rotation = 0;
       const angle = 360 / items.length;
-      const rotation = -index * angle;
-      wheel.style.transition = 'transform 0.5s cubic-bezier(0.1, 0.9, 0.3, 1)';
-      wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
-      Array.from(wheel.children).forEach((el, i) => {
-        el.classList.toggle('active', i === index);
-      });
-      clickSound.currentTime = 0;
-      clickSound.play();
+      const damping = 0.98;
+      let lastClickAngle = 0;
+
+      function animate(){
+        velocity *= damping;
+        rotation += velocity;
+
+        const currentAngle = ((rotation % angle) + angle) % angle;
+        if (Math.abs(currentAngle - lastClickAngle) > angle / 2) {
+          clickSound.currentTime = 0;
+          clickSound.play();
+          lastClickAngle = currentAngle;
+        }
+
+        wheel.style.transform = `translate(-50%, -50%) rotateX(${rotation}deg)`;
+
+        if (Math.abs(velocity) > 0.1) {
+          requestAnimationFrame(animate);
+        } else {
+          const index = Math.round(-rotation / angle) % items.length;
+          const fixedIndex = (index + items.length) % items.length;
+          wheel.style.transform = `translate(-50%, -50%) rotateX(${-fixedIndex * angle}deg)`;
+          Array.from(wheel.children).forEach((el, i) => el.classList.toggle('active', i === fixedIndex));
+          onFinish?.(fixedIndex);
+        }
+      }
+      animate();
     }
 
-    function enableTouchSpin(picker, wheel, items, onSelect){
-      let startY = 0, currentRotation = 0, velocity = 0, lastY = 0, lastTime = 0;
-      const angle = 360 / items.length;
+    function enablePicker(picker, wheel, items, onSelect){
+      let startY = 0, lastY = 0, velocity = 0, lastTime = 0;
 
-      function updateRotation(delta){
-        currentRotation += delta * 0.3;
-        wheel.style.transition = 'none';
-        wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
-      }
-
-      function snapToNearest(){
-        const index = Math.round(-currentRotation / angle) % items.length;
-        const fixedIndex = (index + items.length) % items.length;
-        rotateWheel(wheel, fixedIndex, items);
-        if(onSelect) onSelect(fixedIndex);
-      }
-
-      picker.addEventListener('touchstart', e=>{
+      picker.addEventListener('touchstart', e => {
         e.stopPropagation();
-        startY = e.touches[0].clientY;
-        lastY = startY;
+        startY = lastY = e.touches[0].clientY;
         lastTime = performance.now();
-        wheel.style.transition = 'none';
       });
 
-      picker.addEventListener('touchmove', e=>{
+      picker.addEventListener('touchmove', e => {
         e.stopPropagation();
         const y = e.touches[0].clientY;
-        const dy = y - lastY;
         const now = performance.now();
-        velocity = dy / (now - lastTime);
-        updateRotation(dy);
+        const dy = y - lastY;
+        const dt = now - lastTime;
+        velocity = dy / dt * 20;
+        wheel.style.transform += ` rotateX(${dy * 0.5}deg)`;
         lastY = y;
         lastTime = now;
       });
 
-      picker.addEventListener('touchend', e=>{
+      picker.addEventListener('touchend', e => {
         e.stopPropagation();
-        const momentum = velocity * 600;
-        currentRotation += momentum;
-        wheel.style.transition = 'transform 0.8s cubic-bezier(0.1, 0.9, 0.3, 1)';
-        wheel.style.transform = `translate(-50%, -50%) rotateX(${currentRotation}deg)`;
-        setTimeout(snapToNearest, 900);
+        spinWheel(wheel, velocity, items, onSelect);
       });
     }
 
-    // экраны
     function showScreen(id){
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
+    const wheel1 = document.getElementById('wheel1');
+    const wheel2 = document.getElementById('wheel2');
     buildWheel(wheel1, items1);
     buildWheel(wheel2, items2);
 
-    enableTouchSpin(picker1, wheel1, items1, i => {
-      showScreen('screen2');
-    });
-    enableTouchSpin(picker2, wheel2, items2, i => {
-      resultText.textContent = items1[i % items1.length] + " + " + items2[i];
+    enablePicker(document.getElementById('picker1'), wheel1, items1, i => showScreen('screen2'));
+    enablePicker(document.getElementById('picker2'), wheel2, items2, i => {
+      document.getElementById('resultText').textContent = `${items1[i % items1.length]} + ${items2[i]}`;
       showScreen('screen3');
     });
 
-    document.getElementById("restart").onclick = () => showScreen("screen1");
+    document.getElementById('restart').onclick = () => showScreen('screen1');
 
     // настройки
     const modal = document.getElementById("settingsModal");
