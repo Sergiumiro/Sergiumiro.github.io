@@ -1,615 +1,387 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Picker App</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .app-container {
-            max-width: 400px;
-            height: 100vh;
-            margin: 0 auto;
-            background: white;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .header {
-            padding: 20px;
-            text-align: center;
-            position: relative;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .header h1 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .settings-btn {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            color: #007AFF;
-            cursor: pointer;
-        }
-        
-        .wheel-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            position: relative;
-        }
-        
-        .wheel {
-            width: 100%;
-            height: 200px;
-            position: relative;
-            overflow: hidden;
-            perspective: 1000px;
-        }
-        
-        .wheel-inner {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
-            transition: transform 0.3s ease-out;
-        }
-        
-        .wheel-item {
-            position: absolute;
-            width: 100%;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 0 20px;
-            font-size: 18px;
-            color: #8e8e93;
-            transition: all 0.3s ease;
-        }
-        
-        .wheel-item.center {
-            color: #000;
-            font-size: 22px;
-            font-weight: 600;
-        }
-        
-        .wheel-center-line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 50px;
-            border-top: 1px solid #c0c0c0;
-            border-bottom: 1px solid #c0c0c0;
-            transform: translateY(-50%);
-            pointer-events: none;
-            z-index: 10;
-        }
-        
-        .screen {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .screen.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-        
-        .result-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .result-title {
-            font-size: 18px;
-            color: #8e8e93;
-            margin-bottom: 20px;
-        }
-        
-        .result-value {
-            font-size: 24px;
-            font-weight: 600;
-            color: #007AFF;
-            margin-bottom: 30px;
-        }
-        
-        .next-btn {
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,122,255,0.2);
-        }
-        
-        .settings-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .settings-modal {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .settings-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .settings-section {
-            margin-bottom: 20px;
-        }
-        
-        .settings-section h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: #333;
-        }
-        
-        .input-group {
-            display: flex;
-            margin-bottom: 10px;
-        }
-        
-        .input-group input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px 0 0 8px;
-            font-size: 16px;
-        }
-        
-        .input-group button {
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 12px 15px;
-            border-radius: 0 8px 8px 0;
-            cursor: pointer;
-        }
-        
-        .items-list {
-            list-style: none;
-            margin-top: 10px;
-        }
-        
-        .items-list li {
-            padding: 10px;
-            background: #f8f8f8;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .delete-btn {
-            background: #ff3b30;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .close-settings {
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            width: 100%;
-            margin-top: 10px;
-            font-size: 16px;
-        }
-        
-        .loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007AFF;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Telegram — Date Picker (iOS 2025 style)</title>
+  <style>
+    :root{
+      --bg-1: linear-gradient(180deg,#0f1723 0%, #0b1220 60%);
+      --card: rgba(255,255,255,0.06);
+      --glass: rgba(255,255,255,0.06);
+      --accent: rgba(255,255,255,0.06);
+      --text: rgba(255,255,255,0.95);
+      --muted: rgba(255,255,255,0.6);
+      --glass-border: rgba(255,255,255,0.08);
+      --radius: 18px;
+      --safe-pad: env(safe-area-inset-bottom,12px);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    html,body{height:100%;margin:0;background:var(--bg-1);color:var(--text);-webkit-font-smoothing:antialiased;}
+    .app{max-width:540px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:18px;box-sizing:border-box}
+
+    header{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+    .title{font-weight:600;font-size:18px}
+    #settingsBtn{background:transparent;border:0;color:var(--muted);font-size:22px;padding:8px;border-radius:12px}
+
+    main{flex:1;display:flex;flex-direction:column}
+    .screens{flex:1;display:flex;flex-direction:column;gap:14px}
+    .screen{flex:1;display:none;flex-direction:column;align-items:stretch;justify-content:center}
+    .screen.active{display:flex}
+    .screen-title{margin:0 0 8px 0;text-align:center;color:var(--muted);font-weight:600}
+
+    .wheel-wrapper{position:relative;width:100%;flex:0 0 340px;display:flex;align-items:center;justify-content:center}
+    .wheel{width:100%;height:260px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(10px);box-shadow:0 8px 30px rgba(2,6,23,0.6);overflow:hidden;scrollbar-width:none;-ms-overflow-style:none;touch-action:pan-y}
+    .wheel::-webkit-scrollbar{display:none}
+    .wheel-list{list-style:none;margin:0;padding:60px 0;width:100%}
+    .wheel-list li{height:52px;line-height:52px;padding:0 18px;box-sizing:border-box;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px}
+
+    /* center highlight */
+    .wheel-overlay{position:absolute;left:12px;right:12px;pointer-events:none;display:flex;align-items:center;justify-content:center;height:100%}
+    .wheel-overlay::before{content:'';position:absolute;left:0;right:0;height:66px;border-radius:12px;background:linear-gradient(0deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border:1px solid var(--glass-border);box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+
+    .spin-btn{margin:10px auto 0 auto;padding:12px 22px;border-radius:14px;border:0;background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));color:var(--text);font-weight:700}
+
+    .bottom-nav{display:flex;gap:12px;justify-content:center;padding:10px 0}
+    .bottom-nav button{padding:12px 18px;border-radius:12px;border:0;background:rgba(255,255,255,0.03);color:var(--text)}
+
+    /* result */
+    .result-card{margin:16px auto;padding:18px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));width:100%;box-sizing:border-box;text-align:center}
+    .result-item{font-size:20px;font-weight:700;margin:6px 0}
+
+    /* modal settings */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:50}
+    .modal.show{display:flex}
+    .modal .card{width:100%;max-width:520px;background:rgba(10,12,16,0.9);border-radius:16px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+    .tabs{display:flex;gap:8px;margin-bottom:12px}
+    .tab{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid transparent;color:var(--muted)}
+    .tab.active{background:rgba(255,255,255,0.03);border-color:var(--glass-border);color:var(--text)}
+    .list-edit{max-height:260px;overflow:auto;padding:6px;border-radius:10px;background:rgba(255,255,255,0.02)}
+    .list-edit .row{display:flex;gap:8px;padding:8px 6px}
+    .list-edit input{flex:1;padding:8px;border-radius:10px;border:0;background:rgba(255,255,255,0.03);color:var(--text)}
+    .list-edit button{padding:8px 10px;border-radius:10px;border:0}
+    .modal .footer{display:flex;justify-content:space-between;margin-top:12px}
+
+    /* overlay during spin to block interactions */
+    #blockOverlay{position:fixed;inset:0;background:transparent;display:none;z-index:40}
+    #blockOverlay.show{display:block}
+
+    /* small screens adjustments */
+    @media (max-width:420px){.app{padding:12px}.wheel-wrapper{flex:0 0 300px}.wheel{height:240px}.wheel-list li{height:48px;line-height:48px;font-size:18px}.result-item{font-size:18px}}
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="header">
-            <h1 id="screen-title">Выберите место</h1>
-            <button class="settings-btn" onclick="openSettings()">⚙️</button>
-        </div>
-        
-        <div class="screen active" id="location-screen">
-            <div class="wheel-container">
-                <div class="wheel">
-                    <div class="wheel-inner" id="location-wheel">
-                        <!-- Items will be added dynamically -->
-                    </div>
-                    <div class="wheel-center-line"></div>
-                </div>
+  <div class="app" role="application">
+    <header>
+      <div class="title">Telegram — Свидание</div>
+      <button id="settingsBtn" aria-label="Открыть настройки">⚙️</button>
+    </header>
+
+    <main>
+      <div class="screens">
+        <section id="screen1" class="screen active" data-screen="1">
+          <h3 class="screen-title">Выберите место</h3>
+          <div class="wheel-wrapper">
+            <div id="wheel-places" class="wheel" data-kind="places" aria-label="Колёсико выбора места" tabindex="0">
+              <ul class="wheel-list"></ul>
             </div>
-        </div>
-        
-        <div class="screen" id="action-screen">
-            <div class="wheel-container">
-                <div class="wheel">
-                    <div class="wheel-inner" id="action-wheel">
-                        <!-- Items will be added dynamically -->
-                    </div>
-                    <div class="wheel-center-line"></div>
-                </div>
+            <div class="wheel-overlay"></div>
+          </div>
+          <button class="spin-btn" data-wheel="places">Крутить</button>
+        </section>
+
+        <section id="screen2" class="screen" data-screen="2">
+          <h3 class="screen-title">Выберите действие</h3>
+          <div class="wheel-wrapper">
+            <div id="wheel-actions" class="wheel" data-kind="actions" aria-label="Колёсико выбора действия" tabindex="0">
+              <ul class="wheel-list"></ul>
             </div>
+            <div class="wheel-overlay"></div>
+          </div>
+          <button class="spin-btn" data-wheel="actions">Крутить</button>
+        </section>
+
+        <section id="screen3" class="screen" data-screen="3">
+          <h3 class="screen-title">Результат</h3>
+          <div class="result-card" id="resultCard">
+            <div class="result-item" id="resultPlace">—</div>
+            <div class="result-item" id="resultAction">—</div>
+          </div>
+          <div style="display:flex;gap:12px;justify-content:center;margin-top:10px">
+            <button id="restartBtn">Ещё раз</button>
+            <button id="editBtn">Изменить списки</button>
+          </div>
+        </section>
+      </div>
+
+      <nav class="bottom-nav">
+        <button id="prevBtn">Назад</button>
+        <button id="nextBtn">Далее</button>
+      </nav>
+    </main>
+
+    <!-- settings modal -->
+    <div class="modal" id="settingsModal" aria-hidden="true">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <strong>Настройки списков</strong>
+          <button id="closeSettings">✕</button>
         </div>
-        
-        <div class="screen" id="result-screen">
-            <div class="result-screen">
-                <div class="result-title">Ваш выбор:</div>
-                <div class="result-value" id="result-value"></div>
-                <button class="next-btn" onclick="goToNext()">Следующий шаг</button>
-            </div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="places">Места</button>
+          <button class="tab" data-tab="actions">Действия</button>
         </div>
-    </div>
-    
-    <div class="settings-screen" id="settings-screen" style="display: none;">
-        <div class="settings-modal">
-            <h2 class="settings-title">Настройки</h2>
-            
-            <div class="settings-section">
-                <h3>Места для свидания</h3>
-                <div class="input-group">
-                    <input type="text" id="location-input" placeholder="Добавить место">
-                    <button onclick="addLocation()">+</button>
-                </div>
-                <ul class="items-list" id="location-list">
-                    <!-- Items will be added dynamically -->
-                </ul>
-            </div>
-            
-            <div class="settings-section">
-                <h3>Действия</h3>
-                <div class="input-group">
-                    <input type="text" id="action-input" placeholder="Добавить действие">
-                    <button onclick="addAction()">+</button>
-                </div>
-                <ul class="items-list" id="action-list">
-                    <!-- Items will be added dynamically -->
-                </ul>
-            </div>
-            
-            <button class="close-settings" onclick="closeSettings()">Закрыть</button>
+        <div class="list-edit" id="editorList"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="newItemInput" placeholder="Новый элемент" />
+          <button id="addItemBtn">Добавить</button>
         </div>
+        <div class="footer">
+          <div style="color:var(--muted)">Изменения сохраняются локально</div>
+          <div>
+            <button id="resetBtn">Сбросить</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // Default data
-        let locations = ['Парк', 'Кафе', 'Кино', 'Прогулка', 'Ресторан', 'Музей', 'Пляж', 'Горы', 'Лес', 'Бассейн'];
-        let actions = ['Поцелуй', 'Объятие', 'Диалог', 'Подарок', 'Фото', 'Танец', 'Песня', 'Смех', 'Признание', 'Сюрприз'];
-        
-        let currentScreen = 'location';
-        let selectedLocation = '';
-        let selectedAction = '';
-        
-        // Initialize wheels
-        function initWheels() {
-            updateWheel('location-wheel', locations);
-            updateWheel('action-wheel', actions);
-            updateSettingsLists();
-        }
-        
-        // Update wheel with items
-        function updateWheel(wheelId, items) {
-            const wheel = document.getElementById(wheelId);
-            wheel.innerHTML = '';
-            
-            items.forEach((item, index) => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'wheel-item';
-                itemElement.textContent = item;
-                itemElement.style.transform = `translateY(${index * 50 - 50}px)`;
-                itemElement.dataset.index = index;
-                wheel.appendChild(itemElement);
-            });
-            
-            // Center the first item
-            if (wheel.children.length > 0) {
-                wheel.children[0].classList.add('center');
-            }
-        }
-        
-        // Update settings lists
-        function updateSettingsLists() {
-            updateSettingsList('location-list', locations, removeLocation);
-            updateSettingsList('action-list', actions, removeAction);
-        }
-        
-        function updateSettingsList(listId, items, removeFunction) {
-            const list = document.getElementById(listId);
-            list.innerHTML = '';
-            
-            items.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.textContent = item;
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Удалить';
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.onclick = () => removeFunction(index);
-                
-                li.appendChild(deleteBtn);
-                list.appendChild(li);
-            });
-        }
-        
-        // Add location
-        function addLocation() {
-            const input = document.getElementById('location-input');
-            const value = input.value.trim();
-            if (value && !locations.includes(value)) {
-                locations.push(value);
-                updateWheel('location-wheel', locations);
-                updateSettingsLists();
-                input.value = '';
-            }
-        }
-        
-        // Remove location
-        function removeLocation(index) {
-            locations.splice(index, 1);
-            updateWheel('location-wheel', locations);
-            updateSettingsLists();
-        }
-        
-        // Add action
-        function addAction() {
-            const input = document.getElementById('action-input');
-            const value = input.value.trim();
-            if (value && !actions.includes(value)) {
-                actions.push(value);
-                updateWheel('action-wheel', actions);
-                updateSettingsLists();
-                input.value = '';
-            }
-        }
-        
-        // Remove action
-        function removeAction(index) {
-            actions.splice(index, 1);
-            updateWheel('action-wheel', actions);
-            updateSettingsLists();
-        }
-        
-        // Wheel interaction
-        let startY = 0;
-        let currentY = 0;
-        let isSpinning = false;
-        
-        function setupWheel(wheelId, items) {
-            const wheel = document.getElementById(wheelId);
-            let selected = 0;
-            
-            wheel.addEventListener('touchstart', (e) => {
-                if (isSpinning) return;
-                startY = e.touches[0].clientY;
-                currentY = 0;
-            });
-            
-            wheel.addEventListener('touchmove', (e) => {
-                if (isSpinning) return;
-                e.preventDefault();
-                const currentTouchY = e.touches[0].clientY;
-                currentY = currentTouchY - startY;
-                
-                // Update wheel position
-                wheel.style.transform = `translateY(${currentY}px)`;
-            });
-            
-            wheel.addEventListener('touchend', () => {
-                if (isSpinning) return;
-                
-                // Calculate new selected index based on movement
-                const movedItems = Math.round(-currentY / 50);
-                selected = (selected + movedItems) % items.length;
-                if (selected < 0) selected += items.length;
-                
-                // Animate to selected item
-                spinToItem(wheelId, items, selected);
-            });
-        }
-        
-        function spinToItem(wheelId, items, targetIndex) {
-            isSpinning = true;
-            showLoading();
-            
-            const wheel = document.getElementById(wheelId);
-            const duration = 2000; // 2 seconds spin
-            const spins = 5; // Number of full spins
-            const totalItems = items.length;
-            
-            // Calculate target position
-            const targetPosition = -targetIndex * 50;
-            
-            // Randomize final position for more dynamic effect
-            setTimeout(() => {
-                const randomIndex = Math.floor(Math.random() * items.length);
-                const finalPosition = -randomIndex * 50;
-                
-                // Animate to final position
-                wheel.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.3, 1)`;
-                wheel.style.transform = `translateY(${finalPosition}px)`;
-                
-                setTimeout(() => {
-                    // Update center class
-                    document.querySelectorAll(`#${wheelId} .wheel-item`).forEach(item => {
-                        item.classList.remove('center');
-                    });
-                    
-                    const centerItem = document.querySelector(`#${wheelId} .wheel-item:nth-child(${randomIndex + 1})`);
-                    if (centerItem) {
-                        centerItem.classList.add('center');
-                        if (wheelId === 'location-wheel') {
-                            selectedLocation = centerItem.textContent;
-                        } else if (wheelId === 'action-wheel') {
-                            selectedAction = centerItem.textContent;
-                        }
-                    }
-                    
-                    wheel.style.transition = '';
-                    isSpinning = false;
-                    hideLoading();
-                }, duration);
-            }, 500);
-        }
-        
-        function showLoading() {
-            const loading = document.createElement('div');
-            loading.className = 'loading';
-            loading.id = 'loading';
-            loading.innerHTML = '<div class="spinner"></div>';
-            document.querySelector('.app-container').appendChild(loading);
-        }
-        
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.remove();
-            }
-        }
-        
-        // Navigation functions
-        function goToAction() {
-            if (isSpinning) return;
-            
-            document.getElementById('location-screen').classList.remove('active');
-            document.getElementById('action-screen').classList.add('active');
-            document.getElementById('screen-title').textContent = 'Выберите действие';
-            currentScreen = 'action';
-        }
-        
-        function goToResult() {
-            if (isSpinning) return;
-            
-            document.getElementById('action-screen').classList.remove('active');
-            document.getElementById('result-screen').classList.add('active');
-            document.getElementById('screen-title').textContent = 'Результат';
-            document.getElementById('result-value').textContent = `${selectedLocation} + ${selectedAction}`;
-            currentScreen = 'result';
-        }
-        
-        function goToNext() {
-            document.getElementById('result-screen').classList.remove('active');
-            document.getElementById('location-screen').classList.add('active');
-            document.getElementById('screen-title').textContent = 'Выберите место';
-            currentScreen = 'location';
-        }
-        
-        // Settings functions
-        function openSettings() {
-            document.getElementById('settings-screen').style.display = 'flex';
-        }
-        
-        function closeSettings() {
-            document.getElementById('settings-screen').style.display = 'none';
-        }
-        
-        // Prevent body scroll
-        document.body.addEventListener('touchmove', (e) => {
-            if (e.target.closest('.settings-modal')) return;
-            e.preventDefault();
-        }, { passive: false });
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initWheels();
-            setupWheel('location-wheel', locations);
-            setupWheel('action-wheel', actions);
-            
-            // Add click events to center items
-            document.getElementById('location-wheel').addEventListener('click', () => {
-                if (!isSpinning) goToAction();
-            });
-            
-            document.getElementById('action-wheel').addEventListener('click', () => {
-                if (!isSpinning) goToResult();
-            });
+    <div id="blockOverlay"></div>
+  </div>
+
+  <script>
+  // JS: минималистичный wheel picker + настройки
+  (function(){
+    // -- данные по умолчанию --
+    const DEFAULTS = {
+      places: ["Кафе у реки","Городской парк","Кинотеатр","Ресторан","Крыша с видом","Музей","Прогулка по набережной","Пикник"],
+      actions: ["Ужин","Прогулка","Кофе","Кино","Поездка","Сюрприз","Игры в кафе","Посещение выставки"]
+    };
+
+    // локальное хранилище
+    const STORAGE_KEY = 'tg_date_picker_lists_v1';
+    function loadLists(){
+      try{const raw=localStorage.getItem(STORAGE_KEY);if(raw) return JSON.parse(raw);}catch(e){}
+      return JSON.parse(JSON.stringify(DEFAULTS));
+    }
+    function saveLists(obj){localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));}
+
+    let lists = loadLists();
+
+    // элементы
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettings = document.getElementById('closeSettings');
+    const tabs = document.querySelectorAll('.tab');
+    const editorList = document.getElementById('editorList');
+    const newItemInput = document.getElementById('newItemInput');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const editBtn = document.getElementById('editBtn');
+
+    const blockOverlay = document.getElementById('blockOverlay');
+
+    // wheels map
+    const wheels = {
+      places: createWheel(document.getElementById('wheel-places'),'places'),
+      actions: createWheel(document.getElementById('wheel-actions'),'actions')
+    };
+
+    // result fields
+    const resultPlace = document.getElementById('resultPlace');
+    const resultAction = document.getElementById('resultAction');
+
+    // navigation
+    let currentScreen = 1; // 1..3
+    function showScreen(n){
+      document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', Number(s.dataset.screen)===n));
+      currentScreen = n; updateNav();
+    }
+    function updateNav(){
+      prevBtn.disabled = currentScreen===1;
+      nextBtn.disabled = currentScreen===3 || isSpinning();
+    }
+    prevBtn.addEventListener('click', ()=>{ if(isSpinning()) return; showScreen(Math.max(1,currentScreen-1)); });
+    nextBtn.addEventListener('click', ()=>{ if(isSpinning()) return; if(currentScreen===1) showScreen(2); else if(currentScreen===2){ showResult(); showScreen(3);} });
+    restartBtn.addEventListener('click', ()=>{ showScreen(1); });
+    editBtn.addEventListener('click', ()=>{ openSettings('places'); });
+
+    // settings
+    settingsBtn.addEventListener('click', ()=>openSettings('places'));
+    closeSettings.addEventListener('click', closeSettingsModal);
+    tabs.forEach(t=>t.addEventListener('click', ()=>{tabs.forEach(x=>x.classList.remove('active'));t.classList.add('active'); renderEditor(t.dataset.tab);}));
+    addItemBtn.addEventListener('click', ()=>{ const val=newItemInput.value.trim(); if(!val) return; const tab=document.querySelector('.tab.active').dataset.tab; lists[tab].push(val); saveLists(lists); renderEditor(tab); renderWheel(tab); newItemInput.value='';});
+    resetBtn.addEventListener('click', ()=>{if(confirm('Сбросить списки к значениям по умолчанию?')){lists = JSON.parse(JSON.stringify(DEFAULTS)); saveLists(lists); renderEditor(document.querySelector('.tab.active').dataset.tab); renderWheel('places'); renderWheel('actions');}});
+
+    function openSettings(tab){settingsModal.classList.add('show');settingsModal.setAttribute('aria-hidden','false'); document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab)); renderEditor(tab);}
+    function closeSettingsModal(){settingsModal.classList.remove('show');settingsModal.setAttribute('aria-hidden','true');}
+
+    function renderEditor(kind){ editorList.innerHTML=''; lists[kind].forEach((it,idx)=>{
+      const row = document.createElement('div'); row.className='row';
+      const input = document.createElement('input'); input.value=it; input.addEventListener('change', ()=>{lists[kind][idx]=input.value; saveLists(lists); renderWheel(kind);});
+      const del = document.createElement('button'); del.textContent='✕'; del.addEventListener('click', ()=>{lists[kind].splice(idx,1); saveLists(lists); renderEditor(kind); renderWheel(kind);});
+      row.appendChild(input); row.appendChild(del); editorList.appendChild(row);
+    });
+    }
+
+    // --- wheel implementation ---
+    // create wheel object for element
+    function createWheel(el, kind){
+      const obj = {el,kind,items:[],listEl:el.querySelector('.wheel-list'),itemHeight:52,selectedIndex:null,spinning:false,wakeLock:null};
+      renderWheel(kind);
+      // center initial scroll to middle copy
+      setTimeout(()=>normalizeScroll(obj),100);
+
+      // pointer handling to trigger spin on release
+      let pointer = {down:false, startY:0, lastY:0, lastT:0, moved:false};
+      el.addEventListener('pointerdown', (e)=>{ if(isSpinning()) return; pointer.down=true; pointer.startY=e.clientY; pointer.lastY=e.clientY; pointer.lastT=performance.now(); el.setPointerCapture(e.pointerId);});
+      el.addEventListener('pointermove', (e)=>{ if(!pointer.down) return; pointer.moved=true; pointer.lastY=e.clientY; pointer.lastT=performance.now(); });
+      el.addEventListener('pointerup', (e)=>{ if(!pointer.down) return; pointer.down=false; el.releasePointerCapture(e.pointerId); // start spin on any release
+        if(!isSpinning()) startSpin(kind);
+      });
+
+      // also spin on wheel scroll end (debounced)
+      let scrollTO=null;
+      el.addEventListener('scroll', ()=>{ if(scrollTO) clearTimeout(scrollTO); scrollTO=setTimeout(()=>{ if(!isSpinning()) startSpin(kind); }, 350); });
+
+      // spin button
+      document.querySelectorAll('.spin-btn').forEach(b=>{ if(b.dataset.wheel===kind) b.addEventListener('click', ()=>{ if(!isSpinning()) startSpin(kind); }); });
+
+      return obj;
+    }
+
+    function renderWheel(kind){
+      const obj = wheels[kind];
+      obj.items = lists[kind].slice();
+      const list = obj.listEl; list.innerHTML='';
+      // create triple list for "infinite" feel
+      const full = [...obj.items, ...obj.items, ...obj.items];
+      full.forEach(it=>{ const li = document.createElement('li'); li.textContent = it; list.appendChild(li); });
+      // measure item height
+      requestAnimationFrame(()=>{
+        const first = list.querySelector('li'); if(first){ obj.itemHeight = first.getBoundingClientRect().height; }
+        // position in the middle block
+        const wheelEl = obj.el;
+        const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
+        wheelEl.scrollTop = obj.items.length * obj.itemHeight - topOffset;
+        // fit fonts (уменьшать шрифт если текста много)
+        fitTextInItems(list, wheelEl.clientWidth - 40);
+      });
+    }
+
+    function renderWheelIfExists(kind){ if(wheels[kind]) renderWheel(kind); }
+
+    // fit text to width
+    function fitTextInItems(list, maxWidth){ const lis = list.querySelectorAll('li'); lis.forEach(li=>{
+        li.style.fontSize='20px'; // base
+        requestAnimationFrame(()=>{
+          const allowed = maxWidth - 40; // padding
+          if(li.scrollWidth > allowed){ const base=20; const ratio = allowed / li.scrollWidth; const newSize = Math.max(12, Math.floor(base * ratio)); li.style.fontSize = newSize + 'px'; }
         });
-    </script>
+      }); }
+
+    // ensure scroll is centered to middle copy region if it strays
+    function normalizeScroll(obj){ const wheelEl = obj.el; const totalItems = obj.items.length * 3; const block = obj.items.length; const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
+      // keep scrollTop in middle third
+      const sc = wheelEl.scrollTop + topOffset; const index = Math.round(sc / obj.itemHeight);
+      if(index < block || index >= block*2){ // move to middle equivalent
+        const newIndex = block + (index % block + block) % block;
+        wheelEl.scrollTop = newIndex * obj.itemHeight - topOffset;
+      }
+    }
+
+    // spinning flag
+    function isSpinning(){ return Object.values(wheels).some(w=>w.spinning); }
+
+    // perform spin
+    async function startSpin(kind){
+      const obj = wheels[kind];
+      if(!obj || obj.spinning) return;
+      if(obj.items.length===0) return;
+      obj.spinning = true; blockUI(true);
+      try{ await requestWakeLock(obj); }catch(e){ /* ignore */ }
+
+      // choose random index
+      const rand = Math.floor(Math.random()*obj.items.length);
+      // compute animation
+      const wheelEl = obj.el; const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
+      const current = wheelEl.scrollTop;
+      const spins = 3 + Math.floor(Math.random()*4);
+      const targetIndex = obj.items.length * (1 + spins) + rand; // land in middle-block plus spins
+      const target = targetIndex * obj.itemHeight - topOffset;
+      const distance = target - current;
+      // duration depending on distance
+      const duration = 1800 + Math.min(2200, Math.abs(distance)/obj.itemHeight*120);
+
+      await animateScroll(wheelEl, current, target, duration);
+      // normalize to middle copy
+      wheelEl.scrollTop = obj.items.length * obj.itemHeight + rand * obj.itemHeight - topOffset;
+      obj.selectedIndex = rand;
+      obj.spinning = false; releaseWakeLock(obj);
+      blockUI(false);
+      // save selection
+      // trigger result combine or enable next
+      updateNav();
+    }
+
+    // animate scroll top with easing
+    function animateScroll(container, from, to, duration){
+      return new Promise(resolve=>{
+        const start = performance.now();
+        function tick(now){
+          const t = Math.min(1,(now-start)/duration);
+          // easeOutCubic
+          const eased = 1 - Math.pow(1-t,3);
+          container.scrollTop = from + (to-from) * eased;
+          if(t < 1) requestAnimationFrame(tick); else resolve();
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // block UI while spinning and prevent minimizing actions
+    function blockUI(on){ if(on){ blockOverlay.classList.add('show'); document.body.style.pointerEvents='none'; blockOverlay.style.pointerEvents='auto'; } else { blockOverlay.classList.remove('show'); document.body.style.pointerEvents='auto'; blockOverlay.style.pointerEvents='none'; }}
+
+    // Wake lock (to prevent screen sleeping while spinning) - best-effort. Requires https and browser support.
+    async function requestWakeLock(obj){ if('wakeLock' in navigator){ try{ obj.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){ console.warn('WakeLock failed',e); }} }
+    function releaseWakeLock(obj){ try{ if(obj.wakeLock && obj.wakeLock.release) obj.wakeLock.release(); obj.wakeLock=null; }catch(e){}
+    }
+
+    // show result when on screen2 -> next
+    function showResult(){ const p = wheels.places.selectedIndex!=null ? lists.places[wheels.places.selectedIndex] : '—'; const a = wheels.actions.selectedIndex!=null ? lists.actions[wheels.actions.selectedIndex] : '—'; resultPlace.textContent = p; resultAction.textContent = a; }
+
+    // initialize nav state
+    updateNav();
+
+    // render initial selections
+    function renderWheel(kind){ renderWheelIfExists(kind); }
+
+    // ensure wheels re-render after settings changes
+    window.addEventListener('storage', ()=>{ lists = loadLists(); renderWheel('places'); renderWheel('actions'); });
+
+    // sync local lists into wheels at start
+    renderWheel('places'); renderWheel('actions');
+
+    // helpful: click outside modal to close
+    settingsModal.addEventListener('click', (e)=>{ if(e.target===settingsModal) closeSettingsModal(); });
+
+    // prevent leaving while spinning (best-effort by disabling navigation/back keys)
+    window.addEventListener('beforeunload', (e)=>{ if(isSpinning()){ e.preventDefault(); e.returnValue='Подождите, пока не завершится раскрутка.'; return e.returnValue; } });
+
+    // simple keyboard support
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowLeft') prevBtn.click();
+      if(e.key==='ArrowRight') nextBtn.click();
+      if(e.key==='Escape') closeSettingsModal();
+    });
+
+    // ensure when wheel scroll ends we normalize after some time
+    setInterval(()=>{ Object.values(wheels).forEach(w=>{ if(!w.spinning) normalizeScroll(w); }); }, 800);
+
+  })();
+  </script>
 </body>
 </html>
