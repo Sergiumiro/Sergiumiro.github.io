@@ -62,12 +62,10 @@
       box-shadow: 0 0 10px rgba(255,255,100,0.8);
     }
     .wheel::before {
-      top: 50%;
-      transform: translateY(-24px); /* верхняя линия */
+      top: calc(50% - 24px);
     }
     .wheel::after {
-      top: 50%;
-      transform: translateY(24px);  /* нижняя линия */
+      top: calc(50% + 24px);
     }
 
     .wheel-list {
@@ -127,7 +125,7 @@
 <body>
   <!-- экран 1 -->
   <div class="screen" id="screen1">
-    <h1>🎲 Выбираем место свидания</h1>
+    <h1>Выбираем место свидания</h1>
     <div class="wheel">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
@@ -136,7 +134,7 @@
 
   <!-- экран 2 -->
   <div class="screen hidden" id="screen2">
-    <h1>✨ Теперь выберем действие</h1>
+    <h1>Теперь выберем действие</h1>
     <div class="wheel">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
@@ -145,9 +143,9 @@
 
   <!-- экран 3 -->
   <div class="screen hidden" id="screen3">
-    <h1>💖 Ваше свидание готово!</h1>
+    <h1>Ваше свидание готово!</h1>
     <div class="result-text" id="finalResult"></div>
-    <button class="back-btn" id="restartBtn">🔄 Сыграть снова</button>
+    <button class="back-btn" id="restartBtn">Сыграть снова</button>
   </div>
 
   <script>
@@ -195,7 +193,8 @@
       const base = Math.floor(items.length * (CLONE_FACTOR / 2));
       const targetIndex = base + randomIndex;
 
-      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT/2 - ITEM_HEIGHT/2));
+      // корректировка, чтобы активный элемент точно оказался между линиями
+      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2));
 
       listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
       listEl.style.transition = 'transform 2.5s cubic-bezier(0.22,1,0.36,1)';
@@ -235,7 +234,7 @@
       spinWheel(wheelList2, actions, (res) => {
         actionResult = res;
         setTimeout(() => {
-          finalResult.textContent = `📍 Место: ${placeResult}\n💡 Действие: ${actionResult}`;
+          finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
           screen2.classList.add('hidden');
           screen3.classList.remove('hidden');
         }, 1000);
