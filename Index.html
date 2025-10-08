@@ -12,6 +12,9 @@
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
     }
 
     .screen {
@@ -21,8 +24,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.5s ease, transform 0.5s ease;
       background: radial-gradient(circle at center, #111, #000);
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     .hidden {
@@ -43,7 +46,6 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.06);
     }
 
-    /* линии */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -119,10 +121,28 @@
       padding: 12px 24px;
       font-size: 18px;
       cursor: pointer;
-      transition: transform 0.2s ease, filter 0.2s ease;
+      transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease;
       margin-top: 24px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
+
     button:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+    /* 🔥 Эффект накаливания */
+    button.glow {
+      background: linear-gradient(135deg, #ffd700, #ff8000);
+      box-shadow: 0 0 30px rgba(255, 180, 0, 0.9);
+      animation: glowPulse 0.8s ease-in-out infinite alternate;
+      transform: scale(1.1);
+      color: #000;
+    }
+
+    @keyframes glowPulse {
+      0% { box-shadow: 0 0 15px rgba(255,150,0,0.6); }
+      100% { box-shadow: 0 0 35px rgba(255,220,0,1); }
+    }
   </style>
 </head>
 <body>
@@ -131,7 +151,7 @@
     <div class="wheel">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
-    <button id="spinBtn">Крутить</button>
+    <button id="spinBtn1">Крутить</button>
   </div>
 
   <!-- экран 2 -->
@@ -150,32 +170,29 @@
 
   <script>
     const CLONE_FACTOR = 6;
-    const DECELERATION = 0.98;  // коэффициент замедления
-    const ACCELERATION = 1.05;  // ускорение при удержании
-    const MAX_SPEED = 60;       // пикселей за кадр
+    const DECELERATION = 0.98;
+    const ACCELERATION = 1.05;
+    const MAX_SPEED = 60;
 
     const fallbackPlaces = ["Кафе", "Парк", "Кино", "Музей", "Ресторан", "Пляж", "Пикник"];
     const fallbackActions = ["Прогулка", "Ужин", "Кофе", "Фотосессия", "Фильм", "Пикник", "Разговор"];
 
-    let places = [];
-    let actions = [];
-    let placeResult = '';
-    let actionResult = '';
-    let currentScreen = 1;
+    let places = [], actions = [];
+    let placeResult = '', actionResult = '';
+    let spinning = false;
+    let speed = 0;
+    let spinTimer;
+    let offset = 0;
 
     const wheelList1 = document.getElementById('wheelList1');
     const wheelList2 = document.getElementById('wheelList2');
-    const spinBtn1 = document.getElementById('spinBtn');
+    const spinBtn1 = document.getElementById('spinBtn1');
     const spinBtn2 = document.getElementById('spinBtn2');
     const restartBtn = document.getElementById('restartBtn');
     const finalResult = document.getElementById('finalResult');
     const screen1 = document.getElementById('screen1');
     const screen2 = document.getElementById('screen2');
     const screen3 = document.getElementById('screen3');
-
-    let spinning = false;
-    let speed = 0;
-    let spinningInterval;
 
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
@@ -188,12 +205,13 @@
       });
     }
 
-    function startSpin(listEl) {
+    function startSpin(listEl, btn) {
       if (spinning) return;
       spinning = true;
       speed = 5;
-      let offset = 0;
-      spinningInterval = setInterval(() => {
+      offset = 0;
+      btn.classList.add('glow');
+      spinTimer = setInterval(() => {
         speed = Math.min(speed * ACCELERATION, MAX_SPEED);
         offset += speed;
         listEl.style.transform = `translateY(${-offset}px)`;
@@ -201,11 +219,12 @@
       }, 16);
     }
 
-    function stopSpin(listEl, items, cb) {
-      clearInterval(spinningInterval);
+    function stopSpin(listEl, items, cb, btn) {
+      clearInterval(spinTimer);
+      btn.classList.remove('glow');
+
       const itemHeight = listEl.children[0].getBoundingClientRect().height;
       const wheelHeight = listEl.parentElement.clientHeight;
-      let offset = parseFloat(listEl.style.transform.match(/-?\d+(\.\d+)?/)) || 0;
 
       function decelerate() {
         speed *= DECELERATION;
@@ -245,15 +264,25 @@
         .catch(() => console.warn('⚠️ lists.json не найден — используются стандартные списки'));
     }
 
-    spinBtn1.onmousedown = () => startSpin(wheelList1);
-    spinBtn1.onmouseup = () => stopSpin(wheelList1, places, res => {
+    function setupSpin(button, listEl, items, nextScreenFn) {
+      const start = () => startSpin(listEl, button);
+      const stop = () => stopSpin(listEl, items, nextScreenFn, button);
+
+      button.addEventListener('mousedown', start);
+      button.addEventListener('mouseup', stop);
+      button.addEventListener('mouseleave', stop);
+
+      button.addEventListener('touchstart', e => { e.preventDefault(); start(); }, { passive: false });
+      button.addEventListener('touchend', e => { e.preventDefault(); stop(); }, { passive: false });
+    }
+
+    setupSpin(spinBtn1, wheelList1, fallbackPlaces, res => {
       placeResult = res;
       screen1.classList.add('hidden');
       screen2.classList.remove('hidden');
     });
 
-    spinBtn2.onmousedown = () => startSpin(wheelList2);
-    spinBtn2.onmouseup = () => stopSpin(wheelList2, actions, res => {
+    setupSpin(spinBtn2, wheelList2, fallbackActions, res => {
       actionResult = res;
       finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
       screen2.classList.add('hidden');
