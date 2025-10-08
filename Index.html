@@ -46,6 +46,7 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.06);
     }
 
+    /* Линии выбора */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -76,6 +77,7 @@
       transition: all 0.15s ease;
     }
 
+    /* центральный элемент во время вращения */
     .wheel-list li.center {
       font-size: 26px;
       opacity: 1;
@@ -84,9 +86,10 @@
       transform: scale(1.15);
     }
 
+    /* финальный выбранный вариант */
     .wheel-list li.final {
       color: #ff0;
-      text-shadow: 0 0 15px rgba(255,255,0,1);
+      text-shadow: 0 0 18px rgba(255,255,0,1);
       font-weight: bold;
       transform: scale(1.2);
     }
@@ -109,7 +112,7 @@
 
     button:hover { transform: scale(1.05); filter: brightness(1.1); }
 
-    /* 🔥 Эффект накаливания */
+    /* 🔥 эффект накаливания кнопки при удержании */
     button.glow {
       background: linear-gradient(135deg, #ffd700, #ff8000);
       box-shadow: 0 0 30px rgba(255, 180, 0, 0.9);
@@ -215,7 +218,6 @@
       if (spinning) return;
       spinning = true;
       speed = 5;
-      offset = 0;
       btn.classList.add('glow');
       spinTimer = setInterval(() => {
         speed = Math.min(speed * ACCELERATION, MAX_SPEED);
@@ -234,12 +236,11 @@
         offset += speed;
         listEl.style.transform = `translateY(${-offset}px)`;
         if (offset > listEl.scrollHeight / 2) offset = 0;
-        highlightCenter(listEl);
+        const centerEl = highlightCenter(listEl);
         if (speed > 0.5) {
           requestAnimationFrame(decelerate);
         } else {
           spinning = false;
-          const centerEl = highlightCenter(listEl);
           listEl.querySelectorAll('li').forEach(li => li.classList.remove('final'));
           if (centerEl) {
             centerEl.classList.add('final');
