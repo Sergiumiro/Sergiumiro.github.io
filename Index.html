@@ -11,17 +11,15 @@
       background: radial-gradient(circle at center, #111, #000);
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden;
+      overflow: hidden; /* оставляем скрывать обычный скролл страницы */
     }
 
     .screen {
       position: absolute;
       inset: 0;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.5s ease, transform 0.5s ease;
       background: radial-gradient(circle at center, #111, #000);
     }
 
@@ -40,11 +38,14 @@
       overflow: hidden;
       border: 2px solid #333;
       border-radius: 16px;
-      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+      box-shadow: 0 0 20px rgba(255,255,255,0.06);
       background: rgba(20,20,20,0.6);
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: pan-y;
     }
 
-    /* линии */
+    /* линии (верхняя и нижняя) */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -54,13 +55,10 @@
       height: 2px;
       background: #ff6;
       box-shadow: 0 0 10px rgba(255,255,100,0.8);
+      pointer-events: none;
     }
-    .wheel::before {
-      top: calc(50% - 24px);
-    }
-    .wheel::after {
-      top: calc(50% + 24px);
-    }
+    .wheel::before { top: calc(50% - 24px); }
+    .wheel::after  { top: calc(50% + 24px); }
 
     .wheel-list {
       list-style: none;
@@ -76,6 +74,7 @@
       padding: 14px 0;
       font-size: 20px;
       opacity: 0.4;
+      line-height: 1;
     }
 
     .wheel-list li.active {
@@ -95,9 +94,10 @@
       left: -50%;
       width: 200%;
       height: 100%;
-      background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
+      background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.85) 50%, transparent 60%);
       transform: translateX(-100%);
       animation: shine 1.2s ease-in-out forwards;
+      pointer-events: none;
     }
 
     @keyframes shine {
@@ -109,134 +109,259 @@
     .result-text {
       font-size: 26px;
       color: #ff6;
-      margin-bottom: 20px;
       text-align: center;
       text-shadow: 0 0 10px rgba(255,255,100,0.8);
       white-space: pre-line;
     }
+
+    /* небольшая подсказка (не заголовок) — можно убрать при необходимости */
+    .hint {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: #aaa;
+      opacity: 0.7;
+      user-select: none;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
-  <!-- экран 1 -->
-  <div class="screen" id="screen1">
-    <div class="wheel">
+  <div class="screen" id="screen1" aria-hidden="false">
+    <div class="wheel" id="wheelA" role="listbox" aria-label="Колесо мест">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
   </div>
 
-  <!-- экран 2 -->
-  <div class="screen hidden" id="screen2">
-    <div class="wheel">
+  <div class="screen hidden" id="screen2" aria-hidden="true">
+    <div class="wheel" id="wheelB" role="listbox" aria-label="Колесо действий">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
   </div>
 
-  <!-- экран 3 -->
-  <div class="screen hidden" id="screen3">
+  <div class="screen hidden" id="screen3" aria-hidden="true">
     <div class="result-text" id="finalResult"></div>
   </div>
 
-  <script>
-    const ITEM_HEIGHT = 48;
-    const WHEEL_HEIGHT = 180;
-    const CLONE_FACTOR = 5;
+  <div class="hint" id="hint">Прокрути (или смахни) — сначала выбор места, потом действие</div>
 
+  <script>
+    // --- настройки и запасные списки (если lists.json недоступен) ---
+    const CLONE_FACTOR = 5;
+    const SPIN_DURATION_MS = 2500;
+    const WHEEL_SELECTOR = '.wheel';
+    const fallbackPlaces = [
+      "Кафе рядом", "Парк", "Кино", "Музей", "Книжное кафе", "Ресторан",
+      "Прогулка у реки", "Выставка", "Концерт", "Пикник"
+    ];
+    const fallbackActions = [
+      "Ужин", "Прогулка", "Посмотреть фильм", "Поболтать за кофе", "Играть в настольные",
+      "Фотосессия", "Катание на велах", "Посещение выставки", "Пение караоке"
+    ];
+
+    // --- состояние ---
     let places = [];
     let actions = [];
     let placeResult = '';
     let actionResult = '';
     let spinning = false;
-    let stage = 1;
-
-    const wheelList1 = document.getElementById('wheelList1');
-    const wheelList2 = document.getElementById('wheelList2');
-    const finalResult = document.getElementById('finalResult');
-
+    let stage = 1; // 1 - места, 2 - действия, 3 - финал
+    let lastInteractionTime = 0;
+    const MIN_INTERACTION_GAP = 500; // ms для предотвращения спама
+    const WHEEL_A = document.getElementById('wheelList1');
+    const WHEEL_B = document.getElementById('wheelList2');
+    const wheelContainerA = document.getElementById('wheelA');
+    const wheelContainerB = document.getElementById('wheelB');
     const screen1 = document.getElementById('screen1');
     const screen2 = document.getElementById('screen2');
     const screen3 = document.getElementById('screen3');
+    const finalResult = document.getElementById('finalResult');
 
-    // рендер списка с клонированием
+    // --- рендер с клонированием ---
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
-      const longList = [];
-      for (let i = 0; i < CLONE_FACTOR; i++) {
-        longList.push(...items);
-      }
-      longList.forEach((text) => {
+      const long = [];
+      for (let i = 0; i < CLONE_FACTOR; i++) long.push(...items);
+      long.forEach((t) => {
         const li = document.createElement('li');
-        li.textContent = text;
+        li.textContent = t;
         listEl.appendChild(li);
       });
+      // убрать активный стиль у всех
+      listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+      // сразу поставить позицию так, чтобы средняя группа была видима (без анимации)
+      requestAnimationFrame(() => {
+        const itemH = measureItemHeight(listEl);
+        const base = items.length * Math.floor(CLONE_FACTOR / 2);
+        const offset = computeOffsetForIndex(base, itemH, listEl.parentElement.clientHeight);
+        listEl.style.transition = 'none';
+        listEl.style.transform = `translateY(${offset}px)`;
+        // небольшая задержка, чтобы transition возобновился корректно в будущем
+        setTimeout(() => listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`, 50);
+      });
     }
 
-    // вращение
+    function measureItemHeight(listEl) {
+      const first = listEl.querySelector('li');
+      if (!first) return 48;
+      return Math.round(first.getBoundingClientRect().height);
+    }
+
+    function computeOffsetForIndex(index, itemHeight, wheelHeight) {
+      // делаем так, чтобы центр элемента совпадал с центром колеса
+      return (wheelHeight / 2) - (itemHeight / 2) - (index * itemHeight);
+    }
+
+    // --- вращение ---
     function spinWheel(listEl, items, cb) {
-      if (spinning || items.length === 0) return;
+      if (spinning || !items || items.length === 0) return;
       spinning = true;
 
+      const itemH = measureItemHeight(listEl);
+      const wheelH = listEl.parentElement.clientHeight;
       const randomIndex = Math.floor(Math.random() * items.length);
-      const base = Math.floor(items.length * (CLONE_FACTOR / 2));
+      const base = items.length * Math.floor(CLONE_FACTOR / 2);
       const targetIndex = base + randomIndex;
 
-      // идеально по центру между линиями
-      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2 - ITEM_HEIGHT / 2));
+      const offset = computeOffsetForIndex(targetIndex, itemH, wheelH);
 
+      // убрать старые active
       listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-      listEl.style.transition = 'transform 2.5s cubic-bezier(0.22,1,0.36,1)';
+      // анимация
+      // принудительно включаем transition (мог быть отключён)
+      listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`;
       listEl.style.transform = `translateY(${offset}px)`;
 
+      // по завершении анимации:
       setTimeout(() => {
-        spinning = false;
         const active = listEl.children[targetIndex];
-        if (active) {
-          active.classList.add('active');
-          cb(active.textContent);
-        }
-      }, 2500);
+        if (active) active.classList.add('active');
+        spinning = false;
+        if (typeof cb === 'function') cb(active ? active.textContent : items[randomIndex]);
+      }, SPIN_DURATION_MS + 30);
     }
 
-    // загрузка списка
-    fetch('lists.json')
-      .then(res => res.json())
-      .then(data => {
-        places = data.places || [];
-        actions = data.actions || [];
-        renderWheel(wheelList1, places);
-        renderWheel(wheelList2, actions);
-      });
+    // --- загрузка списков (fetch с fallback) ---
+    function loadLists() {
+      // сразу рендерим fallback, чтобы интерфейс мог реагировать
+      places = fallbackPlaces.slice();
+      actions = fallbackActions.slice();
+      renderWheel(WHEEL_A, places);
+      renderWheel(WHEEL_B, actions);
 
-    // управление скроллом
-    window.addEventListener('wheel', (e) => {
-      if (spinning) return;
-      e.preventDefault();
+      fetch('lists.json').then(r => {
+        if (!r.ok) throw new Error('no json');
+        return r.json();
+      }).then(data => {
+        if (Array.isArray(data.places) && data.places.length) places = data.places;
+        if (Array.isArray(data.actions) && data.actions.length) actions = data.actions;
+        renderWheel(WHEEL_A, places);
+        renderWheel(WHEEL_B, actions);
+      }).catch(() => {
+        // оставляем fallback — уже отрисовано
+        // (можно логировать ошибку в devtools)
+        console.warn('lists.json не загружен — используются дефолтные списки');
+      });
+    }
+
+    // --- логика триггера (wheel / touch / keys) ---
+    function tryTriggerFromInput() {
+      const now = Date.now();
+      if (now - lastInteractionTime < MIN_INTERACTION_GAP) return;
+      lastInteractionTime = now;
 
       if (stage === 1) {
-        spinWheel(wheelList1, places, (res) => {
+        spinWheel(WHEEL_A, places, (res) => {
           placeResult = res;
           stage = 2;
-          setTimeout(() => {
-            screen1.classList.add('hidden');
-            screen2.classList.remove('hidden');
-          }, 1000);
+          // переключение экранов
+          screen1.classList.add('hidden');
+          screen2.classList.remove('hidden');
         });
       } else if (stage === 2) {
-        spinWheel(wheelList2, actions, (res) => {
+        spinWheel(WHEEL_B, actions, (res) => {
           actionResult = res;
           stage = 3;
           setTimeout(() => {
             finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
             screen2.classList.add('hidden');
             screen3.classList.remove('hidden');
-          }, 1000);
+          }, 300);
         });
-      } else if (stage === 3) {
-        // сброс
+      } else {
+        // рестарт
         stage = 1;
         screen3.classList.add('hidden');
         screen1.classList.remove('hidden');
+        // реинициализируем позицию колес (необязательно)
+        renderWheel(WHEEL_A, places);
+        renderWheel(WHEEL_B, actions);
       }
+    }
+
+    // wheel — десктоп / трекпад
+    let wheelAccum = 0; // аккумулируем слабые дельты от трекпада
+    window.addEventListener('wheel', (e) => {
+      // если списки не загружены — игнор
+      if (!places.length || !actions.length) return;
+      if (spinning) return;
+
+      // фильтр: игнорируем очень маленькие дельты
+      const delta = e.deltaY;
+      // аккумуляция для плавных трекпадов
+      wheelAccum += delta;
+
+      // порог — подстрой, если нужно
+      const THRESH = 30;
+      if (Math.abs(wheelAccum) >= THRESH) {
+        wheelAccum = 0;
+        tryTriggerFromInput();
+      }
+
+      // предотвращаем стандартную прокрутку (у нас overflow:hidden, но на мобильном/браузерах безопасно)
+      if (e.cancelable) e.preventDefault();
     }, { passive: false });
+
+    // touch — мобильные устройства (свайп вверх/вниз)
+    let touchStartY = null;
+    function onTouchStart(e) {
+      if (e.touches && e.touches[0]) touchStartY = e.touches[0].clientY;
+    }
+    function onTouchEnd(e) {
+      if (touchStartY === null) return;
+      const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : null;
+      if (endY === null) { touchStartY = null; return; }
+      const dy = touchStartY - endY; // положительный при свайпе вверх
+      touchStartY = null;
+      const TH = 30; // порог в пикселях
+      if (Math.abs(dy) > TH) tryTriggerFromInput();
+    }
+
+    // поддержка клавиш (для удобства)
+    window.addEventListener('keydown', (e) => {
+      if (spinning) return;
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        tryTriggerFromInput();
+      }
+    });
+
+    // привязка тача к каждому колесу (чтобы кастомный свайп на элементе работал)
+    wheelContainerA.addEventListener('touchstart', onTouchStart, { passive: true });
+    wheelContainerA.addEventListener('touchend', onTouchEnd, { passive: true });
+    wheelContainerB.addEventListener('touchstart', onTouchStart, { passive: true });
+    wheelContainerB.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    // --- инициализация ---
+    loadLists();
+
+    // (опционально) скрыть подсказку через некоторое время
+    setTimeout(() => {
+      const hint = document.getElementById('hint');
+      if (hint) hint.style.opacity = '0';
+    }, 4000);
   </script>
 </body>
 </html>
