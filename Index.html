@@ -13,8 +13,6 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       overflow: hidden;
       user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
     }
 
     .screen {
@@ -24,14 +22,14 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      transition: opacity 0.6s ease, transform 0.6s ease;
       background: radial-gradient(circle at center, #111, #000);
-      transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     .hidden {
       opacity: 0;
       pointer-events: none;
-      transform: translateY(50px);
+      transform: translateY(60px);
     }
 
     .wheel {
@@ -40,13 +38,11 @@
       max-width: 420px;
       height: 180px;
       overflow: hidden;
-      border: 2px solid #333;
       border-radius: 16px;
       background: rgba(20,20,20,0.6);
-      box-shadow: 0 0 20px rgba(255,255,255,0.06);
+      box-shadow: 0 0 25px rgba(255,255,255,0.05);
     }
 
-    /* линии выбора */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -54,13 +50,12 @@
       left: 0;
       right: 0;
       height: 2px;
-      background: #ff6;
-      box-shadow: 0 0 10px rgba(255,255,100,0.8);
-      pointer-events: none;
+      background: #ffb;
+      box-shadow: 0 0 12px rgba(255,255,100,0.5);
     }
 
     .wheel::before { top: calc(50% - 24px); }
-    .wheel::after  { top: calc(50% + 24px); }
+    .wheel::after { top: calc(50% + 24px); }
 
     .wheel-list {
       list-style: none;
@@ -75,94 +70,105 @@
       padding: 14px 0;
       font-size: 20px;
       opacity: 0.4;
-      transition: all 0.15s ease;
+      transition: color 0.2s, transform 0.2s, opacity 0.2s;
     }
 
     .wheel-list li.center {
-      font-size: 26px;
+      color: #ffd;
       opacity: 1;
-      color: #ff6;
-      text-shadow: 0 0 8px rgba(255,255,100,0.8);
-      transform: scale(1.15);
+      transform: scale(1.1);
+      text-shadow: 0 0 12px rgba(255,255,150,0.7);
     }
 
-    .wheel-list li.final {
-      color: #ff0;
-      text-shadow: 0 0 18px rgba(255,255,0,1);
-      font-weight: bold;
+    .wheel-list li.active {
+      color: #ffea80;
       transform: scale(1.2);
+      text-shadow: 0 0 18px rgba(255,255,150,0.9);
+      animation: pulse 0.8s ease-in-out alternate infinite;
+    }
+
+    @keyframes pulse {
+      from { text-shadow: 0 0 10px rgba(255,255,150,0.4); }
+      to { text-shadow: 0 0 25px rgba(255,255,200,1); }
+    }
+
+    .glow {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.2), transparent 60%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .glow.active {
+      opacity: 1;
+      animation: flash 0.4s ease;
+    }
+
+    @keyframes flash {
+      0% { opacity: 0; }
+      30% { opacity: 1; }
+      100% { opacity: 0; }
     }
 
     button {
-      background: linear-gradient(135deg, #ff6, #f90);
-      color: #000;
-      font-weight: bold;
+      margin-top: 25px;
+      padding: 12px 28px;
+      font-size: 18px;
       border: none;
       border-radius: 10px;
-      padding: 12px 24px;
-      font-size: 18px;
       cursor: pointer;
-      transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease;
-      margin-top: 24px;
-      user-select: none;
-      -webkit-user-select: none;
+      background: linear-gradient(135deg, #ff9, #fc3);
+      color: #000;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(255,255,100,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
       touch-action: none;
     }
 
-    button:hover { transform: scale(1.05); filter: brightness(1.1); }
-
-    /* 🔥 эффект накаливания при удержании */
-    button.glow {
-      background: linear-gradient(135deg, #ffd700, #ff8000);
-      box-shadow: 0 0 30px rgba(255, 180, 0, 0.9);
-      animation: glowPulse 0.8s ease-in-out infinite alternate;
-      transform: scale(1.1);
-      color: #000;
-    }
-
-    @keyframes glowPulse {
-      0% { box-shadow: 0 0 15px rgba(255,150,0,0.6); }
-      100% { box-shadow: 0 0 35px rgba(255,220,0,1); }
+    button:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 15px rgba(255,255,100,0.6);
     }
 
     .result-text {
       font-size: 26px;
-      color: #ff6;
-      text-align: center;
-      text-shadow: 0 0 10px rgba(255,255,100,0.8);
-      white-space: pre-line;
+      color: #ff9;
       margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(255,255,100,0.7);
+      white-space: pre-line;
     }
   </style>
 </head>
 <body>
-  <!-- экран 1 -->
+  <div class="glow" id="glow"></div>
+
   <div class="screen" id="screen1">
     <div class="wheel">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
-    <button id="spinBtn1">Крутить</button>
+    <button id="spinBtn">Раскрутить</button>
   </div>
 
-  <!-- экран 2 -->
   <div class="screen hidden" id="screen2">
     <div class="wheel">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
-    <button id="spinBtn2">Крутить</button>
+    <button id="spinBtn2">Раскрутить</button>
   </div>
 
-  <!-- экран 3 -->
   <div class="screen hidden" id="screen3">
     <div class="result-text" id="finalResult"></div>
-    <button id="restartBtn">Повторить</button>
+    <button id="restartBtn">Сыграть снова</button>
   </div>
 
   <script>
-    const CLONE_FACTOR = 6;
-    const DECELERATION = 0.97;
-    const ACCELERATION = 1.05;
-    const MAX_SPEED = 55;
+    const ITEM_HEIGHT = 48;
+    const WHEEL_HEIGHT = 180;
+    const CLONE_FACTOR = 5;
+    const CENTER_POS = WHEEL_HEIGHT / 2 - ITEM_HEIGHT / 2;
 
     let places = [];
     let actions = [];
@@ -170,24 +176,27 @@
     let actionResult = '';
     let spinning = false;
     let speed = 0;
-    let spinTimer;
-    let offset = 0;
+    let spinInterval;
+    let stage = 1;
 
+    const glow = document.getElementById('glow');
     const wheelList1 = document.getElementById('wheelList1');
     const wheelList2 = document.getElementById('wheelList2');
-    const spinBtn1 = document.getElementById('spinBtn1');
+    const spinBtn = document.getElementById('spinBtn');
     const spinBtn2 = document.getElementById('spinBtn2');
     const restartBtn = document.getElementById('restartBtn');
     const finalResult = document.getElementById('finalResult');
-    const screen1 = document.getElementById('screen1');
-    const screen2 = document.getElementById('screen2');
-    const screen3 = document.getElementById('screen3');
+    const screens = [
+      document.getElementById('screen1'),
+      document.getElementById('screen2'),
+      document.getElementById('screen3')
+    ];
 
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
-      const long = [];
-      for (let i = 0; i < CLONE_FACTOR; i++) long.push(...items);
-      long.forEach(text => {
+      const longList = [];
+      for (let i = 0; i < CLONE_FACTOR; i++) longList.push(...items);
+      longList.forEach((text) => {
         const li = document.createElement('li');
         li.textContent = text;
         listEl.appendChild(li);
@@ -195,105 +204,103 @@
     }
 
     function highlightCenter(listEl) {
-      const rect = listEl.parentElement.getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      let closest = null, closestDist = Infinity;
+      const rect = listEl.getBoundingClientRect();
+      const centerY = rect.top + WHEEL_HEIGHT / 2;
       listEl.querySelectorAll('li').forEach(li => {
-        const r = li.getBoundingClientRect();
-        const center = r.top + r.height / 2;
-        const dist = Math.abs(center - mid);
-        li.classList.remove('center');
-        if (dist < closestDist) {
-          closest = li;
-          closestDist = dist;
-        }
+        const liRect = li.getBoundingClientRect();
+        const liCenter = liRect.top + liRect.height / 2;
+        const diff = Math.abs(centerY - liCenter);
+        li.classList.toggle('center', diff < ITEM_HEIGHT / 2);
       });
-      if (closest) closest.classList.add('center');
-      return closest;
     }
 
-    function startSpin(listEl, btn) {
+    function startSpin(listEl) {
       if (spinning) return;
       spinning = true;
-      speed = 5;
-      btn.classList.add('glow');
-      spinTimer = setInterval(() => {
-        speed = Math.min(speed * ACCELERATION, MAX_SPEED);
-        offset += speed;
-        listEl.style.transform = `translateY(${-offset}px)`;
-        if (offset > listEl.scrollHeight / 2) offset = 0;
+      speed = 25;
+      spinInterval = setInterval(() => {
+        const currentY = new WebKitCSSMatrix(getComputedStyle(listEl).transform).m42 || 0;
+        const newY = currentY - speed;
+        listEl.style.transform = `translateY(${newY}px)`;
         highlightCenter(listEl);
+        if (Math.random() < 0.005 && speed < 60) speed += 0.5; // ускорение
       }, 16);
     }
 
-    function stopSpin(listEl, items, cb, btn) {
-      clearInterval(spinTimer);
-      btn.classList.remove('glow');
-      function decelerate() {
-        speed *= DECELERATION;
-        offset += speed;
-        listEl.style.transform = `translateY(${-offset}px)`;
-        if (offset > listEl.scrollHeight / 2) offset = 0;
-        const centerEl = highlightCenter(listEl);
-        if (speed > 0.5) {
-          requestAnimationFrame(decelerate);
-        } else {
-          spinning = false;
-          listEl.querySelectorAll('li').forEach(li => li.classList.remove('final'));
-          if (centerEl) {
-            centerEl.classList.add('final');
-            // задержка 1 сек перед переходом
-            setTimeout(() => cb(centerEl.textContent), 1000);
+    function stopSpin(listEl, items, cb) {
+      clearInterval(spinInterval);
+      let inertia = 2.5;
+      const slow = setInterval(() => {
+        const currentY = new WebKitCSSMatrix(getComputedStyle(listEl).transform).m42 || 0;
+        const newY = currentY - speed;
+        listEl.style.transform = `translateY(${newY}px)`;
+        highlightCenter(listEl);
+        speed *= 0.94;
+        if (speed < inertia) {
+          clearInterval(slow);
+          // определяем выбранный элемент
+          const rect = listEl.getBoundingClientRect();
+          const centerY = rect.top + WHEEL_HEIGHT / 2;
+          let closest, minDiff = Infinity;
+          listEl.querySelectorAll('li').forEach(li => {
+            const liRect = li.getBoundingClientRect();
+            const liCenter = liRect.top + liRect.height / 2;
+            const diff = Math.abs(centerY - liCenter);
+            if (diff < minDiff) { minDiff = diff; closest = li; }
+          });
+          if (closest) {
+            listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+            closest.classList.add('active');
+            glow.classList.add('active');
+            setTimeout(() => glow.classList.remove('active'), 400);
+            cb(closest.textContent);
           }
+          spinning = false;
         }
-      }
-      requestAnimationFrame(decelerate);
+      }, 16);
     }
 
-    function loadLists() {
-      fetch('lists.json')
-        .then(r => r.json())
-        .then(data => {
-          places = data.places || [];
-          actions = data.actions || [];
-          renderWheel(wheelList1, places);
-          renderWheel(wheelList2, actions);
-        })
-        .catch(err => console.error('Ошибка загрузки lists.json:', err));
+    fetch('lists.json')
+      .then(res => res.json())
+      .then(data => {
+        places = data.places || [];
+        actions = data.actions || [];
+        renderWheel(wheelList1, places);
+        renderWheel(wheelList2, actions);
+      });
+
+    function setupSpin(button, listEl, items, next) {
+      let holding = false;
+      button.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        holding = true;
+        startSpin(listEl);
+      });
+      button.addEventListener('pointerup', () => {
+        if (!holding) return;
+        holding = false;
+        stopSpin(listEl, items, (result) => {
+          if (stage === 1) placeResult = result;
+          else actionResult = result;
+          setTimeout(() => {
+            screens[stage - 1].classList.add('hidden');
+            screens[stage].classList.remove('hidden');
+            stage++;
+            if (stage === 3) {
+              finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
+            }
+          }, 1000);
+        });
+      });
     }
 
-    function setupSpin(button, listEl, itemsGetter, nextScreenFn) {
-      const start = () => startSpin(listEl, button);
-      const stop = () => stopSpin(listEl, itemsGetter(), nextScreenFn, button);
-
-      button.addEventListener('mousedown', start);
-      button.addEventListener('mouseup', stop);
-      button.addEventListener('mouseleave', stop);
-      button.addEventListener('touchstart', e => { e.preventDefault(); start(); }, { passive: false });
-      button.addEventListener('touchend', e => { e.preventDefault(); stop(); }, { passive: false });
-    }
-
-    setupSpin(spinBtn1, wheelList1, () => places, res => {
-      placeResult = res;
-      screen1.classList.add('hidden');
-      screen2.classList.remove('hidden');
-    });
-
-    setupSpin(spinBtn2, wheelList2, () => actions, res => {
-      actionResult = res;
-      finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
-      screen2.classList.add('hidden');
-      screen3.classList.remove('hidden');
-    });
-
+    setupSpin(spinBtn, wheelList1, places);
+    setupSpin(spinBtn2, wheelList2, actions);
     restartBtn.onclick = () => {
-      screen3.classList.add('hidden');
-      screen1.classList.remove('hidden');
-      renderWheel(wheelList1, places);
-      renderWheel(wheelList2, actions);
+      stage = 1;
+      screens[2].classList.add('hidden');
+      screens[0].classList.remove('hidden');
     };
-
-    loadLists();
   </script>
 </body>
 </html>
