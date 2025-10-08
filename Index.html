@@ -73,43 +73,22 @@
       padding: 14px 0;
       font-size: 20px;
       opacity: 0.4;
+      transition: all 0.15s ease;
     }
 
-    .wheel-list li.active {
+    .wheel-list li.center {
       font-size: 26px;
       opacity: 1;
       color: #ff6;
+      text-shadow: 0 0 8px rgba(255,255,100,0.8);
       transform: scale(1.15);
-      text-shadow: 0 0 12px rgba(255,255,100,0.8);
-      position: relative;
     }
 
-    .wheel-list li.active::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -50%;
-      width: 200%;
-      height: 100%;
-      background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.85) 50%, transparent 60%);
-      transform: translateX(-100%);
-      animation: shine 1.2s ease-in-out forwards;
-      pointer-events: none;
-    }
-
-    @keyframes shine {
-      0% { transform: translateX(-100%); opacity: 0; }
-      30% { opacity: 1; }
-      100% { transform: translateX(100%); opacity: 0; }
-    }
-
-    .result-text {
-      font-size: 26px;
-      color: #ff6;
-      text-align: center;
-      text-shadow: 0 0 10px rgba(255,255,100,0.8);
-      white-space: pre-line;
-      margin-bottom: 20px;
+    .wheel-list li.final {
+      color: #ff0;
+      text-shadow: 0 0 15px rgba(255,255,0,1);
+      font-weight: bold;
+      transform: scale(1.2);
     }
 
     button {
@@ -143,6 +122,15 @@
       0% { box-shadow: 0 0 15px rgba(255,150,0,0.6); }
       100% { box-shadow: 0 0 35px rgba(255,220,0,1); }
     }
+
+    .result-text {
+      font-size: 26px;
+      color: #ff6;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(255,255,100,0.8);
+      white-space: pre-line;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -170,9 +158,9 @@
 
   <script>
     const CLONE_FACTOR = 6;
-    const DECELERATION = 0.98;
+    const DECELERATION = 0.97;
     const ACCELERATION = 1.05;
-    const MAX_SPEED = 60;
+    const MAX_SPEED = 55;
 
     const fallbackPlaces = ["Кафе", "Парк", "Кино", "Музей", "Ресторан", "Пляж", "Пикник"];
     const fallbackActions = ["Прогулка", "Ужин", "Кофе", "Фотосессия", "Фильм", "Пикник", "Разговор"];
@@ -205,6 +193,24 @@
       });
     }
 
+    function highlightCenter(listEl) {
+      const rect = listEl.parentElement.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      let closest = null, closestDist = Infinity;
+      listEl.querySelectorAll('li').forEach(li => {
+        const r = li.getBoundingClientRect();
+        const center = r.top + r.height / 2;
+        const dist = Math.abs(center - mid);
+        li.classList.remove('center');
+        if (dist < closestDist) {
+          closest = li;
+          closestDist = dist;
+        }
+      });
+      if (closest) closest.classList.add('center');
+      return closest;
+    }
+
     function startSpin(listEl, btn) {
       if (spinning) return;
       spinning = true;
@@ -216,32 +222,29 @@
         offset += speed;
         listEl.style.transform = `translateY(${-offset}px)`;
         if (offset > listEl.scrollHeight / 2) offset = 0;
+        highlightCenter(listEl);
       }, 16);
     }
 
     function stopSpin(listEl, items, cb, btn) {
       clearInterval(spinTimer);
       btn.classList.remove('glow');
-
-      const itemHeight = listEl.children[0].getBoundingClientRect().height;
-      const wheelHeight = listEl.parentElement.clientHeight;
-
       function decelerate() {
         speed *= DECELERATION;
         offset += speed;
         listEl.style.transform = `translateY(${-offset}px)`;
         if (offset > listEl.scrollHeight / 2) offset = 0;
-        if (speed > 0.3) {
+        highlightCenter(listEl);
+        if (speed > 0.5) {
           requestAnimationFrame(decelerate);
         } else {
           spinning = false;
-          const index = Math.floor((offset + wheelHeight / 2) / itemHeight) % items.length;
-          const result = items[index];
-          listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-          const activeIndex = index + items.length * Math.floor(CLONE_FACTOR / 2);
-          const active = listEl.children[activeIndex];
-          if (active) active.classList.add('active');
-          cb(result);
+          const centerEl = highlightCenter(listEl);
+          listEl.querySelectorAll('li').forEach(li => li.classList.remove('final'));
+          if (centerEl) {
+            centerEl.classList.add('final');
+            cb(centerEl.textContent);
+          }
         }
       }
       requestAnimationFrame(decelerate);
@@ -252,7 +255,6 @@
       actions = fallbackActions;
       renderWheel(wheelList1, places);
       renderWheel(wheelList2, actions);
-
       fetch('lists.json')
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
