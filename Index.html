@@ -1,65 +1,276 @@
 <!doctype html>
-
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Рулетка свидания</title>
-<style>
-html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;justify-content:center;align-items:center;overflow:hidden;}.wheel-container{position:relative;width:100%;max-width:420px;height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center;} .wheel-list{list-style:none;margin:0;padding:0;width:100%;text-align:center;transform:translateY(0);transition:transform 2.5s cubic-bezier(0.22,1,0.36,1);} .wheel-list li{padding:16px 0;font-size:22px;opacity:0.5;transition:transform 0.3s,opacity 0.3s;} .wheel-list li.active{font-size:28px;opacity:1;transform:scale(1.2);} .settings-btn{position:fixed;top:10px;right:14px;background:transparent;border:none;color:#888;font-size:24px;} .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);} .modal.show{display:flex;} .card{background:#111;padding:16px;border-radius:12px;width:90%;max-width:400px;} input,button{background:#222;color:#fff;border:none;border-radius:8px;padding:10px;width:100%;margin-top:8px;font-size:16px;} .result-screen{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;opacity:0;transition:opacity 1s;} .result-screen.show{opacity:1;} .repeat-btn{margin-top:24px;padding:10px 20px;border-radius:12px;background:#333;color:#fff;border:none;font-size:18px;} </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Рулетка свидания</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(circle at center, #111, #000);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
 
+    h1 {
+      margin-bottom: 20px;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .wheel {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 240px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid #333;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+      background: rgba(20,20,20,0.6);
+    }
+
+    .wheel-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      text-align: center;
+      transform: translateY(0);
+      transition: transform 2.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .wheel-list li {
+      padding: 14px 0;
+      font-size: 20px;
+      opacity: 0.4;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .wheel-list li.active {
+      font-size: 26px;
+      opacity: 1;
+      transform: scale(1.15);
+      color: #ff6;
+      text-shadow: 0 0 8px rgba(255,255,100,0.6);
+    }
+
+    .spin-btn {
+      margin-top: 18px;
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ff6, #f90);
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .spin-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(255,200,0,0.6);
+    }
+
+    .settings-btn {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      background: transparent;
+      border: none;
+      color: #aaa;
+      font-size: 26px;
+      cursor: pointer;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .modal.show { display: flex; }
+
+    .card {
+      background: #181818;
+      padding: 20px;
+      border-radius: 14px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+
+    .card strong {
+      font-size: 18px;
+    }
+
+    input, button {
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+    }
+
+    input {
+      flex: 1;
+    }
+
+    .editor-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .editor-row button {
+      background: #444;
+      width: 40px;
+      cursor: pointer;
+    }
+
+    #addItem {
+      margin-top: 10px;
+      background: #444;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<button class="settings-btn" id="settingsBtn">⚙️</button>
-<div class="wheel-container" id="screenContainer">
-  <ul class="wheel-list" id="wheelList"></ul>
-  <div class="result-screen" id="resultScreen">
-    <div id="resultPlace" style="font-size:26px;margin-bottom:12px"></div>
-    <div id="resultAction" style="font-size:26px"></div>
-    <button class="repeat-btn" id="repeatBtn">Повторить</button>
+  <h1>🎲 Рулетка свидания</h1>
+
+  <button class="settings-btn" id="settingsBtn">⚙️</button>
+
+  <div class="wheel" id="wheel">
+    <ul class="wheel-list" id="wheelList"></ul>
   </div>
-</div>
-<div class="modal" id="settingsModal">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <strong>Редактор списка</strong>
-      <button id="closeSettings">✕</button>
+
+  <button class="spin-btn" id="spinBtn">Старт</button>
+
+  <div class="modal" id="settingsModal">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <strong>Редактор списка</strong>
+        <button id="closeSettings">✕</button>
+      </div>
+      <div id="editorList"></div>
+      <input id="newItem" placeholder="Новый вариант" />
+      <button id="addItem">Добавить</button>
     </div>
-    <div id="editorList"></div>
-    <input id="newItem" placeholder="Новый вариант">
-    <button id="addItem">Добавить</button>
   </div>
-</div>
-<script>
-const screens = ['place','action','result'];
-let currentScreen = 0;
-const wheelList = document.getElementById('wheelList');
-const settingsBtn = document.getElementById('settingsBtn');
-const modal = document.getElementById('settingsModal');
-const closeSettings = document.getElementById('closeSettings');
-const editorList = document.getElementById('editorList');
-const newItemInput = document.getElementById('newItem');
-const addItemBtn = document.getElementById('addItem');
-const resultScreen = document.getElementById('resultScreen');
-const resultPlace = document.getElementById('resultPlace');
-const resultAction = document.getElementById('resultAction');
-const repeatBtn = document.getElementById('repeatBtn');const STORAGE_KEY = 'date_items_final_v1'; let items = {place:[], action:[]}; let selected = {place:null, action:null}; let spinning = false;
 
-// load or init items.place = JSON.parse(localStorage.getItem('placeList')) || ['Кафе у реки','Парк','Кинотеатр','Ресторан','Крыша с видом','Пикник']; items.action = JSON.parse(localStorage.getItem('actionList')) || ['Прогулка','Обед','Кино','Танцы','Совместное творчество','Игры'];
+  <script>
+    const wheelList = document.getElementById('wheelList');
+    const spinBtn = document.getElementById('spinBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const modal = document.getElementById('settingsModal');
+    const closeSettings = document.getElementById('closeSettings');
+    const editorList = document.getElementById('editorList');
+    const newItemInput = document.getElementById('newItem');
+    const addItemBtn = document.getElementById('addItem');
 
-function saveLists(){ localStorage.setItem('placeList', JSON.stringify(items.place)); localStorage.setItem('actionList', JSON.stringify(items.action)); }
+    const STORAGE_KEY = 'date_items_v2';
+    let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+      'Кафе у реки', 'Парк', 'Кинотеатр', 'Ресторан', 'Крыша с видом', 'Пикник'
+    ];
+    let spinning = false;
 
-function renderWheel(){ wheelList.innerHTML = ''; const listType = screens[currentScreen]; if(listType==='result'){wheelList.style.display='none';return;} wheelList.style.display='block'; const arr = items[listType]; arr.forEach(it=>{ const li=document.createElement('li'); li.textContent=it; wheelList.appendChild(li); }); }
+    function saveItems() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
 
-function spinWheel(){ if(spinning) return; spinning = true; const listType = screens[currentScreen]; const arr = items[listType]; const randomIndex = Math.floor(Math.random() * arr.length); const offset = -(randomIndex * 60); document.querySelectorAll('.wheel-list li').forEach(li=>li.classList.remove('active')); wheelList.style.transition='transform 2.5s cubic-bezier(0.22,1,0.36,1)'; wheelList.style.transform=translateY(${offset}px); setTimeout(()=>{ spinning=false; const active = wheelList.children[randomIndex]; active.classList.add('active'); selected[listType] = arr[randomIndex]; if(currentScreen<2){currentScreen++;setTimeout(()=>{renderWheel(); if(currentScreen===2){showResult();}},1000);} },2500); }
+    function renderWheel() {
+      wheelList.innerHTML = '';
+      items.forEach((text) => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        wheelList.appendChild(li);
+      });
+    }
 
-function showResult(){ resultPlace.textContent = 📍 Место: ${selected.place}; resultAction.textContent = 🎬 Действие: ${selected.action}; resultScreen.classList.add('show'); }
+    function spinWheel() {
+      if (spinning || items.length === 0) return;
+      spinning = true;
+      const randomIndex = Math.floor(Math.random() * items.length);
+      const offset = -(randomIndex * 48); // расстояние между элементами
+      document.querySelectorAll('.wheel-list li').forEach(li => li.classList.remove('active'));
 
-function renderEditor(){ editorList.innerHTML=''; const listType = screens[currentScreen] === 'place' ? 'place' : 'action'; items[listType].forEach((it,idx)=>{ const row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.marginBottom='6px'; const input=document.createElement('input'); input.value=it; input.onchange=()=>{items[listType][idx]=input.value; saveLists(); renderWheel();}; const del=document.createElement('button'); del.textContent='✕'; del.onclick=()=>{items[listType].splice(idx,1); saveLists(); renderEditor(); renderWheel();}; row.appendChild(input); row.appendChild(del); editorList.appendChild(row); }); }
+      wheelList.style.transition = 'transform 2.5s cubic-bezier(0.22, 1, 0.36, 1)';
+      wheelList.style.transform = `translateY(${offset}px)`;
 
-settingsBtn.onclick=()=>{ modal.classList.add('show'); renderEditor(); }; closeSettings.onclick=()=>{ modal.classList.remove('show'); }; addItemBtn.onclick=()=>{ const val=newItemInput.value.trim(); if(!val)return; const listType = screens[currentScreen]==='place'?'place':'action'; items[listType].push(val); saveLists(); newItemInput.value=''; renderEditor(); renderWheel(); }; wheelList.addEventListener('click',()=>{ spinWheel(); }); // touch scroll to spin let touchStartY = null; wheelList.addEventListener('touchstart',e=>{ touchStartY=e.touches[0].clientY; }); wheelList.addEventListener('touchend',e=>{ if(touchStartY!==null){ const delta = e.changedTouches[0].clientY - touchStartY; if(Math.abs(delta)>10) spinWheel(); touchStartY=null; } }); repeatBtn.onclick=()=>{currentScreen=0;selected={place:null,action:null}; resultScreen.classList.remove('show'); renderWheel();};
+      setTimeout(() => {
+        spinning = false;
+        const active = wheelList.children[randomIndex];
+        if (active) active.classList.add('active');
+        saveItems();
+      }, 2500);
+    }
 
-renderWheel(); </script>
+    function renderEditor() {
+      editorList.innerHTML = '';
+      items.forEach((it, idx) => {
+        const row = document.createElement('div');
+        row.className = 'editor-row';
 
+        const input = document.createElement('input');
+        input.value = it;
+        input.onchange = () => {
+          items[idx] = input.value;
+          saveItems();
+          renderWheel();
+        };
+
+        const del = document.createElement('button');
+        del.textContent = '✕';
+        del.onclick = () => {
+          items.splice(idx, 1);
+          saveItems();
+          renderEditor();
+          renderWheel();
+        };
+
+        row.appendChild(input);
+        row.appendChild(del);
+        editorList.appendChild(row);
+      });
+    }
+
+    spinBtn.onclick = () => spinWheel();
+
+    settingsBtn.onclick = () => {
+      modal.classList.add('show');
+      renderEditor();
+    };
+
+    closeSettings.onclick = () => {
+      modal.classList.remove('show');
+    };
+
+    addItemBtn.onclick = () => {
+      const val = newItemInput.value.trim();
+      if (!val) return;
+      items.push(val);
+      saveItems();
+      renderEditor();
+      renderWheel();
+      newItemInput.value = '';
+    };
+
+    renderWheel();
+  </script>
 </body>
 </html>
