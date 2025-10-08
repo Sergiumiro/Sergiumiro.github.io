@@ -46,21 +46,7 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.06);
     }
 
-    /* линии выбора */
-    .wheel::before,
-    .wheel::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: #ff6;
-      box-shadow: 0 0 10px rgba(255,255,100,0.8);
-      pointer-events: none;
-    }
 
-    .wheel::before { top: calc(50% - 24px); }
-    .wheel::after  { top: calc(50% + 24px); }
 
     .wheel-list {
       list-style: none;
