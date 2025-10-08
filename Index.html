@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Рулетка свидания</title>
   <style>
     html, body {
@@ -21,7 +21,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.5s, transform 0.5s;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      background: radial-gradient(circle at center, #111, #000);
     }
 
     .hidden {
@@ -36,7 +37,7 @@
       text-align: center;
     }
 
-    /* Рулетка */
+    /* рулетка */
     .wheel {
       position: relative;
       width: 100%;
@@ -78,7 +79,6 @@
       padding: 14px 0;
       font-size: 20px;
       opacity: 0.4;
-      transition: transform 0.3s, opacity 0.3s;
     }
 
     .wheel-list li.active {
@@ -89,64 +89,56 @@
       text-shadow: 0 0 8px rgba(255,255,100,0.6);
     }
 
-    .spin-btn {
+    button {
       margin-top: 18px;
       padding: 12px 24px;
       font-size: 18px;
       border: none;
       border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .spin-btn {
       background: linear-gradient(135deg, #ff6, #f90);
       color: #000;
       font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .spin-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(255,200,0,0.6);
-    }
-
-    /* Экран результата */
-    .result-text {
-      font-size: 28px;
-      color: #ff6;
-      text-align: center;
-      margin-bottom: 20px;
-      text-shadow: 0 0 12px rgba(255,255,150,0.8);
-    }
-
-    .back-btn {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 10px;
+    .back-btn, .next-btn {
       background: #444;
       color: #fff;
-      cursor: pointer;
     }
 
+    .result-text {
+      font-size: 26px;
+      color: #ff6;
+      margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(255,255,100,0.8);
+      white-space: pre-line;
+    }
+
+    /* кнопка настроек */
     .settings-btn {
-      position: fixed;
-      top: 12px;
+      position: absolute;
+      top: 10px;
       right: 16px;
       background: transparent;
       border: none;
-      color: #aaa;
       font-size: 26px;
+      color: #aaa;
       cursor: pointer;
     }
 
-    /* Модалка */
+    /* модалка */
     .modal {
       position: fixed;
       inset: 0;
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0,0,0,0.8);
     }
-
     .modal.show { display: flex; }
 
     .card {
@@ -155,16 +147,6 @@
       border-radius: 14px;
       width: 90%;
       max-width: 420px;
-      box-shadow: 0 0 20px rgba(255,255,255,0.1);
-    }
-
-    input, button {
-      background: #222;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 15px;
     }
 
     .editor-row {
@@ -173,139 +155,179 @@
       margin-bottom: 6px;
     }
 
+    .editor-row input {
+      flex: 1;
+      background: #222;
+      border: none;
+      color: #fff;
+      padding: 8px;
+      border-radius: 6px;
+    }
+
     .editor-row button {
       background: #444;
-      width: 40px;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
       cursor: pointer;
+    }
+
+    .card button {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <!-- Экран рулетки -->
-  <div class="screen" id="screenWheel">
-    <h1>🎲 Рулетка свидания</h1>
-    <button class="settings-btn" id="settingsBtn">⚙️</button>
+  <!-- экран 1 -->
+  <div class="screen" id="screen1">
+    <h1>🎲 Выбираем место свидания</h1>
+    <button class="settings-btn" data-type="places">⚙️</button>
     <div class="wheel">
-      <ul class="wheel-list" id="wheelList"></ul>
+      <ul class="wheel-list" id="wheelList1"></ul>
     </div>
-    <button class="spin-btn" id="spinBtn">Старт</button>
+    <button class="spin-btn" id="spinBtn1">Старт</button>
   </div>
 
-  <!-- Экран результата -->
-  <div class="screen hidden" id="screenResult">
-    <div class="result-text" id="resultText"></div>
-    <button class="back-btn" id="backBtn">Назад</button>
+  <!-- экран 2 -->
+  <div class="screen hidden" id="screen2">
+    <h1>✨ Теперь выберем действие</h1>
+    <button class="settings-btn" data-type="actions">⚙️</button>
+    <div class="wheel">
+      <ul class="wheel-list" id="wheelList2"></ul>
+    </div>
+    <button class="spin-btn" id="spinBtn2">Крутить</button>
   </div>
 
-  <!-- Модалка настроек -->
+  <!-- экран 3 -->
+  <div class="screen hidden" id="screen3">
+    <h1>💖 Ваше свидание готово!</h1>
+    <div class="result-text" id="finalResult"></div>
+    <button class="back-btn" id="restartBtn">🔄 Сыграть снова</button>
+  </div>
+
+  <!-- модалка -->
   <div class="modal" id="settingsModal">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <strong>Редактор списка</strong>
-        <button id="closeSettings">✕</button>
-      </div>
+      <h3 id="editorTitle">Редактор</h3>
       <div id="editorList"></div>
-      <input id="newItem" placeholder="Новый вариант" />
+      <input id="newItem" placeholder="Новый элемент" />
       <button id="addItem">Добавить</button>
+      <button id="closeSettings">Закрыть</button>
     </div>
   </div>
 
   <script>
-    const wheelList = document.getElementById('wheelList');
-    const spinBtn = document.getElementById('spinBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const modal = document.getElementById('settingsModal');
-    const closeSettings = document.getElementById('closeSettings');
-    const editorList = document.getElementById('editorList');
-    const newItemInput = document.getElementById('newItem');
-    const addItemBtn = document.getElementById('addItem');
+    const STORAGE_KEY1 = 'date_places';
+    const STORAGE_KEY2 = 'date_actions';
 
-    const screenWheel = document.getElementById('screenWheel');
-    const screenResult = document.getElementById('screenResult');
-    const resultText = document.getElementById('resultText');
-    const backBtn = document.getElementById('backBtn');
-
-    const STORAGE_KEY = 'date_items_v4';
-    let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+    let places = JSON.parse(localStorage.getItem(STORAGE_KEY1)) || [
       'Кафе у реки', 'Парк', 'Кинотеатр', 'Ресторан', 'Крыша с видом', 'Пикник'
     ];
-    let spinning = false;
+    let actions = JSON.parse(localStorage.getItem(STORAGE_KEY2)) || [
+      'Прогулка за руку', 'Поцелуй', 'Катание на самокатах', 'Танцы под фонарями', 'Совместное фото', 'Смотреть звёзды'
+    ];
 
+    let placeResult = '';
+    let actionResult = '';
+    let currentEdit = 'places'; // режим редактора
+
+    let spinning = false;
     const ITEM_HEIGHT = 48;
     const WHEEL_HEIGHT = 180;
     const CENTER_OFFSET = Math.floor(WHEEL_HEIGHT / ITEM_HEIGHT / 2);
 
-    function saveItems() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    function save() {
+      localStorage.setItem(STORAGE_KEY1, JSON.stringify(places));
+      localStorage.setItem(STORAGE_KEY2, JSON.stringify(actions));
     }
 
-    function renderWheel() {
-      wheelList.innerHTML = '';
+    function renderWheel(listEl, items) {
+      listEl.innerHTML = '';
       for (let i = 0; i < CENTER_OFFSET; i++) {
-        const empty = document.createElement('li');
-        empty.textContent = '';
-        wheelList.appendChild(empty);
+        listEl.appendChild(document.createElement('li'));
       }
       items.forEach((text) => {
         const li = document.createElement('li');
         li.textContent = text;
-        wheelList.appendChild(li);
+        listEl.appendChild(li);
       });
       for (let i = 0; i < CENTER_OFFSET; i++) {
-        const empty = document.createElement('li');
-        empty.textContent = '';
-        wheelList.appendChild(empty);
+        listEl.appendChild(document.createElement('li'));
       }
     }
 
-    function spinWheel() {
+    function spinWheel(listEl, items, cb) {
       if (spinning || items.length === 0) return;
       spinning = true;
       const randomIndex = Math.floor(Math.random() * items.length);
       const targetIndex = randomIndex + CENTER_OFFSET;
       const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2 - ITEM_HEIGHT / 2));
 
-      document.querySelectorAll('.wheel-list li').forEach(li => li.classList.remove('active'));
-
-      wheelList.style.transition = 'transform 2.5s cubic-bezier(0.22, 1, 0.36, 1)';
-      wheelList.style.transform = `translateY(${offset}px)`;
+      listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+      listEl.style.transition = 'transform 2.5s cubic-bezier(0.22, 1, 0.36, 1)';
+      listEl.style.transform = `translateY(${offset}px)`;
 
       setTimeout(() => {
         spinning = false;
-        const active = wheelList.children[targetIndex];
+        const active = listEl.children[targetIndex];
         if (active) {
           active.classList.add('active');
-          resultText.textContent = "✨ Ваш выбор: " + active.textContent;
+          cb(active.textContent);
         }
-        saveItems();
-
-        // переход на экран результата
-        screenWheel.classList.add('hidden');
-        screenResult.classList.remove('hidden');
       }, 2500);
+    }
+
+    const screen1 = document.getElementById('screen1');
+    const screen2 = document.getElementById('screen2');
+    const screen3 = document.getElementById('screen3');
+
+    const wheelList1 = document.getElementById('wheelList1');
+    const wheelList2 = document.getElementById('wheelList2');
+
+    const spinBtn1 = document.getElementById('spinBtn1');
+    const spinBtn2 = document.getElementById('spinBtn2');
+    const finalResult = document.getElementById('finalResult');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const modal = document.getElementById('settingsModal');
+    const editorList = document.getElementById('editorList');
+    const editorTitle = document.getElementById('editorTitle');
+    const newItemInput = document.getElementById('newItem');
+    const addItemBtn = document.getElementById('addItem');
+    const closeSettings = document.getElementById('closeSettings');
+
+    function openEditor(type) {
+      currentEdit = type;
+      editorTitle.textContent = type === 'places' ? 'Редактор мест' : 'Редактор действий';
+      renderEditor();
+      modal.classList.add('show');
     }
 
     function renderEditor() {
       editorList.innerHTML = '';
-      items.forEach((it, idx) => {
+      const arr = currentEdit === 'places' ? places : actions;
+      arr.forEach((it, idx) => {
         const row = document.createElement('div');
         row.className = 'editor-row';
 
         const input = document.createElement('input');
         input.value = it;
-        input.onchange = () => {
-          items[idx] = input.value;
-          saveItems();
-          renderWheel();
+        input.oninput = () => {
+          arr[idx] = input.value;
+          save();
+          renderWheel(wheelList1, places);
+          renderWheel(wheelList2, actions);
         };
 
         const del = document.createElement('button');
         del.textContent = '✕';
         del.onclick = () => {
-          items.splice(idx, 1);
-          saveItems();
+          arr.splice(idx, 1);
+          save();
           renderEditor();
-          renderWheel();
+          renderWheel(wheelList1, places);
+          renderWheel(wheelList2, actions);
         };
 
         row.appendChild(input);
@@ -314,24 +336,52 @@
       });
     }
 
-    spinBtn.onclick = spinWheel;
-    backBtn.onclick = () => {
-      screenResult.classList.add('hidden');
-      screenWheel.classList.remove('hidden');
-    };
-    settingsBtn.onclick = () => { modal.classList.add('show'); renderEditor(); };
-    closeSettings.onclick = () => { modal.classList.remove('show'); };
     addItemBtn.onclick = () => {
       const val = newItemInput.value.trim();
       if (!val) return;
-      items.push(val);
-      saveItems();
+      if (currentEdit === 'places') places.push(val);
+      else actions.push(val);
+      save();
       renderEditor();
-      renderWheel();
+      renderWheel(wheelList1, places);
+      renderWheel(wheelList2, actions);
       newItemInput.value = '';
     };
 
-    renderWheel();
+    closeSettings.onclick = () => { modal.classList.remove('show'); };
+
+    document.querySelectorAll('.settings-btn').forEach(btn => {
+      btn.onclick = () => openEditor(btn.dataset.type);
+    });
+
+    spinBtn1.onclick = () => {
+      spinWheel(wheelList1, places, (res) => {
+        placeResult = res;
+        setTimeout(() => {
+          screen1.classList.add('hidden');
+          screen2.classList.remove('hidden');
+        }, 1000);
+      });
+    };
+
+    spinBtn2.onclick = () => {
+      spinWheel(wheelList2, actions, (res) => {
+        actionResult = res;
+        setTimeout(() => {
+          finalResult.textContent = `📍 Место: ${placeResult}\n💡 Действие: ${actionResult}`;
+          screen2.classList.add('hidden');
+          screen3.classList.remove('hidden');
+        }, 1000);
+      });
+    };
+
+    restartBtn.onclick = () => {
+      screen3.classList.add('hidden');
+      screen1.classList.remove('hidden');
+    };
+
+    renderWheel(wheelList1, places);
+    renderWheel(wheelList2, actions);
   </script>
 </body>
 </html>
