@@ -18,11 +18,11 @@
       position: absolute;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
-      background: radial-gradient(circle at center, #111, #000);
       transition: opacity 0.5s ease, transform 0.5s ease;
+      background: radial-gradient(circle at center, #111, #000);
     }
 
     .hidden {
@@ -39,12 +39,11 @@
       overflow: hidden;
       border: 2px solid #333;
       border-radius: 16px;
-      box-shadow: 0 0 20px rgba(255,255,255,0.06);
       background: rgba(20,20,20,0.6);
-      user-select: none;
-      touch-action: pan-y;
+      box-shadow: 0 0 20px rgba(255,255,255,0.06);
     }
 
+    /* линии */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -66,14 +65,12 @@
       width: 100%;
       text-align: center;
       transform: translateY(0);
-      transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .wheel-list li {
       padding: 14px 0;
       font-size: 20px;
       opacity: 0.4;
-      line-height: 1;
     }
 
     .wheel-list li.active {
@@ -85,7 +82,6 @@
       position: relative;
     }
 
-    /* блеск */
     .wheel-list li.active::after {
       content: "";
       position: absolute;
@@ -123,49 +119,40 @@
       padding: 12px 24px;
       font-size: 18px;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      margin-top: 24px;
     }
-    button:hover {
-      transform: scale(1.05);
-    }
-
-    .hint {
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 13px;
-      color: #aaa;
-      opacity: 0.7;
-      user-select: none;
-      pointer-events: none;
-    }
+    button:hover { transform: scale(1.05); filter: brightness(1.1); }
   </style>
 </head>
 <body>
+  <!-- экран 1 -->
   <div class="screen" id="screen1">
-    <div class="wheel" id="wheelA">
+    <div class="wheel">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
+    <button id="spinBtn">Крутить</button>
   </div>
 
+  <!-- экран 2 -->
   <div class="screen hidden" id="screen2">
-    <div class="wheel" id="wheelB">
+    <div class="wheel">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
+    <button id="spinBtn2">Крутить</button>
   </div>
 
+  <!-- экран 3 -->
   <div class="screen hidden" id="screen3">
     <div class="result-text" id="finalResult"></div>
-    <button id="repeatBtn">Повторить</button>
+    <button id="restartBtn">Повторить</button>
   </div>
 
-  <div class="hint" id="hint">Прокрути (или смахни), чтобы запустить</div>
-
   <script>
-    const CLONE_FACTOR = 5;
-    const SPIN_DURATION_MS = 1600; // быстрее крутится
-    const MIN_INTERACTION_GAP = 500;
+    const CLONE_FACTOR = 6;
+    const DECELERATION = 0.98;  // коэффициент замедления
+    const ACCELERATION = 1.05;  // ускорение при удержании
+    const MAX_SPEED = 60;       // пикселей за кадр
 
     const fallbackPlaces = ["Кафе", "Парк", "Кино", "Музей", "Ресторан", "Пляж", "Пикник"];
     const fallbackActions = ["Прогулка", "Ужин", "Кофе", "Фотосессия", "Фильм", "Пикник", "Разговор"];
@@ -174,26 +161,21 @@
     let actions = [];
     let placeResult = '';
     let actionResult = '';
-    let spinning = false;
-    let stage = 1;
-    let lastInteractionTime = 0;
+    let currentScreen = 1;
 
-    const WHEEL_A = document.getElementById('wheelList1');
-    const WHEEL_B = document.getElementById('wheelList2');
+    const wheelList1 = document.getElementById('wheelList1');
+    const wheelList2 = document.getElementById('wheelList2');
+    const spinBtn1 = document.getElementById('spinBtn');
+    const spinBtn2 = document.getElementById('spinBtn2');
+    const restartBtn = document.getElementById('restartBtn');
+    const finalResult = document.getElementById('finalResult');
     const screen1 = document.getElementById('screen1');
     const screen2 = document.getElementById('screen2');
     const screen3 = document.getElementById('screen3');
-    const finalResult = document.getElementById('finalResult');
-    const repeatBtn = document.getElementById('repeatBtn');
 
-    function measureItemHeight(listEl) {
-      const first = listEl.querySelector('li');
-      return first ? first.getBoundingClientRect().height : 48;
-    }
-
-    function computeOffsetForIndex(index, itemHeight, wheelHeight) {
-      return (wheelHeight / 2) - (itemHeight / 2) - (index * itemHeight);
-    }
+    let spinning = false;
+    let speed = 0;
+    let spinningInterval;
 
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
@@ -204,117 +186,86 @@
         li.textContent = text;
         listEl.appendChild(li);
       });
-
-      requestAnimationFrame(() => {
-        const itemH = measureItemHeight(listEl);
-        const base = items.length * Math.floor(CLONE_FACTOR / 2);
-        const offset = computeOffsetForIndex(base, itemH, listEl.parentElement.clientHeight);
-        listEl.style.transition = 'none';
-        listEl.style.transform = `translateY(${offset}px)`;
-        setTimeout(() => listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`, 100);
-      });
     }
 
-    function spinWheel(listEl, items, cb) {
-      if (spinning || items.length === 0) return;
+    function startSpin(listEl) {
+      if (spinning) return;
       spinning = true;
+      speed = 5;
+      let offset = 0;
+      spinningInterval = setInterval(() => {
+        speed = Math.min(speed * ACCELERATION, MAX_SPEED);
+        offset += speed;
+        listEl.style.transform = `translateY(${-offset}px)`;
+        if (offset > listEl.scrollHeight / 2) offset = 0;
+      }, 16);
+    }
 
-      const itemH = measureItemHeight(listEl);
-      const wheelH = listEl.parentElement.clientHeight;
-      const randomIndex = Math.floor(Math.random() * items.length);
-      const base = items.length * Math.floor(CLONE_FACTOR / 2);
-      const targetIndex = base + randomIndex;
+    function stopSpin(listEl, items, cb) {
+      clearInterval(spinningInterval);
+      const itemHeight = listEl.children[0].getBoundingClientRect().height;
+      const wheelHeight = listEl.parentElement.clientHeight;
+      let offset = parseFloat(listEl.style.transform.match(/-?\d+(\.\d+)?/)) || 0;
 
-      const offset = computeOffsetForIndex(targetIndex, itemH, wheelH);
-
-      listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-      listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`;
-      listEl.style.transform = `translateY(${offset}px)`;
-
-      setTimeout(() => {
-        const active = listEl.children[targetIndex];
-        if (active) active.classList.add('active');
-        spinning = false;
-        cb(active ? active.textContent : items[randomIndex]);
-      }, SPIN_DURATION_MS + 50);
+      function decelerate() {
+        speed *= DECELERATION;
+        offset += speed;
+        listEl.style.transform = `translateY(${-offset}px)`;
+        if (offset > listEl.scrollHeight / 2) offset = 0;
+        if (speed > 0.3) {
+          requestAnimationFrame(decelerate);
+        } else {
+          spinning = false;
+          const index = Math.floor((offset + wheelHeight / 2) / itemHeight) % items.length;
+          const result = items[index];
+          listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+          const activeIndex = index + items.length * Math.floor(CLONE_FACTOR / 2);
+          const active = listEl.children[activeIndex];
+          if (active) active.classList.add('active');
+          cb(result);
+        }
+      }
+      requestAnimationFrame(decelerate);
     }
 
     function loadLists() {
       places = fallbackPlaces;
       actions = fallbackActions;
-      renderWheel(WHEEL_A, places);
-      renderWheel(WHEEL_B, actions);
+      renderWheel(wheelList1, places);
+      renderWheel(wheelList2, actions);
 
       fetch('lists.json')
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
           if (data.places?.length) places = data.places;
           if (data.actions?.length) actions = data.actions;
-          renderWheel(WHEEL_A, places);
-          renderWheel(WHEEL_B, actions);
+          renderWheel(wheelList1, places);
+          renderWheel(wheelList2, actions);
         })
         .catch(() => console.warn('⚠️ lists.json не найден — используются стандартные списки'));
     }
 
-    function tryTriggerFromInput() {
-      const now = Date.now();
-      if (now - lastInteractionTime < MIN_INTERACTION_GAP) return;
-      lastInteractionTime = now;
-      if (spinning) return;
+    spinBtn1.onmousedown = () => startSpin(wheelList1);
+    spinBtn1.onmouseup = () => stopSpin(wheelList1, places, res => {
+      placeResult = res;
+      screen1.classList.add('hidden');
+      screen2.classList.remove('hidden');
+    });
 
-      if (stage === 1) {
-        spinWheel(WHEEL_A, places, res => {
-          placeResult = res;
-          stage = 2;
-          screen1.classList.add('hidden');
-          screen2.classList.remove('hidden');
-        });
-      } else if (stage === 2) {
-        spinWheel(WHEEL_B, actions, res => {
-          actionResult = res;
-          stage = 3;
-          setTimeout(() => {
-            finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
-            screen2.classList.add('hidden');
-            screen3.classList.remove('hidden');
-          }, 300);
-        });
-      }
-    }
+    spinBtn2.onmousedown = () => startSpin(wheelList2);
+    spinBtn2.onmouseup = () => stopSpin(wheelList2, actions, res => {
+      actionResult = res;
+      finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
+      screen2.classList.add('hidden');
+      screen3.classList.remove('hidden');
+    });
 
-    repeatBtn.onclick = () => {
-      stage = 1;
+    restartBtn.onclick = () => {
       screen3.classList.add('hidden');
       screen1.classList.remove('hidden');
-      renderWheel(WHEEL_A, places);
-      renderWheel(WHEEL_B, actions);
+      renderWheel(wheelList1, places);
+      renderWheel(wheelList2, actions);
     };
-
-    // управление
-    window.addEventListener('wheel', e => {
-      if (Math.abs(e.deltaY) > 30) {
-        e.preventDefault();
-        tryTriggerFromInput();
-      }
-    }, { passive: false });
-
-    let touchStartY = null;
-    window.addEventListener('touchstart', e => {
-      if (e.touches[0]) touchStartY = e.touches[0].clientY;
-    });
-    window.addEventListener('touchend', e => {
-      if (!touchStartY) return;
-      const dy = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 30) tryTriggerFromInput();
-      touchStartY = null;
-    });
-
-    window.addEventListener('keydown', e => {
-      if (['Space', 'Enter', 'ArrowDown', 'ArrowUp'].includes(e.code)) {
-        e.preventDefault();
-        tryTriggerFromInput();
-      }
-    });
 
     loadLists();
   </script>
