@@ -11,7 +11,7 @@
       background: radial-gradient(circle at center, #111, #000);
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden; /* оставляем скрывать обычный скролл страницы */
+      overflow: hidden;
     }
 
     .screen {
@@ -20,7 +20,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
       background: radial-gradient(circle at center, #111, #000);
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     .hidden {
@@ -29,7 +31,6 @@
       transform: translateY(50px);
     }
 
-    /* колесо */
     .wheel {
       position: relative;
       width: 100%;
@@ -40,12 +41,10 @@
       border-radius: 16px;
       box-shadow: 0 0 20px rgba(255,255,255,0.06);
       background: rgba(20,20,20,0.6);
-      -webkit-user-select: none;
       user-select: none;
       touch-action: pan-y;
     }
 
-    /* линии (верхняя и нижняя) */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -67,7 +66,7 @@
       width: 100%;
       text-align: center;
       transform: translateY(0);
-      transition: transform 2.5s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .wheel-list li {
@@ -112,9 +111,24 @@
       text-align: center;
       text-shadow: 0 0 10px rgba(255,255,100,0.8);
       white-space: pre-line;
+      margin-bottom: 20px;
     }
 
-    /* небольшая подсказка (не заголовок) — можно убрать при необходимости */
+    button {
+      background: linear-gradient(135deg, #ff6, #f90);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+    }
+
     .hint {
       position: absolute;
       bottom: 18px;
@@ -129,94 +143,80 @@
   </style>
 </head>
 <body>
-  <div class="screen" id="screen1" aria-hidden="false">
-    <div class="wheel" id="wheelA" role="listbox" aria-label="Колесо мест">
+  <div class="screen" id="screen1">
+    <div class="wheel" id="wheelA">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
   </div>
 
-  <div class="screen hidden" id="screen2" aria-hidden="true">
-    <div class="wheel" id="wheelB" role="listbox" aria-label="Колесо действий">
+  <div class="screen hidden" id="screen2">
+    <div class="wheel" id="wheelB">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
   </div>
 
-  <div class="screen hidden" id="screen3" aria-hidden="true">
+  <div class="screen hidden" id="screen3">
     <div class="result-text" id="finalResult"></div>
+    <button id="repeatBtn">Повторить</button>
   </div>
 
-  <div class="hint" id="hint">Прокрути (или смахни) — сначала выбор места, потом действие</div>
+  <div class="hint" id="hint">Прокрути (или смахни), чтобы запустить</div>
 
   <script>
-    // --- настройки и запасные списки (если lists.json недоступен) ---
     const CLONE_FACTOR = 5;
-    const SPIN_DURATION_MS = 2500;
-    const WHEEL_SELECTOR = '.wheel';
-    const fallbackPlaces = [
-      "Кафе рядом", "Парк", "Кино", "Музей", "Книжное кафе", "Ресторан",
-      "Прогулка у реки", "Выставка", "Концерт", "Пикник"
-    ];
-    const fallbackActions = [
-      "Ужин", "Прогулка", "Посмотреть фильм", "Поболтать за кофе", "Играть в настольные",
-      "Фотосессия", "Катание на велах", "Посещение выставки", "Пение караоке"
-    ];
+    const SPIN_DURATION_MS = 1600; // быстрее крутится
+    const MIN_INTERACTION_GAP = 500;
 
-    // --- состояние ---
+    const fallbackPlaces = ["Кафе", "Парк", "Кино", "Музей", "Ресторан", "Пляж", "Пикник"];
+    const fallbackActions = ["Прогулка", "Ужин", "Кофе", "Фотосессия", "Фильм", "Пикник", "Разговор"];
+
     let places = [];
     let actions = [];
     let placeResult = '';
     let actionResult = '';
     let spinning = false;
-    let stage = 1; // 1 - места, 2 - действия, 3 - финал
+    let stage = 1;
     let lastInteractionTime = 0;
-    const MIN_INTERACTION_GAP = 500; // ms для предотвращения спама
+
     const WHEEL_A = document.getElementById('wheelList1');
     const WHEEL_B = document.getElementById('wheelList2');
-    const wheelContainerA = document.getElementById('wheelA');
-    const wheelContainerB = document.getElementById('wheelB');
     const screen1 = document.getElementById('screen1');
     const screen2 = document.getElementById('screen2');
     const screen3 = document.getElementById('screen3');
     const finalResult = document.getElementById('finalResult');
+    const repeatBtn = document.getElementById('repeatBtn');
 
-    // --- рендер с клонированием ---
+    function measureItemHeight(listEl) {
+      const first = listEl.querySelector('li');
+      return first ? first.getBoundingClientRect().height : 48;
+    }
+
+    function computeOffsetForIndex(index, itemHeight, wheelHeight) {
+      return (wheelHeight / 2) - (itemHeight / 2) - (index * itemHeight);
+    }
+
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
       const long = [];
       for (let i = 0; i < CLONE_FACTOR; i++) long.push(...items);
-      long.forEach((t) => {
+      long.forEach(text => {
         const li = document.createElement('li');
-        li.textContent = t;
+        li.textContent = text;
         listEl.appendChild(li);
       });
-      // убрать активный стиль у всех
-      listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-      // сразу поставить позицию так, чтобы средняя группа была видима (без анимации)
+
       requestAnimationFrame(() => {
         const itemH = measureItemHeight(listEl);
         const base = items.length * Math.floor(CLONE_FACTOR / 2);
         const offset = computeOffsetForIndex(base, itemH, listEl.parentElement.clientHeight);
         listEl.style.transition = 'none';
         listEl.style.transform = `translateY(${offset}px)`;
-        // небольшая задержка, чтобы transition возобновился корректно в будущем
-        setTimeout(() => listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`, 50);
+        setTimeout(() => listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`, 100);
       });
     }
 
-    function measureItemHeight(listEl) {
-      const first = listEl.querySelector('li');
-      if (!first) return 48;
-      return Math.round(first.getBoundingClientRect().height);
-    }
-
-    function computeOffsetForIndex(index, itemHeight, wheelHeight) {
-      // делаем так, чтобы центр элемента совпадал с центром колеса
-      return (wheelHeight / 2) - (itemHeight / 2) - (index * itemHeight);
-    }
-
-    // --- вращение ---
     function spinWheel(listEl, items, cb) {
-      if (spinning || !items || items.length === 0) return;
+      if (spinning || items.length === 0) return;
       spinning = true;
 
       const itemH = measureItemHeight(listEl);
@@ -227,61 +227,50 @@
 
       const offset = computeOffsetForIndex(targetIndex, itemH, wheelH);
 
-      // убрать старые active
       listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-      // анимация
-      // принудительно включаем transition (мог быть отключён)
       listEl.style.transition = `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`;
       listEl.style.transform = `translateY(${offset}px)`;
 
-      // по завершении анимации:
       setTimeout(() => {
         const active = listEl.children[targetIndex];
         if (active) active.classList.add('active');
         spinning = false;
-        if (typeof cb === 'function') cb(active ? active.textContent : items[randomIndex]);
-      }, SPIN_DURATION_MS + 30);
+        cb(active ? active.textContent : items[randomIndex]);
+      }, SPIN_DURATION_MS + 50);
     }
 
-    // --- загрузка списков (fetch с fallback) ---
     function loadLists() {
-      // сразу рендерим fallback, чтобы интерфейс мог реагировать
-      places = fallbackPlaces.slice();
-      actions = fallbackActions.slice();
+      places = fallbackPlaces;
+      actions = fallbackActions;
       renderWheel(WHEEL_A, places);
       renderWheel(WHEEL_B, actions);
 
-      fetch('lists.json').then(r => {
-        if (!r.ok) throw new Error('no json');
-        return r.json();
-      }).then(data => {
-        if (Array.isArray(data.places) && data.places.length) places = data.places;
-        if (Array.isArray(data.actions) && data.actions.length) actions = data.actions;
-        renderWheel(WHEEL_A, places);
-        renderWheel(WHEEL_B, actions);
-      }).catch(() => {
-        // оставляем fallback — уже отрисовано
-        // (можно логировать ошибку в devtools)
-        console.warn('lists.json не загружен — используются дефолтные списки');
-      });
+      fetch('lists.json')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          if (data.places?.length) places = data.places;
+          if (data.actions?.length) actions = data.actions;
+          renderWheel(WHEEL_A, places);
+          renderWheel(WHEEL_B, actions);
+        })
+        .catch(() => console.warn('⚠️ lists.json не найден — используются стандартные списки'));
     }
 
-    // --- логика триггера (wheel / touch / keys) ---
     function tryTriggerFromInput() {
       const now = Date.now();
       if (now - lastInteractionTime < MIN_INTERACTION_GAP) return;
       lastInteractionTime = now;
+      if (spinning) return;
 
       if (stage === 1) {
-        spinWheel(WHEEL_A, places, (res) => {
+        spinWheel(WHEEL_A, places, res => {
           placeResult = res;
           stage = 2;
-          // переключение экранов
           screen1.classList.add('hidden');
           screen2.classList.remove('hidden');
         });
       } else if (stage === 2) {
-        spinWheel(WHEEL_B, actions, (res) => {
+        spinWheel(WHEEL_B, actions, res => {
           actionResult = res;
           stage = 3;
           setTimeout(() => {
@@ -290,78 +279,44 @@
             screen3.classList.remove('hidden');
           }, 300);
         });
-      } else {
-        // рестарт
-        stage = 1;
-        screen3.classList.add('hidden');
-        screen1.classList.remove('hidden');
-        // реинициализируем позицию колес (необязательно)
-        renderWheel(WHEEL_A, places);
-        renderWheel(WHEEL_B, actions);
       }
     }
 
-    // wheel — десктоп / трекпад
-    let wheelAccum = 0; // аккумулируем слабые дельты от трекпада
-    window.addEventListener('wheel', (e) => {
-      // если списки не загружены — игнор
-      if (!places.length || !actions.length) return;
-      if (spinning) return;
+    repeatBtn.onclick = () => {
+      stage = 1;
+      screen3.classList.add('hidden');
+      screen1.classList.remove('hidden');
+      renderWheel(WHEEL_A, places);
+      renderWheel(WHEEL_B, actions);
+    };
 
-      // фильтр: игнорируем очень маленькие дельты
-      const delta = e.deltaY;
-      // аккумуляция для плавных трекпадов
-      wheelAccum += delta;
-
-      // порог — подстрой, если нужно
-      const THRESH = 30;
-      if (Math.abs(wheelAccum) >= THRESH) {
-        wheelAccum = 0;
+    // управление
+    window.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaY) > 30) {
+        e.preventDefault();
         tryTriggerFromInput();
       }
-
-      // предотвращаем стандартную прокрутку (у нас overflow:hidden, но на мобильном/браузерах безопасно)
-      if (e.cancelable) e.preventDefault();
     }, { passive: false });
 
-    // touch — мобильные устройства (свайп вверх/вниз)
     let touchStartY = null;
-    function onTouchStart(e) {
-      if (e.touches && e.touches[0]) touchStartY = e.touches[0].clientY;
-    }
-    function onTouchEnd(e) {
-      if (touchStartY === null) return;
-      const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : null;
-      if (endY === null) { touchStartY = null; return; }
-      const dy = touchStartY - endY; // положительный при свайпе вверх
+    window.addEventListener('touchstart', e => {
+      if (e.touches[0]) touchStartY = e.touches[0].clientY;
+    });
+    window.addEventListener('touchend', e => {
+      if (!touchStartY) return;
+      const dy = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(dy) > 30) tryTriggerFromInput();
       touchStartY = null;
-      const TH = 30; // порог в пикселях
-      if (Math.abs(dy) > TH) tryTriggerFromInput();
-    }
+    });
 
-    // поддержка клавиш (для удобства)
-    window.addEventListener('keydown', (e) => {
-      if (spinning) return;
-      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+    window.addEventListener('keydown', e => {
+      if (['Space', 'Enter', 'ArrowDown', 'ArrowUp'].includes(e.code)) {
         e.preventDefault();
         tryTriggerFromInput();
       }
     });
 
-    // привязка тача к каждому колесу (чтобы кастомный свайп на элементе работал)
-    wheelContainerA.addEventListener('touchstart', onTouchStart, { passive: true });
-    wheelContainerA.addEventListener('touchend', onTouchEnd, { passive: true });
-    wheelContainerB.addEventListener('touchstart', onTouchStart, { passive: true });
-    wheelContainerB.addEventListener('touchend', onTouchEnd, { passive: true });
-
-    // --- инициализация ---
     loadLists();
-
-    // (опционально) скрыть подсказку через некоторое время
-    setTimeout(() => {
-      const hint = document.getElementById('hint');
-      if (hint) hint.style.opacity = '0';
-    }, 4000);
   </script>
 </body>
 </html>
