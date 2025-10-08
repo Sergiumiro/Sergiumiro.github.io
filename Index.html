@@ -144,7 +144,10 @@
     <button id="restartBtn">Повторить</button>
   </div>
 
-  <script>
+  <script type="module">
+    import { setupShare } from './share.js'
+    
+    const share = setupShare('resultCanvas','shareBtn')
     const CLONE_FACTOR = 6;
     const DECELERATION = 0.97;
     const ACCELERATION = 1.05;
