@@ -142,9 +142,12 @@
   <div class="screen hidden" id="screen3">
     <div class="result-text" id="finalResult"></div>
     <button id="restartBtn">Повторить</button>
+    <button id="shareBtn">Поделиться</button> 
   </div>
 
-  <script>
+  <script type="module">
+    import {setupShare} from 'share.js';
+    
     const CLONE_FACTOR = 6;
     const DECELERATION = 0.97;
     const ACCELERATION = 1.05;
@@ -169,6 +172,8 @@
     const screen2 = document.getElementById('screen2');
     const screen3 = document.getElementById('screen3');
 
+    const share = setupShare('resultCanvas', 'shareBtn');
+    
     function renderWheel(listEl, items) {
       listEl.innerHTML = '';
       const long = [];
