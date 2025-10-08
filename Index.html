@@ -1,387 +1,167 @@
 <!doctype html>
+
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Telegram — Date Picker (iOS 2025 style)</title>
+  <title>Рулетка свидания</title>
   <style>
-    :root{
-      --bg-1: linear-gradient(180deg,#0f1723 0%, #0b1220 60%);
-      --card: rgba(255,255,255,0.06);
-      --glass: rgba(255,255,255,0.06);
-      --accent: rgba(255,255,255,0.06);
+    :root {
+      --bg: linear-gradient(180deg, #0f1723 0%, #0b1220 60%);
       --text: rgba(255,255,255,0.95);
       --muted: rgba(255,255,255,0.6);
-      --glass-border: rgba(255,255,255,0.08);
-      --radius: 18px;
-      --safe-pad: env(safe-area-inset-bottom,12px);
+      --border: rgba(255,255,255,0.08);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
     }
-    html,body{height:100%;margin:0;background:var(--bg-1);color:var(--text);-webkit-font-smoothing:antialiased;}
-    .app{max-width:540px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:18px;box-sizing:border-box}
-
-    header{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
-    .title{font-weight:600;font-size:18px}
-    #settingsBtn{background:transparent;border:0;color:var(--muted);font-size:22px;padding:8px;border-radius:12px}
-
-    main{flex:1;display:flex;flex-direction:column}
-    .screens{flex:1;display:flex;flex-direction:column;gap:14px}
-    .screen{flex:1;display:none;flex-direction:column;align-items:stretch;justify-content:center}
-    .screen.active{display:flex}
-    .screen-title{margin:0 0 8px 0;text-align:center;color:var(--muted);font-weight:600}
-
-    .wheel-wrapper{position:relative;width:100%;flex:0 0 340px;display:flex;align-items:center;justify-content:center}
-    .wheel{width:100%;height:260px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(10px);box-shadow:0 8px 30px rgba(2,6,23,0.6);overflow:hidden;scrollbar-width:none;-ms-overflow-style:none;touch-action:pan-y}
-    .wheel::-webkit-scrollbar{display:none}
-    .wheel-list{list-style:none;margin:0;padding:60px 0;width:100%}
-    .wheel-list li{height:52px;line-height:52px;padding:0 18px;box-sizing:border-box;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px}
-
-    /* center highlight */
-    .wheel-overlay{position:absolute;left:12px;right:12px;pointer-events:none;display:flex;align-items:center;justify-content:center;height:100%}
-    .wheel-overlay::before{content:'';position:absolute;left:0;right:0;height:66px;border-radius:12px;background:linear-gradient(0deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border:1px solid var(--glass-border);box-shadow:0 6px 20px rgba(2,6,23,0.6)}
-
-    .spin-btn{margin:10px auto 0 auto;padding:12px 22px;border-radius:14px;border:0;background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));color:var(--text);font-weight:700}
-
-    .bottom-nav{display:flex;gap:12px;justify-content:center;padding:10px 0}
-    .bottom-nav button{padding:12px 18px;border-radius:12px;border:0;background:rgba(255,255,255,0.03);color:var(--text)}
-
-    /* result */
-    .result-card{margin:16px auto;padding:18px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));width:100%;box-sizing:border-box;text-align:center}
-    .result-item{font-size:20px;font-weight:700;margin:6px 0}
-
-    /* modal settings */
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:50}
-    .modal.show{display:flex}
-    .modal .card{width:100%;max-width:520px;background:rgba(10,12,16,0.9);border-radius:16px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
-    .tabs{display:flex;gap:8px;margin-bottom:12px}
-    .tab{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid transparent;color:var(--muted)}
-    .tab.active{background:rgba(255,255,255,0.03);border-color:var(--glass-border);color:var(--text)}
-    .list-edit{max-height:260px;overflow:auto;padding:6px;border-radius:10px;background:rgba(255,255,255,0.02)}
-    .list-edit .row{display:flex;gap:8px;padding:8px 6px}
-    .list-edit input{flex:1;padding:8px;border-radius:10px;border:0;background:rgba(255,255,255,0.03);color:var(--text)}
-    .list-edit button{padding:8px 10px;border-radius:10px;border:0}
-    .modal .footer{display:flex;justify-content:space-between;margin-top:12px}
-
-    /* overlay during spin to block interactions */
-    #blockOverlay{position:fixed;inset:0;background:transparent;display:none;z-index:40}
-    #blockOverlay.show{display:block}
-
-    /* small screens adjustments */
-    @media (max-width:420px){.app{padding:12px}.wheel-wrapper{flex:0 0 300px}.wheel{height:240px}.wheel-list li{height:48px;line-height:48px;font-size:18px}.result-item{font-size:18px}}
+    html,body {
+      height:100%;margin:0;background:var(--bg);color:var(--text);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      -webkit-font-smoothing:antialiased;
+    }
+    .title {
+      position:fixed;top:16px;left:16px;font-weight:600;font-size:18px;
+    }
+    #settingsBtn {
+      position:fixed;top:12px;right:16px;background:transparent;border:0;color:var(--muted);font-size:22px;
+    }
+    .wheel-wrapper {
+      width:90%;max-width:400px;position:relative;
+    }
+    .wheel {
+      width:100%;height:260px;border-radius:16px;background:rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);box-shadow:0 8px 30px rgba(2,6,23,0.6);
+      overflow:hidden;scrollbar-width:none;-ms-overflow-style:none;touch-action:pan-y;
+    }
+    .wheel::-webkit-scrollbar {display:none}
+    .wheel-list {list-style:none;margin:0;padding:60px 0;width:100%}
+    .wheel-list li {
+      height:52px;line-height:52px;text-align:center;font-weight:600;white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis;font-size:20px;
+    }
+    .wheel-overlay {
+      position:absolute;left:12px;right:12px;pointer-events:none;display:flex;align-items:center;justify-content:center;height:100%;
+    }
+    .wheel-overlay::before {
+      content:'';position:absolute;left:0;right:0;height:66px;border-radius:12px;border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+    }
+    .spin-btn {
+      margin-top:20px;padding:12px 22px;border-radius:14px;border:0;background:rgba(255,255,255,0.06);
+      color:var(--text);font-weight:700;font-size:18px;
+    }
+    .modal {position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:50;}
+    .modal.show {display:flex;}
+    .modal .card {
+      width:100%;max-width:420px;background:rgba(10,12,16,0.9);border-radius:16px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6);
+    }
+    .list-edit {max-height:260px;overflow:auto;padding:6px;border-radius:10px;background:rgba(255,255,255,0.02)}
+    .row {display:flex;gap:8px;padding:6px}
+    .row input {flex:1;padding:8px;border-radius:10px;border:0;background:rgba(255,255,255,0.05);color:var(--text)}
+    .row button {padding:8px 10px;border-radius:10px;border:0}
+    #addItemBtn {margin-top:8px;width:100%;padding:10px;border-radius:10px;border:0;background:rgba(255,255,255,0.06);color:var(--text)}
   </style>
 </head>
 <body>
-  <div class="app" role="application">
-    <header>
-      <div class="title">Telegram — Свидание</div>
-      <button id="settingsBtn" aria-label="Открыть настройки">⚙️</button>
-    </header>
-
-    <main>
-      <div class="screens">
-        <section id="screen1" class="screen active" data-screen="1">
-          <h3 class="screen-title">Выберите место</h3>
-          <div class="wheel-wrapper">
-            <div id="wheel-places" class="wheel" data-kind="places" aria-label="Колёсико выбора места" tabindex="0">
-              <ul class="wheel-list"></ul>
-            </div>
-            <div class="wheel-overlay"></div>
-          </div>
-          <button class="spin-btn" data-wheel="places">Крутить</button>
-        </section>
-
-        <section id="screen2" class="screen" data-screen="2">
-          <h3 class="screen-title">Выберите действие</h3>
-          <div class="wheel-wrapper">
-            <div id="wheel-actions" class="wheel" data-kind="actions" aria-label="Колёсико выбора действия" tabindex="0">
-              <ul class="wheel-list"></ul>
-            </div>
-            <div class="wheel-overlay"></div>
-          </div>
-          <button class="spin-btn" data-wheel="actions">Крутить</button>
-        </section>
-
-        <section id="screen3" class="screen" data-screen="3">
-          <h3 class="screen-title">Результат</h3>
-          <div class="result-card" id="resultCard">
-            <div class="result-item" id="resultPlace">—</div>
-            <div class="result-item" id="resultAction">—</div>
-          </div>
-          <div style="display:flex;gap:12px;justify-content:center;margin-top:10px">
-            <button id="restartBtn">Ещё раз</button>
-            <button id="editBtn">Изменить списки</button>
-          </div>
-        </section>
-      </div>
-
-      <nav class="bottom-nav">
-        <button id="prevBtn">Назад</button>
-        <button id="nextBtn">Далее</button>
-      </nav>
-    </main>
-
-    <!-- settings modal -->
-    <div class="modal" id="settingsModal" aria-hidden="true">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <strong>Настройки списков</strong>
-          <button id="closeSettings">✕</button>
-        </div>
-        <div class="tabs" role="tablist">
-          <button class="tab active" data-tab="places">Места</button>
-          <button class="tab" data-tab="actions">Действия</button>
-        </div>
-        <div class="list-edit" id="editorList"></div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input id="newItemInput" placeholder="Новый элемент" />
-          <button id="addItemBtn">Добавить</button>
-        </div>
-        <div class="footer">
-          <div style="color:var(--muted)">Изменения сохраняются локально</div>
-          <div>
-            <button id="resetBtn">Сбросить</button>
-          </div>
-        </div>
-      </div>
+  <div class="title">Рулетка свидания</div>
+  <button id="settingsBtn">⚙️</button>  <div class="wheel-wrapper">
+    <div id="wheel" class="wheel" tabindex="0">
+      <ul class="wheel-list"></ul>
     </div>
-
-    <div id="blockOverlay"></div>
+    <div class="wheel-overlay"></div>
   </div>
+  <button class="spin-btn">Крутить</button>  <div class="modal" id="settingsModal">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong>Настройки списка</strong>
+        <button id="closeSettings">✕</button>
+      </div>
+      <div class="list-edit" id="editorList"></div>
+      <input id="newItemInput" placeholder="Новый элемент" />
+      <button id="addItemBtn">Добавить</button>
+    </div>
+  </div>  <script>
+  const DEFAULT_ITEMS = ["Кафе у реки","Городской парк","Кинотеатр","Ресторан","Крыша с видом","Музей","Прогулка по набережной","Пикник"];
+  const STORAGE_KEY = 'date_picker_items_v1';
 
-  <script>
-  // JS: минималистичный wheel picker + настройки
-  (function(){
-    // -- данные по умолчанию --
-    const DEFAULTS = {
-      places: ["Кафе у реки","Городской парк","Кинотеатр","Ресторан","Крыша с видом","Музей","Прогулка по набережной","Пикник"],
-      actions: ["Ужин","Прогулка","Кофе","Кино","Поездка","Сюрприз","Игры в кафе","Посещение выставки"]
-    };
+  function loadItems(){
+    try{const raw=localStorage.getItem(STORAGE_KEY);if(raw) return JSON.parse(raw);}catch(e){}
+    return [...DEFAULT_ITEMS];
+  }
+  function saveItems(list){localStorage.setItem(STORAGE_KEY, JSON.stringify(list));}
 
-    // локальное хранилище
-    const STORAGE_KEY = 'tg_date_picker_lists_v1';
-    function loadLists(){
-      try{const raw=localStorage.getItem(STORAGE_KEY);if(raw) return JSON.parse(raw);}catch(e){}
-      return JSON.parse(JSON.stringify(DEFAULTS));
-    }
-    function saveLists(obj){localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));}
+  let items = loadItems();
+  const wheel = document.getElementById('wheel');
+  const listEl = wheel.querySelector('.wheel-list');
+  const spinBtn = document.querySelector('.spin-btn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeSettings = document.getElementById('closeSettings');
+  const editorList = document.getElementById('editorList');
+  const newItemInput = document.getElementById('newItemInput');
+  const addItemBtn = document.getElementById('addItemBtn');
 
-    let lists = loadLists();
+  let spinning = false;
+  let wakeLock = null;
 
-    // элементы
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsModal = document.getElementById('settingsModal');
-    const closeSettings = document.getElementById('closeSettings');
-    const tabs = document.querySelectorAll('.tab');
-    const editorList = document.getElementById('editorList');
-    const newItemInput = document.getElementById('newItemInput');
-    const addItemBtn = document.getElementById('addItemBtn');
-    const resetBtn = document.getElementById('resetBtn');
+  function renderWheel(){
+    listEl.innerHTML='';
+    const full = [...items, ...items, ...items];
+    full.forEach(it=>{const li=document.createElement('li');li.textContent=it;listEl.appendChild(li);});
+    const first=listEl.querySelector('li');
+    if(first){const h=first.getBoundingClientRect().height;const top=(wheel.clientHeight-h)/2;wheel.scrollTop=items.length*h-top;}
+  }
 
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const editBtn = document.getElementById('editBtn');
+  async function startSpin(){
+    if(spinning||items.length===0)return;
+    spinning=true;
+    await requestWakeLock();
+    const h=listEl.querySelector('li').getBoundingClientRect().height;
+    const top=(wheel.clientHeight-h)/2;
+    const current=wheel.scrollTop;
+    const rand=Math.floor(Math.random()*items.length);
+    const spins=3+Math.floor(Math.random()*3);
+    const targetIndex=items.length*(1+spins)+rand;
+    const target=targetIndex*h-top;
+    const dur=2000;
+    await animateScroll(wheel,current,target,dur);
+    wheel.scrollTop=items.length*h+rand*h-top;
+    spinning=false;
+    releaseWakeLock();
+  }
 
-    const blockOverlay = document.getElementById('blockOverlay');
-
-    // wheels map
-    const wheels = {
-      places: createWheel(document.getElementById('wheel-places'),'places'),
-      actions: createWheel(document.getElementById('wheel-actions'),'actions')
-    };
-
-    // result fields
-    const resultPlace = document.getElementById('resultPlace');
-    const resultAction = document.getElementById('resultAction');
-
-    // navigation
-    let currentScreen = 1; // 1..3
-    function showScreen(n){
-      document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', Number(s.dataset.screen)===n));
-      currentScreen = n; updateNav();
-    }
-    function updateNav(){
-      prevBtn.disabled = currentScreen===1;
-      nextBtn.disabled = currentScreen===3 || isSpinning();
-    }
-    prevBtn.addEventListener('click', ()=>{ if(isSpinning()) return; showScreen(Math.max(1,currentScreen-1)); });
-    nextBtn.addEventListener('click', ()=>{ if(isSpinning()) return; if(currentScreen===1) showScreen(2); else if(currentScreen===2){ showResult(); showScreen(3);} });
-    restartBtn.addEventListener('click', ()=>{ showScreen(1); });
-    editBtn.addEventListener('click', ()=>{ openSettings('places'); });
-
-    // settings
-    settingsBtn.addEventListener('click', ()=>openSettings('places'));
-    closeSettings.addEventListener('click', closeSettingsModal);
-    tabs.forEach(t=>t.addEventListener('click', ()=>{tabs.forEach(x=>x.classList.remove('active'));t.classList.add('active'); renderEditor(t.dataset.tab);}));
-    addItemBtn.addEventListener('click', ()=>{ const val=newItemInput.value.trim(); if(!val) return; const tab=document.querySelector('.tab.active').dataset.tab; lists[tab].push(val); saveLists(lists); renderEditor(tab); renderWheel(tab); newItemInput.value='';});
-    resetBtn.addEventListener('click', ()=>{if(confirm('Сбросить списки к значениям по умолчанию?')){lists = JSON.parse(JSON.stringify(DEFAULTS)); saveLists(lists); renderEditor(document.querySelector('.tab.active').dataset.tab); renderWheel('places'); renderWheel('actions');}});
-
-    function openSettings(tab){settingsModal.classList.add('show');settingsModal.setAttribute('aria-hidden','false'); document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab)); renderEditor(tab);}
-    function closeSettingsModal(){settingsModal.classList.remove('show');settingsModal.setAttribute('aria-hidden','true');}
-
-    function renderEditor(kind){ editorList.innerHTML=''; lists[kind].forEach((it,idx)=>{
-      const row = document.createElement('div'); row.className='row';
-      const input = document.createElement('input'); input.value=it; input.addEventListener('change', ()=>{lists[kind][idx]=input.value; saveLists(lists); renderWheel(kind);});
-      const del = document.createElement('button'); del.textContent='✕'; del.addEventListener('click', ()=>{lists[kind].splice(idx,1); saveLists(lists); renderEditor(kind); renderWheel(kind);});
-      row.appendChild(input); row.appendChild(del); editorList.appendChild(row);
-    });
-    }
-
-    // --- wheel implementation ---
-    // create wheel object for element
-    function createWheel(el, kind){
-      const obj = {el,kind,items:[],listEl:el.querySelector('.wheel-list'),itemHeight:52,selectedIndex:null,spinning:false,wakeLock:null};
-      renderWheel(kind);
-      // center initial scroll to middle copy
-      setTimeout(()=>normalizeScroll(obj),100);
-
-      // pointer handling to trigger spin on release
-      let pointer = {down:false, startY:0, lastY:0, lastT:0, moved:false};
-      el.addEventListener('pointerdown', (e)=>{ if(isSpinning()) return; pointer.down=true; pointer.startY=e.clientY; pointer.lastY=e.clientY; pointer.lastT=performance.now(); el.setPointerCapture(e.pointerId);});
-      el.addEventListener('pointermove', (e)=>{ if(!pointer.down) return; pointer.moved=true; pointer.lastY=e.clientY; pointer.lastT=performance.now(); });
-      el.addEventListener('pointerup', (e)=>{ if(!pointer.down) return; pointer.down=false; el.releasePointerCapture(e.pointerId); // start spin on any release
-        if(!isSpinning()) startSpin(kind);
-      });
-
-      // also spin on wheel scroll end (debounced)
-      let scrollTO=null;
-      el.addEventListener('scroll', ()=>{ if(scrollTO) clearTimeout(scrollTO); scrollTO=setTimeout(()=>{ if(!isSpinning()) startSpin(kind); }, 350); });
-
-      // spin button
-      document.querySelectorAll('.spin-btn').forEach(b=>{ if(b.dataset.wheel===kind) b.addEventListener('click', ()=>{ if(!isSpinning()) startSpin(kind); }); });
-
-      return obj;
-    }
-
-    function renderWheel(kind){
-      const obj = wheels[kind];
-      obj.items = lists[kind].slice();
-      const list = obj.listEl; list.innerHTML='';
-      // create triple list for "infinite" feel
-      const full = [...obj.items, ...obj.items, ...obj.items];
-      full.forEach(it=>{ const li = document.createElement('li'); li.textContent = it; list.appendChild(li); });
-      // measure item height
-      requestAnimationFrame(()=>{
-        const first = list.querySelector('li'); if(first){ obj.itemHeight = first.getBoundingClientRect().height; }
-        // position in the middle block
-        const wheelEl = obj.el;
-        const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
-        wheelEl.scrollTop = obj.items.length * obj.itemHeight - topOffset;
-        // fit fonts (уменьшать шрифт если текста много)
-        fitTextInItems(list, wheelEl.clientWidth - 40);
-      });
-    }
-
-    function renderWheelIfExists(kind){ if(wheels[kind]) renderWheel(kind); }
-
-    // fit text to width
-    function fitTextInItems(list, maxWidth){ const lis = list.querySelectorAll('li'); lis.forEach(li=>{
-        li.style.fontSize='20px'; // base
-        requestAnimationFrame(()=>{
-          const allowed = maxWidth - 40; // padding
-          if(li.scrollWidth > allowed){ const base=20; const ratio = allowed / li.scrollWidth; const newSize = Math.max(12, Math.floor(base * ratio)); li.style.fontSize = newSize + 'px'; }
-        });
-      }); }
-
-    // ensure scroll is centered to middle copy region if it strays
-    function normalizeScroll(obj){ const wheelEl = obj.el; const totalItems = obj.items.length * 3; const block = obj.items.length; const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
-      // keep scrollTop in middle third
-      const sc = wheelEl.scrollTop + topOffset; const index = Math.round(sc / obj.itemHeight);
-      if(index < block || index >= block*2){ // move to middle equivalent
-        const newIndex = block + (index % block + block) % block;
-        wheelEl.scrollTop = newIndex * obj.itemHeight - topOffset;
+  function animateScroll(container,from,to,duration){
+    return new Promise(resolve=>{
+      const start=performance.now();
+      function step(now){
+        const t=Math.min(1,(now-start)/duration);
+        const ease=1-Math.pow(1-t,3);
+        container.scrollTop=from+(to-from)*ease;
+        if(t<1)requestAnimationFrame(step);else resolve();
       }
-    }
-
-    // spinning flag
-    function isSpinning(){ return Object.values(wheels).some(w=>w.spinning); }
-
-    // perform spin
-    async function startSpin(kind){
-      const obj = wheels[kind];
-      if(!obj || obj.spinning) return;
-      if(obj.items.length===0) return;
-      obj.spinning = true; blockUI(true);
-      try{ await requestWakeLock(obj); }catch(e){ /* ignore */ }
-
-      // choose random index
-      const rand = Math.floor(Math.random()*obj.items.length);
-      // compute animation
-      const wheelEl = obj.el; const topOffset = (wheelEl.clientHeight - obj.itemHeight)/2;
-      const current = wheelEl.scrollTop;
-      const spins = 3 + Math.floor(Math.random()*4);
-      const targetIndex = obj.items.length * (1 + spins) + rand; // land in middle-block plus spins
-      const target = targetIndex * obj.itemHeight - topOffset;
-      const distance = target - current;
-      // duration depending on distance
-      const duration = 1800 + Math.min(2200, Math.abs(distance)/obj.itemHeight*120);
-
-      await animateScroll(wheelEl, current, target, duration);
-      // normalize to middle copy
-      wheelEl.scrollTop = obj.items.length * obj.itemHeight + rand * obj.itemHeight - topOffset;
-      obj.selectedIndex = rand;
-      obj.spinning = false; releaseWakeLock(obj);
-      blockUI(false);
-      // save selection
-      // trigger result combine or enable next
-      updateNav();
-    }
-
-    // animate scroll top with easing
-    function animateScroll(container, from, to, duration){
-      return new Promise(resolve=>{
-        const start = performance.now();
-        function tick(now){
-          const t = Math.min(1,(now-start)/duration);
-          // easeOutCubic
-          const eased = 1 - Math.pow(1-t,3);
-          container.scrollTop = from + (to-from) * eased;
-          if(t < 1) requestAnimationFrame(tick); else resolve();
-        }
-        requestAnimationFrame(tick);
-      });
-    }
-
-    // block UI while spinning and prevent minimizing actions
-    function blockUI(on){ if(on){ blockOverlay.classList.add('show'); document.body.style.pointerEvents='none'; blockOverlay.style.pointerEvents='auto'; } else { blockOverlay.classList.remove('show'); document.body.style.pointerEvents='auto'; blockOverlay.style.pointerEvents='none'; }}
-
-    // Wake lock (to prevent screen sleeping while spinning) - best-effort. Requires https and browser support.
-    async function requestWakeLock(obj){ if('wakeLock' in navigator){ try{ obj.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){ console.warn('WakeLock failed',e); }} }
-    function releaseWakeLock(obj){ try{ if(obj.wakeLock && obj.wakeLock.release) obj.wakeLock.release(); obj.wakeLock=null; }catch(e){}
-    }
-
-    // show result when on screen2 -> next
-    function showResult(){ const p = wheels.places.selectedIndex!=null ? lists.places[wheels.places.selectedIndex] : '—'; const a = wheels.actions.selectedIndex!=null ? lists.actions[wheels.actions.selectedIndex] : '—'; resultPlace.textContent = p; resultAction.textContent = a; }
-
-    // initialize nav state
-    updateNav();
-
-    // render initial selections
-    function renderWheel(kind){ renderWheelIfExists(kind); }
-
-    // ensure wheels re-render after settings changes
-    window.addEventListener('storage', ()=>{ lists = loadLists(); renderWheel('places'); renderWheel('actions'); });
-
-    // sync local lists into wheels at start
-    renderWheel('places'); renderWheel('actions');
-
-    // helpful: click outside modal to close
-    settingsModal.addEventListener('click', (e)=>{ if(e.target===settingsModal) closeSettingsModal(); });
-
-    // prevent leaving while spinning (best-effort by disabling navigation/back keys)
-    window.addEventListener('beforeunload', (e)=>{ if(isSpinning()){ e.preventDefault(); e.returnValue='Подождите, пока не завершится раскрутка.'; return e.returnValue; } });
-
-    // simple keyboard support
-    document.addEventListener('keydown', (e)=>{
-      if(e.key==='ArrowLeft') prevBtn.click();
-      if(e.key==='ArrowRight') nextBtn.click();
-      if(e.key==='Escape') closeSettingsModal();
+      requestAnimationFrame(step);
     });
+  }
 
-    // ensure when wheel scroll ends we normalize after some time
-    setInterval(()=>{ Object.values(wheels).forEach(w=>{ if(!w.spinning) normalizeScroll(w); }); }, 800);
+  async function requestWakeLock(){if('wakeLock' in navigator){try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}}}
+  function releaseWakeLock(){if(wakeLock){try{wakeLock.release();}catch(e){}wakeLock=null;}}
 
-  })();
-  </script>
-</body>
+  function renderEditor(){
+    editorList.innerHTML='';
+    items.forEach((it,idx)=>{
+      const row=document.createElement('div');row.className='row';
+      const input=document.createElement('input');input.value=it;input.onchange=()=>{items[idx]=input.value;saveItems(items);renderWheel();};
+      const del=document.createElement('button');del.textContent='✕';del.onclick=()=>{items.splice(idx,1);saveItems(items);renderEditor();renderWheel();};
+      row.append(input,del);editorList.append(row);
+    });
+  }
+
+  addItemBtn.onclick=()=>{const val=newItemInput.value.trim();if(!val)return;items.push(val);saveItems(items);newItemInput.value='';renderEditor();renderWheel();};
+
+  settingsBtn.onclick=()=>{settingsModal.classList.add('show');renderEditor();};
+  closeSettings.onclick=()=>settingsModal.classList.remove('show');
+
+  spinBtn.onclick=()=>{if(!spinning)startSpin();};
+
+  renderWheel();
+  </script></body>
 </html>
