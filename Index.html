@@ -31,12 +31,6 @@
       transform: translateY(50px);
     }
 
-    h1 {
-      margin-bottom: 20px;
-      font-size: 28px;
-      text-align: center;
-    }
-
     /* колесо */
     .wheel {
       position: relative;
@@ -89,27 +83,27 @@
       opacity: 1;
       color: #ff6;
       transform: scale(1.15);
-      text-shadow: 0 0 8px rgba(255,255,100,0.6);
+      text-shadow: 0 0 12px rgba(255,255,100,0.8);
+      position: relative;
     }
 
-    button {
-      margin-top: 18px;
-      padding: 12px 24px;
-      font-size: 18px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
+    /* блеск */
+    .wheel-list li.active::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
+      transform: translateX(-100%);
+      animation: shine 1.2s ease-in-out forwards;
     }
 
-    .spin-btn {
-      background: linear-gradient(135deg, #ff6, #f90);
-      color: #000;
-      font-weight: bold;
-    }
-
-    .back-btn {
-      background: #444;
-      color: #fff;
+    @keyframes shine {
+      0% { transform: translateX(-100%); opacity: 0; }
+      30% { opacity: 1; }
+      100% { transform: translateX(100%); opacity: 0; }
     }
 
     .result-text {
@@ -125,27 +119,21 @@
 <body>
   <!-- экран 1 -->
   <div class="screen" id="screen1">
-    <h1>Выбираем место свидания</h1>
     <div class="wheel">
       <ul class="wheel-list" id="wheelList1"></ul>
     </div>
-    <button class="spin-btn" id="spinBtn1">Старт</button>
   </div>
 
   <!-- экран 2 -->
   <div class="screen hidden" id="screen2">
-    <h1>Теперь выберем действие</h1>
     <div class="wheel">
       <ul class="wheel-list" id="wheelList2"></ul>
     </div>
-    <button class="spin-btn" id="spinBtn2">Крутить</button>
   </div>
 
   <!-- экран 3 -->
   <div class="screen hidden" id="screen3">
-    <h1>Ваше свидание готово!</h1>
     <div class="result-text" id="finalResult"></div>
-    <button class="back-btn" id="restartBtn">Сыграть снова</button>
   </div>
 
   <script>
@@ -158,13 +146,11 @@
     let placeResult = '';
     let actionResult = '';
     let spinning = false;
+    let stage = 1;
 
     const wheelList1 = document.getElementById('wheelList1');
     const wheelList2 = document.getElementById('wheelList2');
-    const spinBtn1 = document.getElementById('spinBtn1');
-    const spinBtn2 = document.getElementById('spinBtn2');
     const finalResult = document.getElementById('finalResult');
-    const restartBtn = document.getElementById('restartBtn');
 
     const screen1 = document.getElementById('screen1');
     const screen2 = document.getElementById('screen2');
@@ -193,8 +179,8 @@
       const base = Math.floor(items.length * (CLONE_FACTOR / 2));
       const targetIndex = base + randomIndex;
 
-      // корректировка, чтобы активный элемент точно оказался между линиями
-      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2));
+      // идеально по центру между линиями
+      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2 - ITEM_HEIGHT / 2));
 
       listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
       listEl.style.transition = 'transform 2.5s cubic-bezier(0.22,1,0.36,1)';
@@ -220,31 +206,37 @@
         renderWheel(wheelList2, actions);
       });
 
-    spinBtn1.onclick = () => {
-      spinWheel(wheelList1, places, (res) => {
-        placeResult = res;
-        setTimeout(() => {
-          screen1.classList.add('hidden');
-          screen2.classList.remove('hidden');
-        }, 1000);
-      });
-    };
+    // управление скроллом
+    window.addEventListener('wheel', (e) => {
+      if (spinning) return;
+      e.preventDefault();
 
-    spinBtn2.onclick = () => {
-      spinWheel(wheelList2, actions, (res) => {
-        actionResult = res;
-        setTimeout(() => {
-          finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
-          screen2.classList.add('hidden');
-          screen3.classList.remove('hidden');
-        }, 1000);
-      });
-    };
-
-    restartBtn.onclick = () => {
-      screen3.classList.add('hidden');
-      screen1.classList.remove('hidden');
-    };
+      if (stage === 1) {
+        spinWheel(wheelList1, places, (res) => {
+          placeResult = res;
+          stage = 2;
+          setTimeout(() => {
+            screen1.classList.add('hidden');
+            screen2.classList.remove('hidden');
+          }, 1000);
+        });
+      } else if (stage === 2) {
+        spinWheel(wheelList2, actions, (res) => {
+          actionResult = res;
+          stage = 3;
+          setTimeout(() => {
+            finalResult.textContent = `Место: ${placeResult}\nДействие: ${actionResult}`;
+            screen2.classList.add('hidden');
+            screen3.classList.remove('hidden');
+          }, 1000);
+        });
+      } else if (stage === 3) {
+        // сброс
+        stage = 1;
+        screen3.classList.add('hidden');
+        screen1.classList.remove('hidden');
+      }
+    }, { passive: false });
   </script>
 </body>
 </html>
