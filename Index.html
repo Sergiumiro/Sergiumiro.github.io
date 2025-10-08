@@ -46,6 +46,7 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.06);
     }
 
+    /* линии выбора */
     .wheel::before,
     .wheel::after {
       content: "";
@@ -110,6 +111,7 @@
 
     button:hover { transform: scale(1.05); filter: brightness(1.1); }
 
+    /* 🔥 эффект накаливания при удержании */
     button.glow {
       background: linear-gradient(135deg, #ffd700, #ff8000);
       box-shadow: 0 0 30px rgba(255, 180, 0, 0.9);
@@ -240,7 +242,8 @@
           listEl.querySelectorAll('li').forEach(li => li.classList.remove('final'));
           if (centerEl) {
             centerEl.classList.add('final');
-            cb(centerEl.textContent);
+            // задержка 1 сек перед переходом
+            setTimeout(() => cb(centerEl.textContent), 1000);
           }
         }
       }
@@ -256,9 +259,7 @@
           renderWheel(wheelList1, places);
           renderWheel(wheelList2, actions);
         })
-        .catch(err => {
-          console.error('Ошибка загрузки lists.json:', err);
-        });
+        .catch(err => console.error('Ошибка загрузки lists.json:', err));
     }
 
     function setupSpin(button, listEl, itemsGetter, nextScreenFn) {
@@ -268,7 +269,6 @@
       button.addEventListener('mousedown', start);
       button.addEventListener('mouseup', stop);
       button.addEventListener('mouseleave', stop);
-
       button.addEventListener('touchstart', e => { e.preventDefault(); start(); }, { passive: false });
       button.addEventListener('touchend', e => { e.preventDefault(); stop(); }, { passive: false });
     }
