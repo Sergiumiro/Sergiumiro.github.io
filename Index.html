@@ -28,16 +28,27 @@
       position: relative;
       width: 100%;
       max-width: 420px;
-      height: 240px;
+      height: 180px; /* фиксированная высота под 3–5 строк */
       overflow: hidden;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       border: 2px solid #333;
       border-radius: 16px;
       box-shadow: 0 0 20px rgba(255,255,255,0.1);
       background: rgba(20,20,20,0.6);
+    }
+
+    .wheel::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #ff6;
+      box-shadow: 0 0 10px rgba(255,255,100,0.8);
+      transform: translateY(-50%);
     }
 
     .wheel-list {
@@ -60,8 +71,8 @@
     .wheel-list li.active {
       font-size: 26px;
       opacity: 1;
-      transform: scale(1.15);
       color: #ff6;
+      transform: scale(1.15);
       text-shadow: 0 0 8px rgba(255,255,100,0.6);
     }
 
@@ -114,10 +125,6 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.1);
     }
 
-    .card strong {
-      font-size: 18px;
-    }
-
     input, button {
       background: #222;
       color: #fff;
@@ -125,10 +132,6 @@
       border-radius: 8px;
       padding: 10px;
       font-size: 15px;
-    }
-
-    input {
-      flex: 1;
     }
 
     .editor-row {
@@ -142,12 +145,6 @@
       width: 40px;
       cursor: pointer;
     }
-
-    #addItem {
-      margin-top: 10px;
-      background: #444;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -155,7 +152,7 @@
 
   <button class="settings-btn" id="settingsBtn">⚙️</button>
 
-  <div class="wheel" id="wheel">
+  <div class="wheel">
     <ul class="wheel-list" id="wheelList"></ul>
   </div>
 
@@ -183,11 +180,15 @@
     const newItemInput = document.getElementById('newItem');
     const addItemBtn = document.getElementById('addItem');
 
-    const STORAGE_KEY = 'date_items_v2';
+    const STORAGE_KEY = 'date_items_v3';
     let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
       'Кафе у реки', 'Парк', 'Кинотеатр', 'Ресторан', 'Крыша с видом', 'Пикник'
     ];
     let spinning = false;
+
+    const ITEM_HEIGHT = 48; // высота одного li
+    const WHEEL_HEIGHT = 180; 
+    const CENTER_OFFSET = Math.floor(WHEEL_HEIGHT / ITEM_HEIGHT / 2); // центр списка
 
     function saveItems() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -195,18 +196,34 @@
 
     function renderWheel() {
       wheelList.innerHTML = '';
+      // добавляем пустые сверху для центрирования
+      for (let i = 0; i < CENTER_OFFSET; i++) {
+        const empty = document.createElement('li');
+        empty.textContent = '';
+        wheelList.appendChild(empty);
+      }
+
       items.forEach((text) => {
         const li = document.createElement('li');
         li.textContent = text;
         wheelList.appendChild(li);
       });
+
+      // пустые снизу
+      for (let i = 0; i < CENTER_OFFSET; i++) {
+        const empty = document.createElement('li');
+        empty.textContent = '';
+        wheelList.appendChild(empty);
+      }
     }
 
     function spinWheel() {
       if (spinning || items.length === 0) return;
       spinning = true;
       const randomIndex = Math.floor(Math.random() * items.length);
-      const offset = -(randomIndex * 48); // расстояние между элементами
+      const targetIndex = randomIndex + CENTER_OFFSET; 
+      const offset = -(targetIndex * ITEM_HEIGHT - (WHEEL_HEIGHT / 2 - ITEM_HEIGHT / 2));
+
       document.querySelectorAll('.wheel-list li').forEach(li => li.classList.remove('active'));
 
       wheelList.style.transition = 'transform 2.5s cubic-bezier(0.22, 1, 0.36, 1)';
@@ -214,7 +231,7 @@
 
       setTimeout(() => {
         spinning = false;
-        const active = wheelList.children[randomIndex];
+        const active = wheelList.children[targetIndex];
         if (active) active.classList.add('active');
         saveItems();
       }, 2500);
@@ -250,16 +267,8 @@
     }
 
     spinBtn.onclick = () => spinWheel();
-
-    settingsBtn.onclick = () => {
-      modal.classList.add('show');
-      renderEditor();
-    };
-
-    closeSettings.onclick = () => {
-      modal.classList.remove('show');
-    };
-
+    settingsBtn.onclick = () => { modal.classList.add('show'); renderEditor(); };
+    closeSettings.onclick = () => { modal.classList.remove('show'); };
     addItemBtn.onclick = () => {
       const val = newItemInput.value.trim();
       if (!val) return;
