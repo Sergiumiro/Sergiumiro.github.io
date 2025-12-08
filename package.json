@@ -1,0 +1,24 @@
+{
+  "name": "comic-con-festival-map",
+  "version": "1.0.0",
+  "description": "Telegram Mini App for COMIC-CON Festival with interactive map and event listings",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "leaflet",
+    "festival",
+    "comic-con",
+    "events",
+    "map"
+  ],
+  "author": "Festival Organizer",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMIC-CON Фестиваль</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .events-list {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .events-header {
+            padding: 10px;
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+
+        .event-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .event-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .event-item.current {
+            background-color: #ff4444 !important;
+            color: white;
+            font-weight: bold;
+        }
+
+        .event-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .event-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .event-hall {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .info-panel.active {
+            display: block;
+        }
+
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .info-content {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .error {
+            padding: 20px;
+            text-align: center;
+            color: #e74c3c;
+        }
+
+        .mobile-layout {
+            flex-direction: column;
+        }
+
+        .mobile-events {
+            height: 50vh;
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .mobile-map {
+            height: 50vh;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .events-list {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            .map-container {
+                height: 50vh;
+            }
+        }
+
+        .pulse-marker {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>COMIC-CON Фестиваль</h1>
+        </div>
+        
+        <div class="app-container" id="appContainer">
+            <div class="events-list" id="eventsList">
+                <div class="events-header">Ближайшие события</div>
+                <div class="loading" id="loading">Загрузка событий...</div>
+                <div id="eventsContainer" style="display: none;"></div>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="info-panel" id="infoPanel">
+                    <div class="info-title" id="infoTitle"></div>
+                    <div class="info-content" id="infoContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src="app.js"></script>
+    <script src="map.js"></script>
+    <script src="share.js"></script>
+</body>
+</html>

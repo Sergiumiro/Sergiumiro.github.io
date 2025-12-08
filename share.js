@@ -1,45 +1,71 @@
-// share.js
-export function setupShare(canvasId, shareBtnId) {
-  const canvas = document.getElementById(canvasId);
-  const shareBtn = document.getElementById(shareBtnId);
-  const ctx = canvas.getContext('2d');
-
-  // Функция генерации картинки с результатом
-  function drawResult(place, action) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // фон
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#111');
-    gradient.addColorStop(1, '#222');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // текст заголовок
-    ctx.fillStyle = '#ffd';
-    ctx.textAlign = 'center';
-    ctx.font = '24px sans-serif';
-    ctx.fillText('Ваше свидание готово!', canvas.width / 2, 60);
-
-    // текст результат
-    ctx.font = '28px sans-serif';
-    ctx.fillText(`Место: ${place}`, canvas.width / 2, 150);
-    ctx.fillText(`Действие: ${action}`, canvas.width / 2, 200);
-  }
-
-  // Обновление картинки при выборе результата
-  function showResult(place, action) {
-    drawResult(place, action);
-  }
-
-  // Кнопка "Поделиться в Telegram"
-  shareBtn.onclick = () => {
-    canvas.toBlob(blob => {
-      const fileUrl = URL.createObjectURL(blob);
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(fileUrl)}&text=Смотри моё свидание!`;
-      window.open(tgUrl, '_blank');
-    });
-  };
-
-  return { showResult };
+// Sharing functionality for the Telegram Mini App
+function initializeSharing() {
+    // Check if we're in Telegram Web App
+    if (window.Telegram && window.Telegram.WebApp) {
+        const webApp = window.Telegram.WebApp;
+        
+        // Enable the share button if available
+        if (webApp.share) {
+            // Create share button in header
+            const header = document.querySelector('.header');
+            const shareButton = document.createElement('button');
+            shareButton.textContent = 'Поделиться';
+            shareButton.style.float = 'right';
+            shareButton.style.background = '#3498db';
+            shareButton.style.color = 'white';
+            shareButton.style.border = 'none';
+            shareButton.style.padding = '5px 10px';
+            shareButton.style.borderRadius = '4px';
+            shareButton.style.cursor = 'pointer';
+            
+            shareButton.addEventListener('click', function() {
+                webApp.share({
+                    url: window.location.href,
+                    text: 'Приложение COMIC-CON Фестиваль - смотрите расписание и находите залы!'
+                });
+            });
+            
+            header.appendChild(shareButton);
+        }
+    } else {
+        // Fallback for non-Telegram environments
+        console.log('Not running in Telegram Web App environment');
+    }
 }
+
+// Initialize sharing when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeSharing);
+
+// Function to share specific events
+function shareEvent(event) {
+    if (window.Telegram && window.Telegram.WebApp) {
+        const webApp = window.Telegram.WebApp;
+        if (webApp.share) {
+            webApp.share({
+                url: `${window.location.href}#event=${event.id}`,
+                text: `Смотри, интересное событие "${event.title}" в зале ${event.hall}!`
+            });
+        } else {
+            // Fallback to clipboard API
+            navigator.clipboard.writeText(`${window.location.href} - ${event.title} в зале ${event.hall}`)
+                .then(() => {
+                    alert('Ссылка скопирована в буфер обмена!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        }
+    } else {
+        // Fallback for non-Telegram environments
+        navigator.clipboard.writeText(`${window.location.href} - ${event.title} в зале ${event.hall}`)
+            .then(() => {
+                alert('Ссылка скопирована в буфер обмена!');
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+    }
+}
+
+// Expose functions globally
+window.shareEvent = shareEvent;
