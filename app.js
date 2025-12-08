@@ -60,7 +60,7 @@ async function loadEvents() {
         events = await response.json();
         
         // Sort events by start time
-        events.sort((a, b) => new Date(a.start) - new Date(b.start));
+        events.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
         
         // Display events
         displayEvents(events);
@@ -88,15 +88,15 @@ function displayEvents(events) {
         eventElement.className = 'event-item';
         eventElement.dataset.id = event.id;
         
-        // Format time
-        const startTime = new Date(event.start);
-        const endTime = new Date(event.end);
+        // Format time using new startTime/endTime fields
+        const startTime = new Date(event.startTime);
+        const endTime = new Date(event.endTime);
         const timeString = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}–${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
         
         eventElement.innerHTML = `
             <div class="event-title">${event.title}</div>
             <div class="event-time">${timeString}</div>
-            <div class="event-hall">Зал: ${event.hall}</div>
+            <div class="event-hall">Зал: ${event.roomName || `№${event.hall}`}</div>
         `;
         
         eventElement.addEventListener('click', () => {
@@ -119,8 +119,8 @@ function updateCurrentEvents() {
     
     // Check each event
     events.forEach(event => {
-        const eventStart = new Date(event.start);
-        const eventEnd = new Date(event.end);
+        const eventStart = new Date(event.startTime);
+        const eventEnd = new Date(event.endTime);
         
         // Check if event starts within the next 30 minutes
         if (eventStart >= now && eventStart <= thirtyMinutesLater) {
@@ -141,8 +141,8 @@ function updateCurrentEvents() {
 }
 
 function selectEvent(event) {
-    // Fly to the event location on the map
-    flyToHall(event.hall);
+    // Highlight the corresponding map points for this event
+    highlightEventMapPoints(event.id);
     
     // Show event details in info panel
     showEventDetails(event);
@@ -157,31 +157,32 @@ function selectEvent(event) {
     }
 }
 
-function flyToHall(hallName) {
-    if (markers[hallName]) {
-        // Remove pulse from current marker if exists
-        if (currentMarker) {
-            currentMarker.getElement().classList.remove('pulse-marker');
-        }
-        
-        // Fly to the hall
-        const latLng = markers[hallName].getLatLng();
-        map.flyTo(latLng, 16, { animate: true, duration: 1.5 });
-        
-        // Add pulse effect to the marker
-        setTimeout(() => {
-            markers[hallName].getElement().classList.add('pulse-marker');
-            currentMarker = markers[hallName];
-            
-            // Remove pulse after animation completes
-            setTimeout(() => {
-                if (currentMarker === markers[hallName]) {
-                    markers[hallName].getElement().classList.remove('pulse-marker');
-                    currentMarker = null;
-                }
-            }, 1500);
-        }, 1000);
+function highlightEventMapPoints(eventId) {
+    // First, reset all map points to default style
+    document.querySelectorAll('.map-point').forEach(point => {
+        point.style.backgroundColor = '#3498db';
+        point.style.width = '12px';
+        point.style.height = '12px';
+        point.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    
+    // Then highlight the points for the selected event
+    if (markers[eventId] && markers[eventId].length > 0) {
+        markers[eventId].forEach(marker => {
+            marker.style.backgroundColor = '#e74c3c'; // Red color for selected event
+            marker.style.width = '16px';
+            marker.style.height = '16px';
+            marker.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            marker.style.zIndex = '1001'; // Bring to front
+        });
     }
+}
+
+function flyToHall(hallName) {
+    // In the static map implementation, we don't actually fly to locations
+    // Instead, we just highlight the corresponding map points
+    // This function is kept for compatibility but could be removed
+    console.log(`Attempting to focus on hall: ${hallName}`);
 }
 
 function showEventDetails(event) {
@@ -189,15 +190,15 @@ function showEventDetails(event) {
     const infoTitle = document.getElementById('infoTitle');
     const infoContent = document.getElementById('infoContent');
     
-    const startTime = new Date(event.start);
-    const endTime = new Date(event.end);
+    const startTime = new Date(event.startTime);
+    const endTime = new Date(event.endTime);
     const timeString = `${startTime.toLocaleDateString()} ${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}–${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
     
     infoTitle.textContent = event.title;
     infoContent.innerHTML = `
         <p><strong>Время:</strong> ${timeString}</p>
-        <p><strong>Зал:</strong> ${event.hall}</p>
-        <p><strong>Описание:</strong> ${event.description || 'Нет описания'}</p>
+        <p><strong>Зал:</strong> ${event.roomName || `№${event.hall}`}</p>
+        <p><strong>Теги:</strong> ${event.tags ? event.tags.join(', ') : 'Нет тегов'}</p>
     `;
     
     infoPanel.classList.add('active');

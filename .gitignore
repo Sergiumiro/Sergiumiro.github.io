@@ -1,56 +1,30 @@
 ```
-# Logs
+# Dependencies
+node_modules/
+
+# Logs and temp files
 *.log
+*.tmp
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Dependencies
-node_modules/
+# Editors
+.vscode/
+.idea/
 
 # Build artifacts
 dist/
 build/
 *.js.map
 
-# Editor/IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# System
-.DS_Store
-Thumbs.db
-
-# Python (if applicable)
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-venv/
-.venv/
-.env/
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-*.coverage
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# PyTest
-.pytest_cache/
 
 # Compressed files
 *.zip
@@ -75,4 +49,8 @@ dmypy.json
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# System files
+.DS_Store
+Thumbs.db
 ```
