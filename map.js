@@ -1,13 +1,14 @@
 // Initialize the map
 function initializeMap() {
-    // Create map centered on Yekaterinburg Expo Hall area
-    map = L.map('map').setView([56.835, 60.605], 15);
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
+    // Create static image map with overlay points
+    const mapContainer = document.getElementById('map');
+    
+    // Set up the static map image
+    mapContainer.style.position = 'relative';
+    mapContainer.style.width = '100%';
+    mapContainer.style.height = '100%';
+    mapContainer.style.objectFit = 'contain';
+    
     // Add hall markers to the map
     addHallMarkers();
     
@@ -16,110 +17,56 @@ function initializeMap() {
 }
 
 function addHallMarkers() {
-    // Define hall coordinates based on the venue layout
-    // These are estimated coordinates for halls in the COMIC-CON venue
-    const halls = {
-        // C halls
-        'C2': [56.836, 60.602],
-        'C4': [56.836, 60.604],
-        'C5': [56.836, 60.605],
-        'C11': [56.836, 60.607],
-        'C14': [56.836, 60.608],
-        'C15': [56.836, 60.609],
-        'C18': [56.836, 60.610],
-        'C19': [56.836, 60.611],
-        'C20': [56.836, 60.612],
-        'C21': [56.836, 60.613],
-        
-        // F halls
-        'F1': [56.834, 60.602],
-        'F2': [56.834, 60.603],
-        'F3': [56.834, 60.604],
-        'F4': [56.834, 60.605],
-        'F5': [56.834, 60.606],
-        
-        // H halls
-        'H1': [56.837, 60.603],
-        'H2': [56.837, 60.604],
-        
-        // B halls
-        'B2': [56.833, 60.602],
-        'B3': [56.833, 60.603],
-        'B4': [56.833, 60.604],
-        'B5': [56.833, 60.605],
-        'B6': [56.833, 60.606],
-        'B7': [56.833, 60.607],
-        'B8': [56.833, 60.608],
-        'B9': [56.833, 60.609],
-        'B10': [56.833, 60.610],
-        'B11': [56.833, 60.611],
-        'B12': [56.833, 60.612],
-        'B13': [56.833, 60.613],
-        'B14': [56.833, 60.614],
-        'B15': [56.833, 60.615],
-        'B16': [56.833, 60.616],
-        'B17': [56.833, 60.617],
-        'B18': [56.833, 60.618],
-        'B19': [56.833, 60.619],
-        'B20': [56.833, 60.620],
-        
-        // m halls
-        'm1': [56.835, 60.601],
-        'm2': [56.835, 60.602],
-        'm3': [56.835, 60.603],
-        'm4': [56.835, 60.604],
-        'm5': [56.835, 60.605],
-        'm6': [56.835, 60.606],
-        'm7': [56.835, 60.607],
-        'm8': [56.835, 60.608],
-        'm9': [56.835, 60.609],
-        'm10': [56.835, 60.610],
-        'm11': [56.835, 60.611],
-        'm12': [56.835, 60.612],
-        'm13': [56.835, 60.613],
-        'm14': [56.835, 60.614],
-        'm15': [56.835, 60.615],
-        'm16': [56.835, 60.616],
-        'm17': [56.835, 60.617],
-        'm18': [56.835, 60.618],
-        'm19': [56.835, 60.619],
-        'm20': [56.835, 60.620],
-        'm21': [56.835, 60.621],
-        'm22': [56.835, 60.622],
-        'm23': [56.835, 60.623],
-        'm24': [56.835, 60.624],
-        'm25': [56.835, 60.625],
-        'm26': [56.835, 60.626],
-        'm27': [56.835, 60.627],
-        'm28': [56.835, 60.628],
-        'm29': [56.835, 60.629],
-        'm30': [56.835, 60.630],
-        'm31': [56.835, 60.631],
-        'm32': [56.835, 60.632],
-        'm33': [56.835, 60.633],
-        'm34': [56.835, 60.634],
-        'm35': [56.835, 60.635],
-        'm36': [56.835, 60.636]
-    };
-
-    // Create markers for each hall
-    for (const [hallName, coords] of Object.entries(halls)) {
-        const marker = L.marker(coords, {
-            title: `Зал ${hallName}`
-        }).addTo(map);
-        
-        // Add popup with hall name
-        marker.bindPopup(`<b>Зал ${hallName}</b><br>Нажмите для просмотра событий`);
-        
-        // Store marker reference
-        markers[hallName] = marker;
-        
-        // Add click event to show hall events
-        marker.on('click', function(e) {
-            showHallEvents(hallName);
-            triggerHapticFeedback();
-        });
-    }
+    // Clear any existing markers
+    const existingMarkers = document.querySelectorAll('.map-point');
+    existingMarkers.forEach(marker => marker.remove());
+    
+    // For each event, create map points based on mapPoints
+    events.forEach(event => {
+        if (event.mapPoints && event.mapPoints.length > 0) {
+            event.mapPoints.forEach((point, index) => {
+                // Create a marker element
+                const marker = document.createElement('div');
+                marker.className = 'map-point';
+                marker.dataset.eventId = event.id;
+                marker.dataset.pointIndex = index;
+                
+                // Set position based on normalized coordinates (0-1)
+                // Convert to percentage positions
+                marker.style.position = 'absolute';
+                marker.style.left = `${point.x * 100}%`;
+                marker.style.top = `${point.y * 100}%`;
+                marker.style.transform = 'translate(-50%, -50%)';
+                marker.style.width = '12px';
+                marker.style.height = '12px';
+                marker.style.backgroundColor = '#3498db';
+                marker.style.border = '2px solid white';
+                marker.style.borderRadius = '50%';
+                marker.style.cursor = 'pointer';
+                marker.style.zIndex = '1000';
+                marker.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+                
+                // Add tooltip
+                marker.title = `${point.label || `Зал ${event.hall}`}`;
+                
+                // Add click event
+                marker.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectEvent(event);
+                    triggerHapticFeedback();
+                });
+                
+                // Add to map container
+                document.getElementById('map').appendChild(marker);
+                
+                // Store reference to marker
+                if (!markers[event.id]) {
+                    markers[event.id] = [];
+                }
+                markers[event.id].push(marker);
+            });
+        }
+    });
 }
 
 function showHallEvents(hallName) {
@@ -138,11 +85,11 @@ function showHallEvents(hallName) {
         const now = new Date();
         
         hallEvents.forEach(event => {
-            const eventStart = new Date(event.start);
+            const eventStart = new Date(event.startTime);
             const timeString = `${eventStart.getHours().toString().padStart(2, '0')}:${eventStart.getMinutes().toString().padStart(2, '0')}`;
             
             // Check if event is current
-            const eventEnd = new Date(event.end);
+            const eventEnd = new Date(event.endTime);
             const isCurrent = now >= eventStart && now <= eventEnd;
             const isSoon = eventStart > now && eventStart <= new Date(now.getTime() + 30 * 60 * 1000);
             
@@ -168,40 +115,48 @@ function showHallEvents(hallName) {
 
 function setupMapEvents() {
     // Add map click event to hide info panel
-    map.on('click', function(e) {
-        document.getElementById('infoPanel').classList.remove('active');
+    document.getElementById('map').addEventListener('click', function(e) {
+        // Only hide if clicking directly on the map, not on a marker
+        if (e.target.id === 'map') {
+            document.getElementById('infoPanel').classList.remove('active');
+        }
     });
-    
-    // Add zoom controls
-    map.addControl(L.control.zoom({ position: 'bottomright' }));
-    
-    // Add scale control
-    L.control.scale({ imperial: false }).addTo(map);
 }
 
 // Function to update markers based on current events
 function updateMarkers() {
     const now = new Date();
     
-    for (const [hallName, marker] of Object.entries(markers)) {
-        // Find current or upcoming events in this hall
-        const hallEvents = events.filter(event => {
-            const eventStart = new Date(event.start);
-            const eventEnd = new Date(event.end);
-            
-            // Check if event is current or starts within 30 minutes
-            return event.hall === hallName && 
-                   (now >= eventStart && now <= eventEnd) || 
-                   (eventStart > now && eventStart <= new Date(now.getTime() + 30 * 60 * 1000));
-        });
+    // Reset all markers to default state
+    document.querySelectorAll('.map-point').forEach(marker => {
+        marker.style.backgroundColor = '#3498db';
+        marker.style.width = '12px';
+        marker.style.height = '12px';
+        marker.style.transform = 'translate(-50%, -50%)';
+    });
+    
+    // Highlight markers for events that are current or upcoming within 30 minutes
+    events.forEach(event => {
+        const eventStart = new Date(event.startTime);
+        const eventEnd = new Date(event.endTime);
         
-        // Change marker color if there are events
-        if (hallEvents.length > 0) {
-            // In a real implementation, we would change the marker icon
-            // For now, we'll just log this
-            console.log(`Hall ${hallName} has ${hallEvents.length} events`);
+        // Check if event is current or starts within 30 minutes
+        const isCurrent = now >= eventStart && now <= eventEnd;
+        const isSoon = eventStart > now && eventStart <= new Date(now.getTime() + 30 * 60 * 1000);
+        
+        if (isCurrent || isSoon) {
+            // Highlight the map points for this event
+            if (markers[event.id] && markers[event.id].length > 0) {
+                markers[event.id].forEach(marker => {
+                    marker.style.backgroundColor = isCurrent ? '#e74c3c' : '#f39c12'; // Red for current, orange for upcoming
+                    marker.style.width = '14px';
+                    marker.style.height = '14px';
+                    marker.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                    marker.style.zIndex = '1001';
+                });
+            }
         }
-    }
+    });
 }
 
 // Make updateMarkers available globally
