@@ -207,6 +207,9 @@ function selectEvent(id){
 
     document.querySelectorAll(".map-point")
         .forEach(p=>p.classList.toggle("large", p.dataset.id === id));
+    
+    // Обновляем позиции точек, чтобы обеспечить корректное отображение выделения
+    updatePointPositions();
 }
 
 
@@ -358,26 +361,44 @@ function updatePointPositions() {
 
     document.querySelectorAll(".map-point").forEach(p => {
         const id = p.dataset.id;
-        const ev = filteredEvents.find(e => e.id === id);
+        const ev = events.find(e => e.id === id); // Используем все события, а не только отфильтрованные
         if (!ev || !ev.mapPoints) return;
 
         const mp = ev.mapPoints[0];
 
         // Рассчитываем позицию точки относительно изображения
+        // Учитываем, что mp.x и mp.y - это относительные координаты (0-1), 
+        // и применяем их к натуральным размерам изображения
         const originalX = mapEl.naturalWidth * mp.x;
         const originalY = mapEl.naturalHeight * mp.y;
 
         // Применяем трансформации (масштабирование и смещение)
-        const scaledX = originalX * scale;
-        const scaledY = originalY * scale;
+        // Для корректного расчета нужно учесть масштабирование изображения
+        const imgScaleX = imgRect.width / mapEl.naturalWidth;
+        const imgScaleY = imgRect.height / mapEl.naturalHeight;
+        
+        // Вычисляем координаты точки с учетом масштаба изображения
+        const scaledX = originalX * imgScaleX;
+        const scaledY = originalY * imgScaleY;
+
+        // Теперь применяем масштаб трансформации и смещения
+        const transformedX = scaledX * scale;
+        const transformedY = scaledY * scale;
 
         // Рассчитываем финальные координаты точки
-        const finalX = scaledX + originX + offsetX;
-        const finalY = scaledY + originY + offsetY;
+        const finalX = transformedX + originX + offsetX;
+        const finalY = transformedY + originY + offsetY;
 
         p.style.left = finalX + "px";
         p.style.top = finalY + "px";
     });
+    
+    // После обновления позиций точек, нужно снова установить класс "large" для выбранной точки
+    if (selectedId) {
+        document.querySelectorAll(".map-point").forEach(p => {
+            p.classList.toggle("large", p.dataset.id === selectedId);
+        });
+    }
 }
 
 
