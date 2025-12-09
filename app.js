@@ -36,13 +36,6 @@ async function loadDay(day){
 
     buildTagFilter();
     applyFilters();
-    
-    // Ensure map points are updated after loading the day
-    setTimeout(() => {
-        if (document.querySelector('.map-area').classList.contains('active')) {
-            updatePointPositions();
-        }
-    }, 200); // Small delay to ensure everything is loaded
 }
 
 
@@ -165,15 +158,7 @@ function renderList(){
         card.querySelector(".title").textContent = ev.title;
         card.querySelector(".time").textContent =
             new Date(ev.startTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-        const tagsContainer = card.querySelector(".tags");
-        tagsContainer.innerHTML = "";
-        if (ev.tags && ev.tags.length > 0) {
-            ev.tags.forEach(tag => {
-                const tagSpan = document.createElement("span");
-                tagSpan.textContent = tag;
-                tagsContainer.appendChild(tagSpan);
-            });
-        }
+        card.querySelector(".tags").textContent = ev.tags?.join(" · ") || "";
 
         // избранное
         const favBtn = node.querySelector(".fav-btn");
@@ -477,8 +462,6 @@ document.querySelectorAll('.nav-item').forEach(item => {
         if (view === 'map') {
             document.querySelector('.events-list').style.display = 'none';
             document.querySelector('.map-area').classList.add('active');
-            // Update map points when map view is activated
-            setTimeout(updatePointPositions, 100); // Small delay to ensure DOM is updated
         } else if (view === 'schedule') {
             document.querySelector('.events-list').style.display = 'flex';
             document.querySelector('.map-area').classList.remove('active');
@@ -495,11 +478,6 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // Set default view to schedule
 document.querySelector('.nav-item[data-view="schedule"]').classList.add('active');
 document.querySelector('.events-list').style.display = 'flex';
-
-// Ensure the map is initialized properly after loading
-setTimeout(() => {
-    updatePointPositions();
-}, 500); // Slight delay to ensure DOM is ready
 
 // Add search icon functionality
 const searchInput = document.getElementById('search-input');
