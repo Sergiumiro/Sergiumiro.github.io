@@ -8,35 +8,43 @@
 </head>
 <body>
     <header class="header">
-        <!-- Переключение дней -->
-        <div id="day-switcher" class="day-switcher">
-            <button data-day="1" class="active">День 1</button>
-            <button data-day="2">День 2</button>
-            <button data-day="3">День 3</button>
+        <div class="accordion-header">
+            <div class="accordion-title">
+                <h2>Фильтры</h2>
+            </div>
+            <button class="accordion-toggle" id="filters-toggle">▼</button>
         </div>
+        <div id="filters-content" class="accordion-content">
+            <!-- Переключение дней -->
+            <div id="day-switcher" class="day-switcher">
+                <button data-day="1" class="active">День 1</button>
+                <button data-day="2">День 2</button>
+                <button data-day="3">День 3</button>
+            </div>
 
-        <!-- Фильтр по залам -->
-        <div id="hall-filter" class="hall-filter">
-            <button data-hall="all" class="active">Все</button>
-            <button data-hall="3">Зал 3</button>
-            <button data-hall="4">Зал 4</button>
-            <button data-hall="5">Зал 5</button>
-        </div>
+            <!-- Фильтр по залам -->
+            <div id="hall-filter" class="hall-filter">
+                <button data-hall="all" class="active">Все</button>
+                <button data-hall="3">Зал 3</button>
+                <button data-hall="4">Зал 4</button>
+                <button data-hall="5">Зал 5</button>
+            </div>
 
-        <!-- Поиск -->
-        <div class="search-panel">
-            <input id="search-input" type="text" placeholder="Поиск по названию…">
-        </div>
+            <!-- Поиск -->
+            <div class="search-panel">
+                <input id="search-input" type="text" placeholder="Поиск по названию…">
+            </div>
 
-        <!-- Фильтр по тегам -->
-        <div id="tags-filter" class="tags-filter"></div>
+            <!-- Фильтр по тегам -->
+            <div id="tags-filter" class="tags-filter"></div>
 
-        <!-- Скрытие прошедших -->
-        <div class="toggle-past">
-            <label>
-                <input type="checkbox" id="hide-past">
-                Скрывать прошедшие
-            </label>
+            <!-- Скрытие прошедших -->
+            <div class="toggle-past">
+                <label>
+                    <input type="checkbox" id="hide-past">
+                    Скрывать прошедшие
+                </label>
+            </div>
         </div>
     </header>
 

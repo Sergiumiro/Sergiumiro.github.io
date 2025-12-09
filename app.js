@@ -308,35 +308,10 @@ function updateTimers(){
 
 
 /* ============================================================
-   ЗУМ / ПАНОРАМА
+   ЗУМ / ПАНОРАМА - отключено
 ============================================================ */
 let scale = 1;
 let originX = 0, originY = 0;
-let lastX = 0, lastY = 0;
-let dragging = false;
-
-mapWrapper.addEventListener("pointerdown", e=>{
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-});
-window.addEventListener("pointerup", ()=> dragging=false);
-
-window.addEventListener("pointermove", e=>{
-    if (!dragging) return;
-    originX += (e.clientX - lastX);
-    originY += (e.clientY - lastY);
-    lastX = e.clientX;
-    lastY = e.clientY;
-    updateTransform();
-});
-
-mapWrapper.addEventListener("wheel", e=>{
-    e.preventDefault();
-    const delta = (e.deltaY < 0) ? 1.1 : 0.9;
-    scale = Math.min(5, Math.max(1, scale * delta)); // Ограничение масштаба от 1 (100%) и выше
-    updateTransform();
-});
 
 function updateTransform(){
     mapEl.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
@@ -348,7 +323,7 @@ window.addEventListener('resize', updatePointPositions);
 
 
 /* ============================================================
-   ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT + SCALE + PAN
+   ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT
 ============================================================ */
 function updatePointPositions() {
     // Получаем размеры элементов
@@ -395,24 +370,17 @@ function updatePointPositions() {
         let scaledX = originalX * scaleRatio;
         let scaledY = originalY * scaleRatio;
 
-        // Применяем трансформацию (масштабирование и панорамирование)
-        // Сначала применяем масштабирование, затем панорамирование
-        let transformedX = scaledX * scale + originX;
-        let transformedY = scaledY * scale + originY;
-
         // Добавляем смещение для центрирования изображения
-        const finalX = transformedX + offsetX;
-        const finalY = transformedY + offsetY;
+        const finalX = scaledX + offsetX;
+        const finalY = scaledY + offsetY;
 
         p.style.left = finalX + "px";
         p.style.top = finalY + "px";
         
-        // Убираем масштабирование точек при изменении масштаба карты
-        
         // Устанавливаем класс large для выбранной точки, чтобы анимация применялась
         p.classList.toggle("large", p.dataset.id === selectedId);
         
-        // Применяем трансформацию без учета масштаба карты
+        // Применяем трансформацию
         if (p.dataset.id === selectedId) {
             // Для выделенной точки используем немного другой масштаб, чтобы она была больше обычной
             p.style.transform = `translate(-50%, -50%) scale(1.25)`;
@@ -436,3 +404,23 @@ document.querySelectorAll("#day-switcher button").forEach(b=>{
 });
 
 loadDay(1);
+
+/* ============================================================
+   ГАРМОШКА (Accordion)
+============================================================ */
+document.getElementById('filters-toggle').addEventListener('click', function() {
+    const content = document.getElementById('filters-content');
+    const toggle = document.getElementById('filters-toggle');
+    
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.textContent = '▼';
+    } else {
+        content.classList.add('collapsed');
+        toggle.textContent = '▶';
+    }
+});
+
+// Изначально свернуть контент
+document.getElementById('filters-content').classList.add('collapsed');
+document.getElementById('filters-toggle').textContent = '▶';
