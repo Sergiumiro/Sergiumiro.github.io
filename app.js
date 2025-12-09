@@ -396,9 +396,9 @@ function updatePointPositions() {
         let scaledY = originalY * scaleRatio;
 
         // Применяем трансформацию (масштабирование и панорамирование)
-        // Сначала панорамируем, затем масштабируем
-        let transformedX = (scaledX + originX) * scale;
-        let transformedY = (scaledY + originY) * scale;
+        // Сначала применяем масштабирование, затем панорамирование
+        let transformedX = scaledX * scale + originX;
+        let transformedY = scaledY * scale + originY;
 
         // Добавляем смещение для центрирования изображения
         const finalX = transformedX + offsetX;
