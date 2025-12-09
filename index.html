@@ -5,127 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Comic Con · Расписание</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <i class="fas fa-calendar-alt"></i>
-                <h1>Comic Con</h1>
+    <header class="header">
+        <div class="accordion-header">
+            <div class="accordion-title">
+                <h2>Фильтры</h2>
             </div>
-            <button class="sidebar-toggle" id="sidebar-toggle">
-                <i class="fas fa-times"></i>
-            </button>
+            <button class="accordion-toggle" id="filters-toggle">▼</button>
         </div>
-        
-        <div class="sidebar-content">
-            <!-- Theme Toggle -->
-            <div class="theme-toggle-container">
-                <label class="theme-toggle">
-                    <input type="checkbox" id="theme-toggle">
-                    <span class="slider"></span>
-                    <span class="theme-label">Темная тема</span>
+        <div id="filters-content" class="accordion-content">
+            <!-- Переключение дней -->
+            <div id="day-switcher" class="day-switcher">
+                <button data-day="1" class="active">День 1</button>
+                <button data-day="2">День 2</button>
+                <button data-day="3">День 3</button>
+            </div>
+
+            <!-- Фильтр по залам -->
+            <div id="hall-filter" class="hall-filter">
+                <button data-hall="all" class="active">Все</button>
+                <button data-hall="3">Зал 3</button>
+                <button data-hall="4">Зал 4</button>
+                <button data-hall="5">Зал 5</button>
+            </div>
+
+            <!-- Поиск -->
+            <div class="search-panel">
+                <input id="search-input" type="text" placeholder="Поиск по названию…">
+            </div>
+
+            <!-- Фильтр по тегам -->
+            <div id="tags-filter" class="tags-filter"></div>
+
+            <!-- Скрытие прошедших -->
+            <div class="toggle-past">
+                <label>
+                    <input type="checkbox" id="hide-past">
+                    Скрывать прошедшие
                 </label>
             </div>
-            
-            <!-- Navigation -->
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active" data-view="schedule">
-                    <i class="fas fa-list"></i>
-                    <span>Расписание</span>
-                </a>
-                <a href="#" class="nav-item" data-view="map">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <span>Карта</span>
-                </a>
-                <a href="#" class="nav-item" data-view="favorites">
-                    <i class="fas fa-heart"></i>
-                    <span>Избранное</span>
-                </a>
-                <a href="#" class="nav-item" data-view="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Настройки</span>
-                </a>
-            </nav>
-            
-            <!-- Filters -->
-            <div class="filters-section">
-                <h3>Фильтры</h3>
-                
-                <!-- Переключение дней -->
-                <div id="day-switcher" class="day-switcher">
-                    <button data-day="1" class="active">День 1</button>
-                    <button data-day="2">День 2</button>
-                    <button data-day="3">День 3</button>
-                </div>
-
-                <!-- Фильтр по залам -->
-                <div id="hall-filter" class="hall-filter">
-                    <button data-hall="all" class="active">Все</button>
-                    <button data-hall="3">Зал 3</button>
-                    <button data-hall="4">Зал 4</button>
-                    <button data-hall="5">Зал 5</button>
-                </div>
-
-                <!-- Поиск -->
-                <div class="search-panel">
-                    <input id="search-input" type="text" placeholder="Поиск по названию…">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-
-                <!-- Фильтр по тегам -->
-                <div id="tags-filter" class="tags-filter"></div>
-
-                <!-- Скрытие прошедших -->
-                <div class="toggle-past">
-                    <label>
-                        <input type="checkbox" id="hide-past">
-                        Скрывать прошедшие
-                    </label>
-                </div>
-            </div>
         </div>
-        
-        <div class="sidebar-footer">
-            <button class="minimize-btn" id="minimize-btn">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-        </div>
-    </aside>
+    </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <header class="app-header">
-            <button class="menu-btn" id="menu-btn">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h2>Расписание мероприятий</h2>
-        </header>
-        
+    <main class="main">
         <section id="list" class="events-list"></section>
-        
-        <section id="map-area" class="map-area">
-            <div id="map-wrapper" class="map-wrapper">
-                <img id="map" src="map/map_raw.jpg" alt="Карта фестиваля">
-                <div id="points-layer" class="points-layer"></div>
-            </div>
-        </section>
-    </main>
-    
-    <template id="event-card-template">
-        <article class="event-card">
-            <div class="meta">
-                <div class="time"></div>
-                <div class="title"></div>
-            </div>
-            <div class="tags"></div>
-            <div class="timer"></div>
-            <button class="fav-btn">★</button>
-        </article>
-    </template>
 
-    <script src="app.js"></script>
+    <section id="map-area" class="map-area">
+        <div id="map-wrapper" class="map-wrapper">
+            <img id="map" src="map/map_raw.jpg" alt="Карта фестиваля">
+            <div id="points-layer" class="points-layer"></div>
+        </div>
+    </section>
+</main>
+
+<template id="event-card-template">
+    <article class="event-card">
+        <div class="meta">
+            <div class="time"></div>
+            <div class="title"></div>
+        </div>
+        <div class="tags"></div>
+        <div class="timer"></div>
+        <button class="fav-btn">★</button>
+    </article>
+</template>
+
+<script src="app.js"></script>
 </body>
 </html>
