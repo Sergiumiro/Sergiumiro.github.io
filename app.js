@@ -355,6 +355,12 @@ function updatePointPositions() {
     const containerRect = mapWrapper.getBoundingClientRect();
     const img = mapEl;
     
+    // Ждем, пока изображение полностью загрузится
+    if (!img.complete || img.naturalWidth === 0) {
+        img.onload = updatePointPositions; // Обновляем позиции после загрузки
+        return;
+    }
+    
     // Получаем натуральные размеры изображения
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
@@ -390,9 +396,9 @@ function updatePointPositions() {
         let scaledY = originalY * scaleRatio;
 
         // Применяем трансформацию (масштабирование и панорамирование)
-        // Сначала масштабируем, затем панорамируем
-        let transformedX = scaledX * scale + originX * scale;
-        let transformedY = scaledY * scale + originY * scale;
+        // Сначала панорамируем, затем масштабируем
+        let transformedX = (scaledX + originX) * scale;
+        let transformedY = (scaledY + originY) * scale;
 
         // Добавляем смещение для центрирования изображения
         const finalX = transformedX + offsetX;
