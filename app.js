@@ -379,7 +379,7 @@ function updatePointPositions() {
 document.querySelectorAll("#day-switcher button").forEach(b=>{
     b.addEventListener("click", ()=>{
         document.querySelectorAll("#day-switcher button").forEach(x=>x.classList.remove("active"));
-        b.addEventListener("active");
+        b.classList.add("active");
         currentDay = Number(b.dataset.day);
         loadDay(currentDay);
     });

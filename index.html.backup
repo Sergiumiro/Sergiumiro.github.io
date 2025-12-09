@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Comic Con · Расписание</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+    <!-- Переключение дней -->
+    <div id="day-switcher" class="day-switcher">
+        <button data-day="1" class="active">День 1</button>
+        <button data-day="2">День 2</button>
+        <button data-day="3">День 3</button>
+    </div>
+
+    <!-- Фильтр по залам -->
+    <div id="hall-filter" class="hall-filter">
+        <button data-hall="all" class="active">Все</button>
+        <button data-hall="3">Зал 3</button>
+        <button data-hall="4">Зал 4</button>
+        <button data-hall="5">Зал 5</button>
+    </div>
+
+    <!-- Поиск -->
+    <div class="search-panel">
+        <input id="search-input" type="text" placeholder="Поиск по названию…">
+    </div>
+
+    <!-- Фильтр по тегам -->
+    <div id="tags-filter" class="tags-filter"></div>
+
+    <!-- Скрытие прошедших -->
+    <div class="toggle-past">
+        <label>
+            <input type="checkbox" id="hide-past">
+            Скрывать прошедшие
+        </label>
+    </div>
+</header>
+
+<main class="main">
+</main>
+
+
+<main class="main">
+    <section id="list" class="events-list"></section>
+
+    <section id="map-area" class="map-area">
+        <div id="map-wrapper" class="map-wrapper">
+            <img id="map" src="map/map_raw.jpg" alt="Карта фестиваля">
+            <div id="points-layer" class="points-layer"></div>
+        </div>
+    </section>
+</main>
+
+<template id="event-card-template">
+    <article class="event-card">
+        <div class="meta">
+            <div class="time"></div>
+            <div class="title"></div>
+        </div>
+        <div class="tags"></div>
+    </article>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
