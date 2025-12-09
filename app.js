@@ -405,22 +405,52 @@ document.querySelectorAll("#day-switcher button").forEach(b=>{
 
 loadDay(1);
 
-/* ============================================================
-   ГАРМОШКА (Accordion)
-============================================================ */
-document.getElementById('filters-toggle').addEventListener('click', function() {
-    const content = document.getElementById('filters-content');
-    const toggle = document.getElementById('filters-toggle');
+// Initialize sidebar as hidden on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const body = document.body;
     
-    if (content.classList.contains('collapsed')) {
-        content.classList.remove('collapsed');
-        toggle.textContent = '▼';
-    } else {
-        content.classList.add('collapsed');
-        toggle.textContent = '▶';
-    }
+    // Initially hide the sidebar
+    sidebar.classList.add('hidden');
+    body.classList.add('sidebar-hidden');
 });
 
-// Изначально свернуть контент
-document.getElementById('filters-content').classList.add('collapsed');
-document.getElementById('filters-toggle').textContent = '▶';
+/* ============================================================
+   SIDEBAR TOGGLE
+============================================================ */
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const body = document.body;
+    
+    sidebar.classList.toggle('hidden');
+    const isHidden = sidebar.classList.contains('hidden');
+    
+    if (isHidden) {
+        body.classList.add('sidebar-hidden');
+        overlay.classList.remove('active');
+    } else {
+        body.classList.remove('sidebar-hidden');
+        overlay.classList.add('active');
+    }
+}
+
+// Toggle sidebar open
+document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+
+// Close sidebar
+document.getElementById('close-sidebar').addEventListener('click', toggleSidebar);
+
+// Close sidebar with overlay click
+document.getElementById('overlay').addEventListener('click', toggleSidebar);
+
+// Close sidebar with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('hidden')) {
+            toggleSidebar();
+        }
+    }
+});
