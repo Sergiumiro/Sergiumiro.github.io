@@ -172,7 +172,7 @@ body{
     position:absolute;
     transform:translate(-50%,-50%);
     pointer-events:auto;
-    opacity:0;
+    opacity:1;
     animation: fadeIn .4s forwards;
 }
 .map-point.large{
