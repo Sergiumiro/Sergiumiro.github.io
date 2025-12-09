@@ -346,19 +346,37 @@ function updateTransform(){
     updatePointPositions(); // точки обновляем вручную
 }
 
+// Обновляем позиции точек при изменении размера окна
+window.addEventListener('resize', updatePointPositions);
+
 
 /* ============================================================
    ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT + SCALE + PAN
 ============================================================ */
 function updatePointPositions() {
-    // Получаем размеры и позиции контейнера и изображения
+    // Получаем размеры элементов
     const containerRect = mapWrapper.getBoundingClientRect();
-    const imgRect = mapEl.getBoundingClientRect();
-
-    // Рассчитываем смещения для центрирования изображения
-    const offsetX = (containerRect.width - imgRect.width) / 2;
-    const offsetY = (containerRect.height - imgRect.height) / 2;
-
+    const img = mapEl;
+    
+    // Получаем натуральные размеры изображения
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+    
+    // Размеры контейнера
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    
+    // Рассчитываем, как изображение масштабируется с помощью object-fit: contain
+    const scaleRatio = Math.min(containerWidth / naturalWidth, containerHeight / naturalHeight);
+    
+    // Рассчитываем размеры изображения после масштабирования
+    const scaledWidth = naturalWidth * scaleRatio;
+    const scaledHeight = naturalHeight * scaleRatio;
+    
+    // Рассчитываем смещения для центрирования изображения в контейнере
+    const offsetX = (containerWidth - scaledWidth) / 2;
+    const offsetY = (containerHeight - scaledHeight) / 2;
+    
     document.querySelectorAll(".map-point").forEach(p => {
         const id = p.dataset.id;
         const ev = events.find(e => e.id === id); // Используем все события, а не только отфильтрованные
@@ -366,28 +384,22 @@ function updatePointPositions() {
 
         const mp = ev.mapPoints[0];
 
-        // Рассчитываем позицию точки относительно изображения
-        // Учитываем, что mp.x и mp.y - это относительные координаты (0-1), 
-        // и применяем их к натуральным размерам изображения
-        const originalX = mapEl.naturalWidth * mp.x;
-        const originalY = mapEl.naturalHeight * mp.y;
+        // Рассчитываем позицию точки в оригинальных координатах изображения
+        const originalX = naturalWidth * mp.x;
+        const originalY = naturalHeight * mp.y;
 
-        // Применяем трансформации (масштабирование и смещение)
-        // Для корректного расчета нужно учесть масштабирование изображения
-        const imgScaleX = imgRect.width / mapEl.naturalWidth;
-        const imgScaleY = imgRect.height / mapEl.naturalHeight;
-        
-        // Вычисляем координаты точки с учетом масштаба изображения
-        const scaledX = originalX * imgScaleX;
-        const scaledY = originalY * imgScaleY;
+        // Применяем масштабирование изображения (object-fit: contain)
+        let scaledX = originalX * scaleRatio;
+        let scaledY = originalY * scaleRatio;
 
-        // Теперь применяем масштаб трансформации и смещения
-        const transformedX = scaledX * scale;
-        const transformedY = scaledY * scale;
+        // Применяем трансформацию (масштабирование и панорамирование)
+        // Сначала панорамируем, затем масштабируем
+        let transformedX = (scaledX + originX) * scale;
+        let transformedY = (scaledY + originY) * scale;
 
-        // Рассчитываем финальные координаты точки
-        const finalX = transformedX + originX + offsetX;
-        const finalY = transformedY + originY + offsetY;
+        // Добавляем смещение для центрирования изображения
+        const finalX = transformedX + offsetX;
+        const finalY = transformedY + offsetY;
 
         p.style.left = finalX + "px";
         p.style.top = finalY + "px";
