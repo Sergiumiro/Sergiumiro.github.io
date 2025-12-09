@@ -348,10 +348,12 @@ function updateTransform(){
    ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT + SCALE + PAN
 ============================================================ */
 function updatePointPositions() {
+    // Получаем размеры и позиции контейнера и изображения
     const containerRect = mapWrapper.getBoundingClientRect();
     const imgRect = mapEl.getBoundingClientRect();
 
-    const offsetX = (containerRect.width  - imgRect.width)  / 2;
+    // Рассчитываем смещения для центрирования изображения
+    const offsetX = (containerRect.width - imgRect.width) / 2;
     const offsetY = (containerRect.height - imgRect.height) / 2;
 
     document.querySelectorAll(".map-point").forEach(p => {
@@ -361,14 +363,20 @@ function updatePointPositions() {
 
         const mp = ev.mapPoints[0];
 
-        const px = imgRect.width  * mp.x + offsetX;
-        const py = imgRect.height * mp.y + offsetY;
+        // Рассчитываем позицию точки относительно изображения
+        const originalX = mapEl.naturalWidth * mp.x;
+        const originalY = mapEl.naturalHeight * mp.y;
 
-        const finalX = px * scale + originX;
-        const finalY = py * scale + originY;
+        // Применяем трансформации (масштабирование и смещение)
+        const scaledX = originalX * scale;
+        const scaledY = originalY * scale;
+
+        // Рассчитываем финальные координаты точки
+        const finalX = scaledX + originX + offsetX;
+        const finalY = scaledY + originY + offsetY;
 
         p.style.left = finalX + "px";
-        p.style.top  = finalY + "px";
+        p.style.top = finalY + "px";
     });
 }
 
