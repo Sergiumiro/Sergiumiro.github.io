@@ -7,38 +7,54 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
-        <div class="accordion-header">
-            <div class="accordion-title">
-                <h2>Фильтры</h2>
-            </div>
-            <button class="accordion-toggle" id="filters-toggle">▼</button>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+    
+    <!-- Sidebar Panel -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Фильтры</h2>
+            <button class="close-sidebar" id="close-sidebar">×</button>
         </div>
-        <div id="filters-content" class="accordion-content">
-            <!-- Переключение дней -->
+        
+        <!-- Days filter section -->
+        <div class="filter-section">
+            <h3>Дни</h3>
             <div id="day-switcher" class="day-switcher">
                 <button data-day="1" class="active">День 1</button>
                 <button data-day="2">День 2</button>
                 <button data-day="3">День 3</button>
             </div>
+        </div>
 
-            <!-- Фильтр по залам -->
+        <!-- Halls filter section -->
+        <div class="filter-section">
+            <h3>Залы</h3>
             <div id="hall-filter" class="hall-filter">
                 <button data-hall="all" class="active">Все</button>
                 <button data-hall="3">Зал 3</button>
                 <button data-hall="4">Зал 4</button>
                 <button data-hall="5">Зал 5</button>
             </div>
+        </div>
 
-            <!-- Поиск -->
+        <!-- Search section -->
+        <div class="filter-section">
+            <h3>Поиск</h3>
             <div class="search-panel">
                 <input id="search-input" type="text" placeholder="Поиск по названию…">
             </div>
+        </div>
 
-            <!-- Фильтр по тегам -->
+        <!-- Tags filter section -->
+        <div class="filter-section">
+            <h3>Теги</h3>
             <div id="tags-filter" class="tags-filter"></div>
+        </div>
 
-            <!-- Скрытие прошедших -->
+        <!-- Hide past events section -->
+        <div class="filter-section">
+            <h3>Настройки</h3>
             <div class="toggle-past">
                 <label>
                     <input type="checkbox" id="hide-past">
@@ -46,7 +62,10 @@
                 </label>
             </div>
         </div>
-    </header>
+    </aside>
+    
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"></div>
 
     <main class="main">
         <section id="list" class="events-list"></section>
