@@ -1,161 +1,151 @@
-// app.js
-const EVENTS_URL = 'events.json';
+let currentDay = 1;
 let events = [];
 let selectedId = null;
-let timerInterval = null;
 
-const listEl = document.getElementById('list');
-const pointsLayer = document.getElementById('points-layer');
-const mapImg = document.getElementById('map');
+const listEl = document.getElementById("list");
+const mapEl = document.getElementById("map");
+const pointsLayer = document.getElementById("points-layer");
 
-function loadEvents() {
-    return fetch(EVENTS_URL).then(r => r.json()).then(data => {
-        events = data.slice().sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
-        renderList();
-        renderPoints();
-        updateHighlights();
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(updateHighlights, 60_000);
-    });
+/* ---------- ЗАГРУЗКА ДНЕЙ ---------- */
+const filesByDay = {
+    1: "event1.json",
+    2: "event2.json",
+    3: "event3.json"
+};
+
+async function loadDay(day){
+    const url = filesByDay[day];
+    const data = await fetch(url).then(r => r.json());
+    events = data;
+    renderList();
+    renderPoints();
 }
 
-function renderList() {
-    listEl.innerHTML = '';
-    const template = document.getElementById('event-card-template');
+document.querySelectorAll("#day-switcher button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+        document.querySelectorAll("#day-switcher button").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        currentDay = Number(btn.dataset.day);
+        loadDay(currentDay);
+    });
+});
 
-    events.forEach(ev => {
+/* ---------- СПИСОК ---------- */
+function renderList(){
+    listEl.innerHTML = "";
+    const template = document.getElementById("event-card-template");
+
+    events.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+
+    events.forEach(ev=>{
         const node = template.content.cloneNode(true);
-        const article = node.querySelector('.event-card');
-        const timeEl = node.querySelector('.time');
-        const titleEl = node.querySelector('.title');
-        const tagsEl = node.querySelector('.tags');
+        const card = node.querySelector(".event-card");
+        const time = node.querySelector(".time");
+        const title = node.querySelector(".title");
+        const tags = node.querySelector(".tags");
 
-        const start = new Date(ev.startTime);
-        const end = new Date(ev.endTime);
-        timeEl.textContent = `${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-        titleEl.textContent = ev.title;
-        tagsEl.textContent = ev.tags ? ev.tags.join(' · ') : '';
+        time.textContent =
+            new Date(ev.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-        article.dataset.id = ev.id;
-        article.addEventListener('click', () => onSelectEvent(ev.id));
+        title.textContent = ev.title;
+        tags.textContent = ev.tags?.join(" · ") || "";
+
+        card.dataset.id = ev.id;
+        card.addEventListener("click", ()=>selectEvent(ev.id));
+
         listEl.appendChild(node);
     });
 }
 
-function renderPoints() {
-    pointsLayer.innerHTML = '';
-    // Build one point per event (could be merged by hall but we follow specification)
-    events.forEach(ev => {
-        const container = document.createElement('div');
-        container.className = 'map-point';
-        container.dataset.id = ev.id;
+/* ---------- ТОЧКИ НА КАРТЕ ---------- */
+function renderPoints(){
+    pointsLayer.innerHTML = "";
+    events.forEach(ev=>{
+        const mp = ev.mapPoints?.[0];
+        if(!mp) return;
 
-        // Use first mapPoint if exists
-        const mp = (ev.mapPoints && ev.mapPoints[0]) || {x:0.5,y:0.5,label:ev.roomName || ''};
-        container.style.left = (mp.x * 100) + '%';
-        container.style.top = (mp.y * 100) + '%';
+        const p = document.createElement("div");
+        p.className = "map-point";
+        p.dataset.id = ev.id;
 
-        // tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.textContent = mp.label || ev.roomName || `${ev.hall ? 'Зал ' + ev.hall : ''}`;
-        container.appendChild(tooltip);
+        p.style.left = (mp.x*100)+"%";
+        p.style.top = (mp.y*100)+"%";
 
-        // small label inside
-        container.textContent = '';
-        const dot = document.createElement('span');
-        dot.textContent = '•';
-        container.appendChild(dot);
-
-        // click — simulate selecting from list
-        container.addEventListener('click', (e) => {
+        p.addEventListener("click", (e)=>{
             e.stopPropagation();
-            onSelectEvent(ev.id);
+            selectEvent(ev.id);
         });
 
-        pointsLayer.appendChild(container);
+        pointsLayer.appendChild(p);
     });
 }
 
-function updateHighlights() {
-    const now = new Date();
-    // highlight imminent events (0 < start - now <= 30min)
-    const cards = document.querySelectorAll('.event-card');
-    cards.forEach(c => c.classList.remove('imminent','selected'));
-    const points = document.querySelectorAll('.map-point');
-    points.forEach(p => p.classList.remove('large'));
-
-    events.forEach(ev => {
-        const start = new Date(ev.startTime);
-        const diffMin = (start - now) / 60000;
-        if (diffMin > 0 && diffMin <= 30) {
-            const card = document.querySelector(`.event-card[data-id="${ev.id}"]`);
-            if (card) {
-                card.classList.add('imminent');
-                // add timer icon if not present
-                if (!card.querySelector('.timer-emoji')) {
-                    const timer = document.createElement('span');
-                    timer.className = 'timer-emoji';
-                    timer.textContent = ' ⏱';
-                    card.querySelector('.time').appendChild(timer);
-                }
-            }
-        } else {
-            const card = document.querySelector(`.event-card[data-id="${ev.id}"]`);
-            if (card) {
-                // remove emoji if present
-                const timer = card.querySelector('.timer-emoji');
-                if (timer) timer.remove();
-            }
-        }
-    });
-
-    // keep selected visible
-    if (selectedId) {
-        const selectedCard = document.querySelector(`.event-card[data-id="${selectedId}"]`);
-        if (selectedCard) selectedCard.classList.add('selected');
-        const selectedPoints = document.querySelectorAll(`.map-point[data-id="${selectedId}"]`);
-        selectedPoints.forEach(p => p.classList.add('large'));
-        // try to bring point(s) into view — scroll wrapper to center point
-        centerPointsOfEvent(selectedId);
-    }
-}
-
-function onSelectEvent(id) {
+/* ---------- ВЫБОР СОБЫТИЯ ---------- */
+function selectEvent(id){
     selectedId = id;
-    // mark selected in list
-    document.querySelectorAll('.event-card').forEach(el => el.classList.toggle('selected', el.dataset.id === id));
-    // enlarge points for this event
-    document.querySelectorAll('.map-point').forEach(el => el.classList.toggle('large', el.dataset.id === id));
-    centerPointsOfEvent(id);
+
+    document.querySelectorAll(".event-card")
+        .forEach(c=>c.classList.toggle("selected", c.dataset.id===id));
+
+    document.querySelectorAll(".map-point")
+        .forEach(p=>p.classList.toggle("large", p.dataset.id===id));
 }
 
-function centerPointsOfEvent(id) {
-    const mapWrapper = document.getElementById('map-wrapper');
-    const pts = Array.from(document.querySelectorAll(`.map-point[data-id="${id}"]`));
-    if (!pts.length) return;
-    // compute bounding box of points in layer coords
-    const rect = mapWrapper.getBoundingClientRect();
-    const xs = pts.map(p => parseFloat(p.style.left) / 100 * rect.width);
-    const ys = pts.map(p => parseFloat(p.style.top) / 100 * rect.height);
-    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+/* ---------- MАСШТАБИРОВАНИЕ КАРТЫ ---------- */
+let scale = 1;
+let originX = 0, originY = 0;
+let lastX = 0, lastY = 0;
+let dragging = false;
 
-    // scroll map-wrapper by transforming points-layer (we used overflow:hidden, so we can animate translation)
-    // Simpler approach: no complex pan/zoom — if map is larger than container, scroll the parent container (if any).
-    // For static image fit-to-width, we can create a quick visual emphasis by flashing border around points.
-    pts.forEach(p => {
-        p.animate([{boxShadow:'0 0 0 0 rgba(255,75,75,0.0)'},{boxShadow:'0 10px 30px 8px rgba(255,75,75,0.12)'}], {duration:600, easing:'ease-out'});
-    });
-
-    // If you implement pinch-zoom/scroll, you can set transform-origin and translate to center coordinates.
-}
-
-// initialize
-window.addEventListener('load', () => {
-    loadEvents().catch(err => {
-        listEl.innerHTML = `<div style="padding:12px;color:#f88">Не удалось загрузить events.json — убедитесь, что файл доступен на GitHub Pages и путь верный.</div>`;
-        console.error(err);
-    });
-
-    // update every 60s handled in loadEvents
+mapEl.addEventListener("pointerdown", e=>{
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
 });
+
+window.addEventListener("pointerup", ()=> dragging=false);
+
+window.addEventListener("pointermove", e=>{
+    if(!dragging) return;
+    originX += (e.clientX - lastX);
+    originY += (e.clientY - lastY);
+    lastX = e.clientX;
+    lastY = e.clientY;
+    updateTransform();
+});
+
+/* колесо мыши — зум */
+mapEl.addEventListener("wheel", e=>{
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1.1 : 0.9;
+    scale *= delta;
+    scale = Math.max(0.5, Math.min(5, scale));
+    updateTransform();
+});
+
+/* Touch pinch */
+let touchStartDist = 0;
+mapEl.addEventListener("touchmove", e=>{
+    if(e.touches.length===2){
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx,dy);
+        if(!touchStartDist) touchStartDist = dist;
+
+        const delta = dist / touchStartDist;
+        scale *= delta;
+        scale = Math.max(0.5, Math.min(5, scale));
+        touchStartDist = dist;
+        updateTransform();
+    }
+});
+mapEl.addEventListener("touchend", ()=> touchStartDist = 0);
+
+function updateTransform(){
+    mapEl.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    pointsLayer.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+}
+
+/* ---------- INIT ---------- */
+loadDay(1);
