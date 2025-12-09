@@ -4,13 +4,12 @@
     --muted:#9aa0a6;
     --accent:#ff4b4b;
     --card:#15161a;
-    --radius:10px;
 }
 
 body{
     margin:0;
     background:#0b0b0f;
-    color:#fff;
+    color:white;
     font-family:Arial, sans-serif;
     height:100vh;
     display:flex;
@@ -23,30 +22,75 @@ body{
     border-bottom:1px solid #222;
 }
 
-.day-switcher{
+/* ---- Дни ---- */
+.day-switcher,
+.hall-filter{
     margin-top:8px;
     display:flex;
     gap:6px;
 }
 
-.day-switcher button{
+.day-switcher button,
+.hall-filter button{
     flex:1;
     padding:8px;
+    border:none;
     border-radius:6px;
     background:#222;
-    border:none;
     color:#ccc;
 }
 
-.day-switcher button.active{
+.day-switcher button.active,
+.hall-filter button.active{
     background:#ff4b4b;
-    color:#fff;
+    color:white;
 }
 
+/* ---- Поиск ---- */
+.search-panel{
+    margin-top:10px;
+}
+#search-input{
+    width:100%;
+    padding:8px;
+    border-radius:6px;
+    background:#1b1c1f;
+    border:1px solid #333;
+    color:#ddd;
+}
+
+/* ---- Теги ---- */
+.tags-filter{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:10px;
+}
+.tags-filter button{
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:12px;
+    background:#222;
+    color:#ccc;
+    border:none;
+}
+.tags-filter button.active{
+    background:#ff4b4b;
+    color:white;
+}
+
+/* ---- Скрытие прошедших ---- */
+.toggle-past{
+    margin-top:10px;
+    font-size:13px;
+    color:#bbb;
+}
+
+/* ---- Макет ---- */
 .main{
     display:flex;
     flex-direction:column;
-    height:calc(100vh - 90px);
+    height:calc(100vh - 180px);
 }
 
 .events-list{
@@ -56,10 +100,10 @@ body{
 }
 
 .event-card{
-    background:#15161a;
-    border-radius:8px;
     padding:10px;
     margin-bottom:10px;
+    background:#15161a;
+    border-radius:8px;
     cursor:pointer;
 }
 
@@ -67,11 +111,14 @@ body{
     outline:2px solid #ff4b4b;
 }
 
+.event-card.now { outline:2px solid #00c853; }
+.event-card.next{ outline:2px solid #ffd600; }
+
+/* ---- Карта ---- */
 .map-area{
     height:60%;
     padding:10px;
 }
-
 .map-wrapper{
     width:100%;
     height:100%;
@@ -84,27 +131,37 @@ body{
     width:100%;
     height:100%;
     object-fit:contain;
-    touch-action:none; /* важно для зума */
+    touch-action:none;
 }
 
+/* ---- Точки ---- */
 .points-layer{
     position:absolute;
-    left:0; top:0;
-    width:100%; height:100%;
+    left:0;top:0;
+    width:100%;height:100%;
     pointer-events:none;
 }
 
 .map-point{
-    position:absolute;
-    width:18px; height:18px;
-    background:#fff;
+    width:20px;height:20px;
+    background:white;
     border-radius:50%;
+    position:absolute;
     transform:translate(-50%,-50%);
     pointer-events:auto;
+    opacity:0;
+    animation: fadeIn .4s forwards;
+}
+.map-point.large{
+    animation:pulse 1.4s infinite;
+    background:#ff4b4b;
 }
 
-.map-point.large{
-    width:32px;
-    height:32px;
-    background:#ff4b4b;
+@keyframes fadeIn{
+    to { opacity:1; }
+}
+@keyframes pulse{
+    0%{ transform:translate(-50%,-50%) scale(1); }
+    50%{ transform:translate(-50%,-50%) scale(1.25); }
+    100%{ transform:translate(-50%,-50%) scale(1); }
 }
