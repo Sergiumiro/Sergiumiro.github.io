@@ -334,7 +334,7 @@ window.addEventListener("pointermove", e=>{
 mapWrapper.addEventListener("wheel", e=>{
     e.preventDefault();
     const delta = (e.deltaY < 0) ? 1.1 : 0.9;
-    scale = Math.min(5, Math.max(0.5, scale * delta));
+    scale = Math.min(5, Math.max(1, scale * delta)); // Ограничение масштаба от 1 (100%) и выше
     updateTransform();
 });
 
@@ -401,19 +401,17 @@ function updatePointPositions() {
         p.style.left = finalX + "px";
         p.style.top = finalY + "px";
         
-        // Масштабируем размер точек обратно пропорционально текущему масштабу,
-        // чтобы они оставались одинакового размера при увеличении/уменьшении карты
-        const pointScale = 1 / scale;
+        // Убираем масштабирование точек при изменении масштаба карты
         
         // Устанавливаем класс large для выбранной точки, чтобы анимация применялась
         p.classList.toggle("large", p.dataset.id === selectedId);
         
-        // Применяем трансформацию с учетом масштаба точки
+        // Применяем трансформацию без учета масштаба карты
         if (p.dataset.id === selectedId) {
             // Для выделенной точки используем немного другой масштаб, чтобы она была больше обычной
-            p.style.transform = `translate(-50%, -50%) scale(${pointScale * 1.25})`;
+            p.style.transform = `translate(-50%, -50%) scale(1.25)`;
         } else {
-            p.style.transform = `translate(-50%, -50%) scale(${pointScale})`;
+            p.style.transform = `translate(-50%, -50%) scale(1)`;
         }
     });
 }
