@@ -2,37 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ИгроМир / Comic Con — Расписание</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comic Con · Расписание</title>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="app">
-    <header class="app-header">
-        <h1>ИгроМир · Расписание</h1>
-    </header>
 
-    <main class="app-main">
-        <section id="list" class="events-list" aria-label="Список мероприятий"></section>
+<header class="header">
+    <h1>Расписание Comic Con / Игромир</h1>
 
-        <section id="map-area" class="map-area">
-            <div id="map-wrapper" class="map-wrapper">
-                <img id="map" src="map/map.png" alt="Карта фестиваля — залы и стенды" />
-                <div id="points-layer" class="points-layer"></div>
-            </div>
-        </section>
-    </main>
+    <div id="day-switcher" class="day-switcher">
+        <button data-day="1" class="active">День 1</button>
+        <button data-day="2">День 2</button>
+        <button data-day="3">День 3</button>
+    </div>
+</header>
 
-    <template id="event-card-template">
-        <article class="event-card">
-            <div class="meta">
-                <div class="time"></div>
-                <div class="title"></div>
-            </div>
-            <div class="tags"></div>
-        </article>
-    </template>
-</div>
+<main class="main">
+    <section id="list" class="events-list"></section>
+
+    <section id="map-area" class="map-area">
+        <div id="map-wrapper" class="map-wrapper">
+            <img id="map" src="map_raw.png" alt="Карта фестиваля" />
+            <div id="points-layer" class="points-layer"></div>
+        </div>
+    </section>
+</main>
+
+<template id="event-card-template">
+    <article class="event-card">
+        <div class="meta">
+            <div class="time"></div>
+            <div class="title"></div>
+        </div>
+        <div class="tags"></div>
+    </article>
+</template>
 
 <script src="app.js"></script>
 </body>
