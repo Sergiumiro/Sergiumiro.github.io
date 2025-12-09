@@ -406,105 +406,21 @@ document.querySelectorAll("#day-switcher button").forEach(b=>{
 loadDay(1);
 
 /* ============================================================
-   НОВАЯ ФУНКЦИОНАЛЬНОСТЬ ДЛЯ НОВОГО ИНТЕРФЕЙСА
+   ГАРМОШКА (Accordion)
 ============================================================ */
-
-// Toggle sidebar
-document.getElementById('menu-btn').addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.toggle('active');
-});
-
-document.getElementById('minimize-btn').addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.toggle('collapsed');
-});
-
-document.getElementById('sidebar-toggle').addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.remove('active');
-});
-
-// Theme toggle
-const themeToggle = document.getElementById('theme-toggle');
-const currentTheme = localStorage.getItem('theme') || 'dark';
-if (currentTheme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    themeToggle.checked = true;
-}
-
-themeToggle.addEventListener('change', function() {
-    if (this.checked) {
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
-    } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-    }
-});
-
-// Navigation
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Remove active class from all nav items
-        document.querySelectorAll('.nav-item').forEach(nav => {
-            nav.classList.remove('active');
-        });
-        
-        // Add active class to clicked item
-        this.classList.add('active');
-        
-        // Hide all views
-        document.querySelector('.events-list').style.display = 'none';
-        document.querySelector('.map-area').classList.remove('active');
-        
-        // Show selected view
-        const view = this.getAttribute('data-view');
-        if (view === 'map') {
-            document.querySelector('.events-list').style.display = 'none';
-            document.querySelector('.map-area').classList.add('active');
-        } else if (view === 'schedule') {
-            document.querySelector('.events-list').style.display = 'flex';
-            document.querySelector('.map-area').classList.remove('active');
-        } else if (view === 'favorites') {
-            // TODO: Implement favorites view
-            alert('Избранные мероприятия');
-        } else if (view === 'settings') {
-            // TODO: Implement settings view
-            alert('Настройки');
-        }
-    });
-});
-
-// Set default view to schedule
-document.querySelector('.nav-item[data-view="schedule"]').classList.add('active');
-document.querySelector('.events-list').style.display = 'flex';
-
-// Add search icon functionality
-const searchInput = document.getElementById('search-input');
-const searchIcon = document.querySelector('.search-icon');
-if (searchIcon) {
-    searchIcon.addEventListener('click', function() {
-        searchInput.focus();
-    });
-}
-
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', function(event) {
-    const sidebar = document.querySelector('.sidebar');
-    const menuBtn = document.getElementById('menu-btn');
+document.getElementById('filters-toggle').addEventListener('click', function() {
+    const content = document.getElementById('filters-content');
+    const toggle = document.getElementById('filters-toggle');
     
-    if (window.innerWidth <= 768 && 
-        sidebar.classList.contains('active') && 
-        !sidebar.contains(event.target) && 
-        !menuBtn.contains(event.target)) {
-        sidebar.classList.remove('active');
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.textContent = '▼';
+    } else {
+        content.classList.add('collapsed');
+        toggle.textContent = '▶';
     }
 });
 
-// Handle window resize for responsive sidebar
-window.addEventListener('resize', function() {
-    const sidebar = document.querySelector('.sidebar');
-    if (window.innerWidth > 768) {
-        sidebar.classList.remove('active');
-    }
-});
+// Изначально свернуть контент
+document.getElementById('filters-content').classList.add('collapsed');
+document.getElementById('filters-toggle').textContent = '▶';
