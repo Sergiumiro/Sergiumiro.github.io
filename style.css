@@ -174,10 +174,11 @@ body{
     pointer-events:auto;
     opacity:1;
     animation: fadeIn .4s forwards;
+    transform-origin: center;
 }
 .map-point.large{
-    animation:pulse 1.4s infinite;
     background:#ff4b4b;
+    animation:pulse 1.4s infinite;
 }
 
 @keyframes fadeIn{

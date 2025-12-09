@@ -205,9 +205,6 @@ function selectEvent(id){
     document.querySelectorAll(".event-card")
         .forEach(c=>c.classList.toggle("selected", c.dataset.id === id));
 
-    document.querySelectorAll(".map-point")
-        .forEach(p=>p.classList.toggle("large", p.dataset.id === id));
-    
     // Обновляем позиции точек, чтобы обеспечить корректное отображение выделения
     updatePointPositions();
 }
@@ -393,9 +390,9 @@ function updatePointPositions() {
         let scaledY = originalY * scaleRatio;
 
         // Применяем трансформацию (масштабирование и панорамирование)
-        // Сначала панорамируем, затем масштабируем
-        let transformedX = (scaledX + originX) * scale;
-        let transformedY = (scaledY + originY) * scale;
+        // Сначала масштабируем, затем панорамируем
+        let transformedX = scaledX * scale + originX * scale;
+        let transformedY = scaledY * scale + originY * scale;
 
         // Добавляем смещение для центрирования изображения
         const finalX = transformedX + offsetX;
@@ -403,14 +400,22 @@ function updatePointPositions() {
 
         p.style.left = finalX + "px";
         p.style.top = finalY + "px";
+        
+        // Масштабируем размер точек обратно пропорционально текущему масштабу,
+        // чтобы они оставались одинакового размера при увеличении/уменьшении карты
+        const pointScale = 1 / scale;
+        
+        // Устанавливаем класс large для выбранной точки, чтобы анимация применялась
+        p.classList.toggle("large", p.dataset.id === selectedId);
+        
+        // Применяем трансформацию с учетом масштаба точки
+        if (p.dataset.id === selectedId) {
+            // Для выделенной точки используем немного другой масштаб, чтобы она была больше обычной
+            p.style.transform = `translate(-50%, -50%) scale(${pointScale * 1.25})`;
+        } else {
+            p.style.transform = `translate(-50%, -50%) scale(${pointScale})`;
+        }
     });
-    
-    // После обновления позиций точек, нужно снова установить класс "large" для выбранной точки
-    if (selectedId) {
-        document.querySelectorAll(".map-point").forEach(p => {
-            p.classList.toggle("large", p.dataset.id === selectedId);
-        });
-    }
 }
 
 
