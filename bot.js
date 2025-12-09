@@ -13,7 +13,7 @@ bot.command('start', (ctx) => {
                     {
                         text: 'Открыть расписание',
                         web_app: { 
-                            url: process.env.WEBAPP_URL || 'https://your-username.github.io/your-repo/' 
+                            url: process.env.WEBAPP_URL || 'https://sergiumiro.github.io/index.html' 
                         }
                     }
                 ]
@@ -41,7 +41,7 @@ bot.command('schedule', (ctx) => {
                     {
                         text: 'Посмотреть расписание',
                         web_app: { 
-                            url: process.env.WEBAPP_URL || 'https://your-username.github.io/your-repo/' 
+                            url: process.env.WEBAPP_URL || 'https://sergiumiro.github.io/index.html' 
                         }
                     }
                 ]
@@ -59,7 +59,7 @@ bot.command('map', (ctx) => {
                     {
                         text: 'Посмотреть карту',
                         web_app: { 
-                            url: process.env.WEBAPP_URL || 'https://your-username.github.io/your-repo/' 
+                            url: process.env.WEBAPP_URL || 'https://sergiumiro.github.io/index.html'
                         }
                     }
                 ]
@@ -79,7 +79,7 @@ bot.on('callback_query', (ctx) => {
                         {
                             text: 'Открыть приложение',
                             web_app: { 
-                                url: process.env.WEBAPP_URL || 'https://your-username.github.io/your-repo/' 
+                                url: process.env.WEBAPP_URL || 'https://sergiumiro.github.io/index.html'
                             }
                         }
                     ]
@@ -98,7 +98,7 @@ bot.hears(/расписание|schedule|программа/i, (ctx) => {
                     {
                         text: 'Да, открыть расписание',
                         web_app: { 
-                            url: process.env.WEBAPP_URL || 'https://your-username.github.io/your-repo/' 
+                            url: process.env.WEBAPP_URL || 'https://sergiumiro.github.io/index.html'
                         }
                     }
                 ]
