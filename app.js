@@ -9,11 +9,14 @@ let searchQuery = "";
 let selectedTags = new Set();
 let hidePast = false;
 
+let favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
+
 const listEl = document.getElementById("list");
 const hallFilterEl = document.getElementById("hall-filter");
 const searchInput = document.getElementById("search-input");
 const tagsContainer = document.getElementById("tags-filter");
 
+const mapWrapper = document.getElementById("map-wrapper");
 const mapEl = document.getElementById("map");
 const pointsLayer = document.getElementById("points-layer");
 
@@ -24,7 +27,9 @@ const filesByDay = {
 };
 
 
-/* ---------------- ЗАГРУЗКА ДНЯ ---------------- */
+/* ============================================================
+   ЗАГРУЗКА ДНЯ
+============================================================ */
 async function loadDay(day){
     const data = await fetch(filesByDay[day]).then(r => r.json());
     events = data.slice().sort((a,b)=> new Date(a.startTime)-new Date(b.startTime));
@@ -34,14 +39,18 @@ async function loadDay(day){
 }
 
 
-/* ---------------- ПОИСК ---------------- */
+/* ============================================================
+   ПОИСК
+============================================================ */
 searchInput.addEventListener("input", ()=>{
     searchQuery = searchInput.value.toLowerCase();
     applyFilters();
 });
 
 
-/* ---------------- ФИЛЬТР ПО ЗАЛАМ ---------------- */
+/* ============================================================
+   ФИЛЬТР ПО ЗАЛАМ
+============================================================ */
 hallFilterEl.querySelectorAll("button").forEach(btn=>{
     btn.addEventListener("click", ()=>{
         hallFilterEl.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
@@ -52,7 +61,9 @@ hallFilterEl.querySelectorAll("button").forEach(btn=>{
 });
 
 
-/* ---------------- ФИЛЬТР ПО ТЕГАМ ---------------- */
+/* ============================================================
+   ФИЛЬТР ТЕГОВ
+============================================================ */
 function buildTagFilter(){
     selectedTags.clear();
     tagsContainer.innerHTML = "";
@@ -63,7 +74,6 @@ function buildTagFilter(){
     [...tagSet].sort().forEach(tag=>{
         const b = document.createElement("button");
         b.textContent = tag;
-        b.dataset.tag = tag;
 
         b.addEventListener("click", ()=>{
             if (selectedTags.has(tag)) {
@@ -81,14 +91,30 @@ function buildTagFilter(){
 }
 
 
-/* ---------------- СКРЫТИЕ ПРОШЕДШИХ ---------------- */
+/* ============================================================
+   СКРЫТИЕ ПРОШЕДШИХ
+============================================================ */
 document.getElementById("hide-past").addEventListener("change", (e)=>{
     hidePast = e.target.checked;
     applyFilters();
 });
 
 
-/* ---------------- ОБЪЕДИНЕННЫЙ ФИЛЬТР ---------------- */
+/* ============================================================
+   ИЗБРАННОЕ
+============================================================ */
+function toggleFavorite(id){
+    if (favorites.has(id)) favorites.delete(id);
+    else favorites.add(id);
+
+    localStorage.setItem("favorites", JSON.stringify([...favorites]));
+    renderList();
+}
+
+
+/* ============================================================
+   ОБЪЕДИНЁННЫЙ ФИЛЬТР
+============================================================ */
 function applyFilters(){
     const now = new Date();
 
@@ -104,6 +130,7 @@ function applyFilters(){
         if (selectedTags.size > 0){
             if (!ev.tags || !ev.tags.some(t => selectedTags.has(t))) return false;
         }
+
         return true;
     });
 
@@ -111,10 +138,14 @@ function applyFilters(){
     renderPoints();
     highlightTimeline();
     scrollToNext();
+    updateTimers();
+    updatePointPositions();
 }
 
 
-/* ---------------- СПИСОК ---------------- */
+/* ============================================================
+   СПИСОК
+============================================================ */
 function renderList(){
     listEl.innerHTML = "";
     const tpl = document.getElementById("event-card-template");
@@ -129,25 +160,31 @@ function renderList(){
             new Date(ev.startTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
         card.querySelector(".tags").textContent = ev.tags?.join(" · ") || "";
 
+        // избранное
+        const favBtn = node.querySelector(".fav-btn");
+        favBtn.classList.toggle("active", favorites.has(ev.id));
+        favBtn.onclick = (e)=>{ e.stopPropagation(); toggleFavorite(ev.id); };
+
+        // выбор события
         card.addEventListener("click", ()=>selectEvent(ev.id));
+
         listEl.appendChild(node);
     });
 }
 
 
-/* ---------------- ТОЧКИ ---------------- */
+/* ============================================================
+   ОТОБРАЖЕНИЕ ТОЧЕК
+============================================================ */
 function renderPoints(){
     pointsLayer.innerHTML = "";
 
     filteredEvents.forEach(ev=>{
-        const mp = ev.mapPoints?.[0];
-        if (!mp) return;
+        if (!ev.mapPoints || !ev.mapPoints[0]) return;
 
         const p = document.createElement("div");
         p.className = "map-point";
         p.dataset.id = ev.id;
-        p.style.left = (mp.x * 100) + "%";
-        p.style.top  = (mp.y * 100) + "%";
 
         p.addEventListener("click", e=>{
             e.stopPropagation();
@@ -159,21 +196,23 @@ function renderPoints(){
 }
 
 
-/* ---------------- ВЫБОР СОБЫТИЯ ---------------- */
+/* ============================================================
+   ВЫБОР СОБЫТИЯ
+============================================================ */
 function selectEvent(id){
     selectedId = id;
 
-    // список
     document.querySelectorAll(".event-card")
         .forEach(c=>c.classList.toggle("selected", c.dataset.id === id));
 
-    // точки
     document.querySelectorAll(".map-point")
         .forEach(p=>p.classList.toggle("large", p.dataset.id === id));
 }
 
 
-/* ---------------- ТЕКУЩЕЕ / СЛЕДУЮЩЕЕ ---------------- */
+/* ============================================================
+   ТЕКУЩЕЕ / СЛЕДУЮЩЕЕ
+============================================================ */
 function highlightTimeline(){
     const now = new Date();
 
@@ -211,7 +250,9 @@ function highlightTimeline(){
 }
 
 
-/* ---------------- АВТОПРОКРУТКА ---------------- */
+/* ============================================================
+   АВТОПРОКРУТКА
+============================================================ */
 function scrollToNext(){
     const {current, next} = highlightTimeline();
     const target = current || next;
@@ -229,13 +270,52 @@ function scrollToNext(){
 }
 
 
-/* ---------------- ЗУМ / ПАНОРАМА ---------------- */
+/* ============================================================
+   ТАЙМЕРЫ ОБРАТНОГО ОТСЧЁТА
+============================================================ */
+setInterval(updateTimers, 1000);
+
+function updateTimers(){
+    const now = new Date();
+
+    filteredEvents.forEach(ev=>{
+        const start = new Date(ev.startTime);
+        const end = new Date(ev.endTime);
+        const card = document.querySelector(`.event-card[data-id="${ev.id}"]`);
+        if (!card) return;
+
+        const t = card.querySelector(".timer");
+
+        if (now < start){
+            const diff = Math.floor((start - now) / 1000);
+            const m = Math.floor(diff/60);
+            const s = diff % 60;
+            t.textContent = `Начнётся через ${m} мин ${String(s).padStart(2,'0')} сек`;
+        }
+        else if (now >= start && now <= end){
+            const diff = Math.floor((end - now) / 1000);
+            const m = Math.floor(diff/60);
+            const s = diff % 60;
+            t.textContent = `Идёт: осталось ${m} мин ${String(s).padStart(2,'0')} сек`;
+        }
+        else {
+            t.textContent = `Завершено`;
+        }
+    });
+
+    highlightTimeline();
+}
+
+
+/* ============================================================
+   ЗУМ / ПАНОРАМА
+============================================================ */
 let scale = 1;
 let originX = 0, originY = 0;
 let lastX = 0, lastY = 0;
 let dragging = false;
 
-mapEl.addEventListener("pointerdown", e=>{
+mapWrapper.addEventListener("pointerdown", e=>{
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
@@ -251,25 +331,55 @@ window.addEventListener("pointermove", e=>{
     updateTransform();
 });
 
-mapEl.addEventListener("wheel", e=>{
+mapWrapper.addEventListener("wheel", e=>{
     e.preventDefault();
     const delta = (e.deltaY < 0) ? 1.1 : 0.9;
-    scale *= delta;
-    scale = Math.max(0.5, Math.min(5, scale));
+    scale = Math.min(5, Math.max(0.5, scale * delta));
     updateTransform();
 });
 
 function updateTransform(){
     mapEl.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    pointsLayer.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    updatePointPositions(); // точки обновляем вручную
 }
 
 
-/* ---------------- INIT ---------------- */
+/* ============================================================
+   ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT + SCALE + PAN
+============================================================ */
+function updatePointPositions() {
+    const containerRect = mapWrapper.getBoundingClientRect();
+    const imgRect = mapEl.getBoundingClientRect();
+
+    const offsetX = (containerRect.width  - imgRect.width)  / 2;
+    const offsetY = (containerRect.height - imgRect.height) / 2;
+
+    document.querySelectorAll(".map-point").forEach(p => {
+        const id = p.dataset.id;
+        const ev = filteredEvents.find(e => e.id === id);
+        if (!ev || !ev.mapPoints) return;
+
+        const mp = ev.mapPoints[0];
+
+        const px = imgRect.width  * mp.x + offsetX;
+        const py = imgRect.height * mp.y + offsetY;
+
+        const finalX = px * scale + originX;
+        const finalY = py * scale + originY;
+
+        p.style.left = finalX + "px";
+        p.style.top  = finalY + "px";
+    });
+}
+
+
+/* ============================================================
+   INIT
+============================================================ */
 document.querySelectorAll("#day-switcher button").forEach(b=>{
     b.addEventListener("click", ()=>{
         document.querySelectorAll("#day-switcher button").forEach(x=>x.classList.remove("active"));
-        b.classList.add("active");
+        b.addEventListener("active");
         currentDay = Number(b.dataset.day);
         loadDay(currentDay);
     });
