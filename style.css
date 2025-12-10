@@ -265,51 +265,6 @@ body{
     font-weight: bold;
 }
 
-/* Favorites toggle */
-.toggle-favorites {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #bbb;
-    padding: 10px;
-    border-radius: var(--border-radius);
-    background: rgba(255, 255, 255, 0.05);
-    transition: var(--transition);
-}
-
-.toggle-favorites:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.toggle-favorites input[type="checkbox"] {
-    margin-right: 8px;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    position: relative;
-    transition: var(--transition);
-}
-
-.toggle-favorites input[type="checkbox"]:checked {
-    background: var(--accent);
-    border-color: var(--accent);
-}
-
-.toggle-favorites input[type="checkbox"]:checked::after {
-    content: '★';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-}
-
 /* Overlay for mobile */
 .overlay {
     position: fixed;

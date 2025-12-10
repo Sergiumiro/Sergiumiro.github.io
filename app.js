@@ -8,7 +8,6 @@ let hallFilter = "all";
 let searchQuery = "";
 let selectedTags = new Set();
 let hidePast = false;
-let showFavoritesOnly = false;
 
 let favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
 
@@ -100,11 +99,6 @@ document.getElementById("hide-past").addEventListener("change", (e)=>{
     applyFilters();
 });
 
-document.getElementById("show-favorites-only").addEventListener("change", (e)=>{
-    showFavoritesOnly = e.target.checked;
-    applyFilters();
-});
-
 
 /* ============================================================
    ИЗБРАННОЕ
@@ -126,9 +120,6 @@ function applyFilters(){
 
     filteredEvents = events.filter(ev=>{
         const start = new Date(ev.startTime);
-
-        // Если включен фильтр "только избранное", то проверяем, есть ли событие в избранном
-        if (showFavoritesOnly && !favorites.has(ev.id)) return false;
 
         if (hidePast && start < now) return false;
 
