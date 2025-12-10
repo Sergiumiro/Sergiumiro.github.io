@@ -11,6 +11,9 @@ let hidePast = false;
 
 let favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
 
+// Переменная для состояния фильтра избранных событий
+let showFavoritesOnly = false;
+
 const listEl = document.getElementById("list");
 const hallFilterEl = document.getElementById("hall-filter");
 const searchInput = document.getElementById("search-input");
@@ -131,6 +134,9 @@ function applyFilters(){
             if (!ev.tags || !ev.tags.some(t => selectedTags.has(t))) return false;
         }
 
+        // Добавляем условие для фильтрации по избранным
+        if (showFavoritesOnly && !favorites.has(ev.id)) return false;
+
         return true;
     });
 
@@ -179,7 +185,7 @@ function renderList(){
 function renderPoints(){
     pointsLayer.innerHTML = "";
 
-    filteredEvents.forEach(ev=>{
+    events.forEach(ev=>{
         if (!ev.mapPoints || !ev.mapPoints[0]) return;
 
         const p = document.createElement("div");
@@ -414,6 +420,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initially hide the sidebar
     sidebar.classList.add('hidden');
     body.classList.add('sidebar-hidden');
+    
+    // Сбрасываем состояние кнопки "Показать только избранное"
+    const favoritesButton = document.getElementById('show-favorites');
+    if (favoritesButton) {
+        favoritesButton.classList.remove('active');
+    }
 });
 
 /* ============================================================
@@ -453,4 +465,15 @@ document.addEventListener('keydown', function(e) {
             toggleSidebar();
         }
     }
+});
+
+// Обработчик кнопки "Показать только избранное"
+document.getElementById('show-favorites').addEventListener('click', function() {
+    showFavoritesOnly = !showFavoritesOnly;
+    
+    // Обновляем класс активности кнопки
+    this.classList.toggle('active', showFavoritesOnly);
+    
+    // Применяем фильтры
+    applyFilters();
 });
