@@ -677,7 +677,7 @@ body.sidebar-hidden .main {
 
 .map-point{
     width:22px;height:22px;
-    background:white;
+    background: rgba(72, 115, 202, 0.41);
     border-radius:50%;
     position:absolute;
     transform:translate(-50%,-50%);
@@ -685,8 +685,8 @@ body.sidebar-hidden .main {
     opacity:1;
     animation: fadeIn .4s forwards;
     transform-origin: center;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(106, 95, 200, 0.37);
+    border: 2px solid rgba(16, 76, 209, 0.7);
     transition: var(--transition);
 }
 .map-point:hover{
@@ -694,10 +694,10 @@ body.sidebar-hidden .main {
     z-index: 10;
 }
 .map-point.large{
-    background:#ff4b4b;
-    border-color: #ff6b6b;
+    background: #1257da;
+    border-color: #0742bf;
     animation:pulse 1.4s infinite;
-    box-shadow: 0 0 15px rgba(255, 75, 75, 0.7);
+    box-shadow: 0 0 15px rgba(16, 76, 209, 0.7);
     transform:translate(-50%,-50%) scale(1.5);
 }
 
