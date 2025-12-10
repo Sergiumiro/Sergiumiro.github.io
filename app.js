@@ -165,6 +165,7 @@ function renderList(){
         card.querySelector(".time").textContent =
             new Date(ev.startTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
         card.querySelector(".tags").textContent = ev.tags?.join(" · ") || "";
+        card.querySelector(".hall").textContent = `Зал ${ev.hall}`;
 
         // избранное
         const favBtn = node.querySelector(".fav-btn");
