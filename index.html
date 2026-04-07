@@ -1,614 +1,439 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K8s Agent Dashboard - Futuristic Neon</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentOps Futuristic Demo</title>
+  <style>
+    :root{
+      --bg:#07090f;
+      --panel:#0d1018cc;
+      --panel2:#111622;
+      --line:#2b0f16;
+      --text:#f5f7fb;
+      --muted:#9aa4b2;
+      --red:#ff355d;
+      --red2:#b31237;
+      --red3:#6f1026;
+      --glow:0 0 25px rgba(255,53,93,.22), 0 0 60px rgba(255,53,93,.12);
+      --shadow:0 20px 50px rgba(0,0,0,.45);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,53,93,.16), transparent 25%),
+        radial-gradient(circle at top right, rgba(179,18,55,.16), transparent 25%),
+        linear-gradient(180deg, #05060a, #0a0d14 35%, #06070b);
+      color:var(--text);
+      min-height:100vh;
+      overflow:hidden;
+    }
+    .app{
+      display:grid;
+      grid-template-columns:280px 1fr;
+      height:100vh;
+    }
+    .sidebar{
+      padding:22px;
+      border-right:1px solid rgba(255,53,93,.14);
+      background:linear-gradient(180deg, rgba(8,10,15,.96), rgba(10,12,18,.92));
+      backdrop-filter:blur(14px);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:16px;
+      border:1px solid rgba(255,53,93,.15);
+      border-radius:18px;
+      background:linear-gradient(135deg, rgba(255,53,93,.12), rgba(179,18,55,.04));
+      box-shadow:var(--glow);
+      margin-bottom:18px;
+    }
+    .orb{
+      width:14px;height:14px;border-radius:50%;
+      background:var(--red);
+      box-shadow:0 0 12px var(--red), 0 0 28px rgba(255,53,93,.6);
+    }
+    .brand h1{font-size:16px;margin:0}
+    .brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+    .nav{
+      display:flex;flex-direction:column;gap:10px;margin-top:14px;
+    }
+    .nav-item,.nav-sub{
+      width:100%;
+      text-align:left;
+      border:none;
+      color:var(--text);
+      background:transparent;
+      padding:14px 16px;
+      border-radius:16px;
+      cursor:pointer;
+      transition:.25s;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .nav-item:hover,.nav-sub:hover,.nav-item.active,.nav-sub.active{
+      background:linear-gradient(135deg, rgba(255,53,93,.18), rgba(255,53,93,.05));
+      box-shadow:inset 0 0 0 1px rgba(255,53,93,.18), var(--glow);
+    }
+    .group{
+      margin-top:8px;
+      padding-left:8px;
+      border-left:1px solid rgba(255,53,93,.15);
+    }
+    .nav-sub{padding-left:18px;color:#d9dee7;font-size:14px}
+    .nav-sub.small{padding-left:30px;color:var(--muted);font-size:13px}
+    .main{
+      display:flex;
+      flex-direction:column;
+      height:100vh;
+    }
+    .topbar{
+      height:78px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+      border-bottom:1px solid rgba(255,53,93,.12);
+      background:rgba(8,10,15,.7);
+      backdrop-filter:blur(14px);
+    }
+    .top-title{
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .top-title h2{margin:0;font-size:20px}
+    .top-title span{color:var(--muted);font-size:13px}
+    .search{
+      position:relative;
+      width:min(420px, 42vw);
+    }
+    .search input{
+      width:100%;
+      background:rgba(16,20,31,.85);
+      border:1px solid rgba(255,53,93,.18);
+      color:var(--text);
+      padding:14px 16px 14px 44px;
+      border-radius:999px;
+      outline:none;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .search input:focus{
+      border-color:rgba(255,53,93,.45);
+      box-shadow:var(--glow);
+    }
+    .search:before{
+      content:"⌕";
+      position:absolute;
+      left:16px;top:50%;
+      transform:translateY(-50%);
+      color:var(--red);
+      font-size:18px;
+    }
+    .content{
+      padding:24px;
+      overflow:auto;
+      height:calc(100vh - 78px);
+    }
+    .page{display:none;animation:fade .25s ease}
+    .page.active{display:block}
+    @keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:18px;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(15,19,29,.94), rgba(10,13,20,.92));
+      border:1px solid rgba(255,53,93,.12);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .card:after{
+      content:"";
+      position:absolute;inset:auto -30% -40% auto;
+      width:220px;height:220px;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,53,93,.16), transparent 65%);
+      pointer-events:none;
+    }
+    .card h3{margin:0 0 10px;font-size:16px}
+    .muted{color:var(--muted);font-size:13px}
+    .status{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:#38f26b;box-shadow:0 0 12px #38f26b;
+      display:inline-block;margin-right:10px;
+    }
+    .dot.warn{background:#ffd24d;box-shadow:0 0 12px #ffd24d}
+    .dot.bad{background:#ff4d67;box-shadow:0 0 12px #ff4d67}
+    .list{
+      display:flex;flex-direction:column;gap:12px;margin-top:14px;
+    }
+    .agent-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px;
+      border-radius:16px;
+      background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,53,93,.11);
+      cursor:pointer;
+    }
+    .agent-row:hover{background:rgba(255,53,93,.06)}
+    .badge{
+      padding:7px 10px;border-radius:999px;
+      background:rgba(255,53,93,.14);
+      color:#ffd3dc;
+      border:1px solid rgba(255,53,93,.18);
+      font-size:12px;
+    }
+    .tabs{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 18px}
+    .tab{
+      padding:11px 16px;border-radius:999px;border:1px solid rgba(255,53,93,.14);
+      background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;
+    }
+    .tab.active{background:linear-gradient(135deg, rgba(255,53,93,.24), rgba(179,18,55,.12));box-shadow:var(--glow)}
+    .agent-panel{
+      display:grid;
+      grid-template-columns:1.25fr .95fr;
+      gap:18px;
+    }
+    .release{
+      display:grid;gap:10px;
+    }
+    .release-item{
+      padding:14px 16px;border-radius:16px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,53,93,.1);
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+    }
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .btn{
+      border:none;cursor:pointer;color:white;
+      padding:12px 16px;border-radius:14px;
+      background:linear-gradient(135deg, var(--red), var(--red2));
+      box-shadow:var(--glow);
+    }
+    .btn.secondary{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,53,93,.16);
+      box-shadow:none;
+    }
+    .footer-note{margin-top:18px;color:var(--muted);font-size:12px}
+    @media (max-width:1100px){
+      .app{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .grid,.agent-panel{grid-template-columns:1fr}
+      .search{width:100%;max-width:320px}
+    }
+  </style>
 </head>
 <body>
-    <!-- Particle background -->
-    <div id="particle-canvas"></div>
-    
-    <div class="dashboard-container">
-        <!-- Left Sidebar Menu (20%) -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1 class="logo">
-                    <span class="logo-icon">◈</span>
-                    <span class="logo-text">K8s AGENT</span>
-                </h1>
-                <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle sidebar">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <div class="menu-section">
-                    <div class="menu-item active" data-menu="agents">
-                        <span class="menu-icon">🚀</span>
-                        <span class="menu-label">Агенты</span>
-                        <span class="menu-arrow">▼</span>
-                    </div>
-                    <div class="submenu" data-parent="agents">
-                        <div class="submenu-item" data-page="agent-settings">
-                            <span class="menu-icon">⚙️</span>
-                            <span class="menu-label">Настройки</span>
-                        </div>
-                        <div class="submenu-item" data-page="gitops">
-                            <span class="menu-icon">📂</span>
-                            <span class="menu-label">GitOps</span>
-                        </div>
-                        <div class="submenu-item" data-page="jenkins">
-                            <span class="menu-icon">🔧</span>
-                            <span class="menu-label">Jenkins</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="menu-section">
-                    <div class="menu-item" data-menu="monitoring">
-                        <span class="menu-icon">📊</span>
-                        <span class="menu-label">Мониторинг</span>
-                        <span class="menu-arrow">▼</span>
-                    </div>
-                    <div class="submenu" data-parent="monitoring">
-                        <div class="submenu-item" data-page="monitoring-settings">
-                            <span class="menu-icon">⚙️</span>
-                            <span class="menu-label">Настройки</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="menu-section">
-                    <div class="menu-item" data-menu="settings">
-                        <span class="menu-icon">🔐</span>
-                        <span class="menu-label">Настройки</span>
-                    </div>
-                </div>
-            </nav>
-            
-            <div class="sidebar-footer">
-                <div class="system-status">
-                    <span class="status-indicator active"></span>
-                    <span class="status-label">Система активна</span>
-                </div>
-            </div>
-        </aside>
-        
-        <!-- Main Content Area (80%) -->
-        <main class="main-content" id="mainContent">
-            <!-- Top Search Bar -->
-            <header class="top-header">
-                <div class="search-container">
-                    <div class="search-wrapper">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" 
-                               class="search-input" 
-                               id="clusterSearch" 
-                               placeholder="Поиск кластеров, агентов..."
-                               autocomplete="off">
-                        <div class="search-dropdown" id="searchDropdown"></div>
-                    </div>
-                    <button class="notification-btn" id="notificationBtn">
-                        <span class="notif-icon">🔔</span>
-                        <span class="notif-badge" id="notifBadge">3</span>
-                    </button>
-                </div>
-            </header>
-            
-            <!-- Page: Cluster List (Home) -->
-            <section class="page active" id="page-home" data-page="home">
-                <div class="page-header">
-                    <h2 class="page-title typing-effect" data-text="Список кластеров">Список кластеров</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-secondary" id="refreshBtn">
-                            <span class="btn-icon">⟳</span>
-                            Обновить
-                        </button>
-                        <button class="btn btn-primary" id="addClusterBtn">
-                            <span class="btn-icon">+</span>
-                            Добавить
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="cluster-stats">
-                    <div class="stat-card">
-                        <span class="stat-value" id="totalClusters">0</span>
-                        <span class="stat-label">Всего кластеров</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value success" id="activeClusters">0</span>
-                        <span class="stat-label">Активны</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value warning" id="warningClusters">0</span>
-                        <span class="stat-label">Предупреждения</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value danger" id="inactiveClusters">0</span>
-                        <span class="stat-label">Неактивны</span>
-                    </div>
-                </div>
-                
-                <div class="cluster-grid" id="clusterGrid">
-                    <!-- Cluster cards will be rendered here by JS -->
-                </div>
-            </section>
-            
-            <!-- Page: Agent Details -->
-            <section class="page" id="page-agent" data-page="agent">
-                <button class="back-button" id="backToHome">
-                    <span class="btn-icon">←</span>
-                    Назад к списку
-                </button>
-                
-                <div class="agent-header">
-                    <div class="agent-info">
-                        <h2 class="agent-name" id="agentName">Agent Name</h2>
-                        <div class="agent-meta">
-                            <span class="agent-id" id="agentId">ID: --</span>
-                            <span class="agent-version" id="agentVersion">v--.--.--</span>
-                        </div>
-                    </div>
-                    <div class="release-banner" id="releaseBanner">
-                        <span class="release-label">РЕЛИЗ:</span>
-                        <a href="#" class="jira-link" id="jiraLink">JIRA #TICKET----</a>
-                        <button class="expand-btn" id="expandRelease">
-                            <span class="expand-icon">▶</span>
-                            Расширить
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Environment Tabs -->
-                <div class="env-tabs">
-                    <button class="env-tab active" data-env="ift">
-                        <span class="tab-status status-active"></span>
-                        ИФТ
-                        <span class="tab-badge">Active</span>
-                    </button>
-                    <button class="env-tab" data-env="psi">
-                        <span class="tab-status status-inactive"></span>
-                        ПСИ
-                        <span class="tab-badge">Inactive</span>
-                    </button>
-                    <button class="env-tab" data-env="prod">
-                        <span class="tab-status status-active"></span>
-                        ПРОМ
-                        <span class="tab-badge">Active</span>
-                    </button>
-                </div>
-                
-                <!-- Tab Contents -->
-                <div class="tab-contents">
-                    <!-- IFT Tab -->
-                    <div class="tab-content active" data-tab="ift">
-                        <div class="release-card" id="releaseCardIft">
-                            <div class="release-header" onclick="toggleReleaseExpand('ift')">
-                                <div class="release-info">
-                                    <span class="release-version" id="versionIft">v2.3.1</span>
-                                    <span class="release-jira">Jira: <a href="#" class="jira-ticket">K8S-2471</a></span>
-                                </div>
-                                <button class="toggle-expand-btn">
-                                    <span class="toggle-icon">⌄</span>
-                                </button>
-                            </div>
-                            <div class="release-details" id="releaseDetailsIft">
-                                <div class="config-grid">
-                                    <div class="config-item">
-                                        <span class="config-label">Дистрибутив</span>
-                                        <span class="config-value">Ubuntu 22.04 LTS</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Kafka Topics</span>
-                                        <span class="config-value">topic1, topic2, topic3</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Базы данных</span>
-                                        <span class="config-value">postgres-main, mysql-replica</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Security Manager</span>
-                                        <span class="config-value enabled">Enabled</span>
-                                    </div>
-                                </div>
-                                <div class="release-actions">
-                                    <button class="btn btn-secondary btn-small">Закрыть</button>
-                                    <button class="btn btn-primary btn-small">Сохранить настройки</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-primary action-btn" data-action="install">
-                                <span class="btn-icon">🚀</span>
-                                Установить
-                            </button>
-                            <button class="btn btn-secondary action-btn" data-action="check">
-                                <span class="btn-icon">✅</span>
-                                Проверить
-                            </button>
-                            <button class="btn btn-secondary action-btn" data-action="namespace">
-                                <span class="btn-icon">📂</span>
-                                Namespace
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- PSI Tab -->
-                    <div class="tab-content" data-tab="psi">
-                        <div class="release-card" id="releaseCardPsi">
-                            <div class="release-header" onclick="toggleReleaseExpand('psi')">
-                                <div class="release-info">
-                                    <span class="release-version" id="versionPsi">v2.3.0</span>
-                                    <span class="release-jira">Jira: <a href="#" class="jira-ticket">K8S-2468</a></span>
-                                </div>
-                                <button class="toggle-expand-btn">
-                                    <span class="toggle-icon">⌄</span>
-                                </button>
-                            </div>
-                            <div class="release-details" id="releaseDetailsPsi">
-                                <div class="config-grid">
-                                    <div class="config-item">
-                                        <span class="config-label">Дистрибутив</span>
-                                        <span class="config-value">CentOS 8.5</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Kafka Topics</span>
-                                        <span class="config-value">psi-kafka-cluster</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Базы данных</span>
-                                        <span class="config-value">psi-postgres-ha</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Security Manager</span>
-                                        <span class="config-value disabled">Disabled</span>
-                                    </div>
-                                </div>
-                                <div class="release-actions">
-                                    <button class="btn btn-secondary btn-small">Закрыть</button>
-                                    <button class="btn btn-primary btn-small">Сохранить настройки</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-primary action-btn" data-action="install">
-                                <span class="btn-icon">🚀</span>
-                                Установить
-                            </button>
-                            <button class="btn btn-secondary action-btn" data-action="check">
-                                <span class="btn-icon">✅</span>
-                                Проверить
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- PROD Tab -->
-                    <div class="tab-content" data-tab="prod">
-                        <div class="release-card" id="releaseCardProd">
-                            <div class="release-header" onclick="toggleReleaseExpand('prod')">
-                                <div class="release-info">
-                                    <span class="release-version" id="versionProd">v2.3.2</span>
-                                    <span class="release-jira">Jira: <a href="#" class="jira-ticket">K8S-2472</a></span>
-                                </div>
-                                <button class="toggle-expand-btn">
-                                    <span class="toggle-icon">⌄</span>
-                                </button>
-                            </div>
-                            <div class="release-details" id="releaseDetailsProd">
-                                <div class="config-grid">
-                                    <div class="config-item">
-                                        <span class="config-label">Дистрибутив</span>
-                                        <span class="config-value">RHEL 9.0</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Kafka Topics</span>
-                                        <span class="config-value">prod-kafka-01, prod-kafka-02, prod-kafka-03</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Базы данных</span>
-                                        <span class="config-value">prod-pg-cluster, prod-mysql-cluster</span>
-                                    </div>
-                                    <div class="config-item">
-                                        <span class="config-label">Security Manager</span>
-                                        <span class="config-value enabled">Enabled</span>
-                                    </div>
-                                </div>
-                                <div class="release-actions">
-                                    <button class="btn btn-secondary btn-small">Закрыть</button>
-                                    <button class="btn btn-primary btn-small">Сохранить настройки</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-primary action-btn" data-action="install">
-                                <span class="btn-icon">🚀</span>
-                                Установить
-                            </button>
-                            <button class="btn btn-secondary action-btn" data-action="check">
-                                <span class="btn-icon">✅</span>
-                                Проверить
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            </section>
-            
-            <!-- Page: Agent Settings -->
-            <section class="page" id="page-agent-settings" data-page="agent-settings">
-                <button class="back-button" id="backToHomeSettings">
-                    <span class="btn-icon">←</span>
-                    Назад к списку
-                </button>
-                
-                <div class="page-header">
-                    <h2 class="page-title">Настройки агентов</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" id="addAgentBtn">
-                            <span class="btn-icon">+</span>
-                            Добавить агента
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="agents-list" id="agentsList">
-                    <!-- Agents will be rendered here -->
-                </div>
-            </section>
-            
-            <!-- Page: GitOps -->
-            <section class="page" id="page-gitops" data-page="gitops">
-                <button class="back-button" id="backToHomeGitops">
-                    <span class="btn-icon">←</span>
-                    Назад к списку
-                </button>
-                
-                <div class="page-header">
-                    <h2 class="page-title">GitOps Configuration</h2>
-                </div>
-                
-                <div class="gitops-content">
-                    <div class="git-repo-card">
-                        <div class="repo-header">
-                            <span class="repo-icon">📂</span>
-                            <h3>Основной репозиторий</h3>
-                        </div>
-                        <div class="repo-info">
-                            <p><strong>URL:</strong> https://github.com/company/k8s-configs.git</p>
-                            <p><strong>Branch:</strong> main</p>
-                            <p><strong>Last Sync:</strong> 5 minutes ago</p>
-                            <p><strong>Status:</strong> <span class="status-badge active">🟢 Synced</span></p>
-                        </div>
-                        <div class="repo-actions">
-                            <button class="btn btn-secondary" id="syncRepoBtn">
-                                <span class="btn-icon">⟳</span>
-                                Синхронизировать
-                            </button>
-                            <button class="btn btn-primary" id="configRepoBtn">
-                                <span class="btn-icon">⚙️</span>
-                                Настроить
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="gitops-history">
-                        <h3>История изменений</h3>
-                        <div class="commit-list" id="commitList">
-                            <div class="commit-item">
-                                <span class="commit-hash">a3f7c21</span>
-                                <span class="commit-message">Update production cluster config</span>
-                                <span class="commit-author">@devops-team</span>
-                                <span class="commit-time">2 hours ago</span>
-                            </div>
-                            <div class="commit-item">
-                                <span class="commit-hash">b8e4d92</span>
-                                <span class="commit-message">Add new agent deployment</span>
-                                <span class="commit-author">@john-doe</span>
-                                <span class="commit-time">5 hours ago</span>
-                            </div>
-                            <div class="commit-item">
-                                <span class="commit-hash">c1f9a45</span>
-                                <span class="commit-message">Fix Kafka topic configuration</span>
-                                <span class="commit-author">@jane-smith</span>
-                                <span class="commit-time">1 day ago</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Page: Jenkins -->
-            <section class="page" id="page-jenkins" data-page="jenkins">
-                <button class="back-button" id="backToHomeJenkins">
-                    <span class="btn-icon">←</span>
-                    Назад к списку
-                </button>
-                
-                <div class="page-header">
-                    <h2 class="page-title">Jenkins Configuration</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" id="newJobBtn">
-                            <span class="btn-icon">+</span>
-                            Новый Job
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="jenkins-content">
-                    <div class="jenkins-status">
-                        <div class="status-card jenkins">
-                            <span class="status-icon">🔧</span>
-                            <div class="status-info">
-                                <h4>Jenkins Server</h4>
-                                <p>URL: https://jenkins.company.internal</p>
-                                <p>Status: <span class="status-badge active">🟢 Online</span></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="pipeline-list">
-                        <h3>Active Pipelines</h3>
-                        <div class="pipeline-grid" id="pipelineGrid">
-                            <div class="pipeline-card">
-                                <div class="pipeline-header">
-                                    <span class="pipeline-name">deploy-prod-cluster</span>
-                                    <span class="pipeline-status running">🔄 Running</span>
-                                </div>
-                                <div class="pipeline-progress">
-                                    <div class="progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
-                                    <span class="progress-text">Stage: Deploy Agents (65%)</span>
-                                </div>
-                                <div class="pipeline-meta">
-                                    <span>Build #1247</span>
-                                    <span>Started by: @devops-bot</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-card">
-                                <div class="pipeline-header">
-                                    <span class="pipeline-name">test-psi-env</span>
-                                    <span class="pipeline-status success">✅ Success</span>
-                                </div>
-                                <div class="pipeline-meta">
-                                    <span>Build #892</span>
-                                    <span>Duration: 12m 34s</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-card">
-                                <div class="pipeline-header">
-                                    <span class="pipeline-name">backup-databases</span>
-                                    <span class="pipeline-status pending">⏳ Pending</span>
-                                </div>
-                                <div class="pipeline-meta">
-                                    <span>Scheduled: 02:00 UTC</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Page: Monitoring -->
-            <section class="page" id="page-monitoring" data-page="monitoring">
-                <button class="back-button" id="backToHomeMonitoring">
-                    <span class="btn-icon">←</span>
-                    Назад к списку
-                </button>
-                
-                <div class="page-header">
-                    <h2 class="page-title">Monitoring Dashboard</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-secondary" id="exportMetricsBtn">
-                            <span class="btn-icon">📊</span>
-                            Экспорт
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="monitoring-content">
-                    <div class="metrics-overview">
-                        <div class="metric-card">
-                            <span class="metric-value">98.5%</span>
-                            <span class="metric-label">Uptime (24h)</span>
-                            <span class="metric-trend positive">↑ 0.2%</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value">1.2s</span>
-                            <span class="metric-label">Avg Response</span>
-                            <span class="metric-trend negative">↓ 0.3s</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value">847</span>
-                            <span class="metric-label">Requests/min</span>
-                            <span class="metric-trend positive">↑ 12%</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value">3</span>
-                            <span class="metric-label">Active Alerts</span>
-                            <span class="metric-trend neutral">─</span>
-                        </div>
-                    </div>
-                    
-                    <div class="charts-grid">
-                        <div class="chart-card">
-                            <h4>CPU Usage (%)</h4>
-                            <div class="chart-placeholder" id="cpuChart">
-                                <svg viewBox="0 0 400 150" class="line-chart">
-                                    <polyline points="0,120 50,100 100,110 150,80 200,90 250,60 300,70 350,50 400,65" 
-                                              fill="none" stroke="#00FF88" stroke-width="2"/>
-                                    <polyline points="0,120 50,100 100,110 150,80 200,90 250,60 300,70 350,50 400,65 400,150 0,150" 
-                                              fill="rgba(0, 255, 136, 0.1)" stroke="none"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="chart-card">
-                            <h4>Memory Usage (GB)</h4>
-                            <div class="chart-placeholder" id="memoryChart">
-                                <svg viewBox="0 0 400 150" class="line-chart">
-                                    <polyline points="0,100 50,95 100,90 150,85 200,80 250,75 300,70 350,65 400,60" 
-                                              fill="none" stroke="#00CCFF" stroke-width="2"/>
-                                    <polyline points="0,100 50,95 100,90 150,85 200,80 250,75 300,70 350,65 400,60 400,150 0,150" 
-                                              fill="rgba(0, 204, 255, 0.1)" stroke="none"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="alerts-panel">
-                        <h3>Recent Alerts</h3>
-                        <div class="alerts-list" id="alertsList">
-                            <div class="alert-item warning">
-                                <span class="alert-icon">⚠️</span>
-                                <span class="alert-message">High CPU usage on prod-cluster-04 (85%)</span>
-                                <span class="alert-time">10 min ago</span>
-                            </div>
-                            <div class="alert-item error">
-                                <span class="alert-icon">🔴</span>
-                                <span class="alert-message">Connection timeout: dev-cluster-01</span>
-                                <span class="alert-time">1 hour ago</span>
-                            </div>
-                            <div class="alert-item info">
-                                <span class="alert-icon">ℹ️</span>
-                                <span class="alert-message">Scheduled maintenance completed</span>
-                                <span class="alert-time">3 hours ago</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-    
-    <!-- JIRA Modal -->
-    <div class="modal-overlay" id="jiraModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="jiraModalTitle">JIRA Ticket</h3>
-                <button class="modal-close" id="closeJiraModal">×</button>
-            </div>
-            <div class="modal-body" id="jiraModalBody">
-                <!-- JIRA details loaded dynamically -->
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeJiraBtn">Закрыть</button>
-                <button class="btn btn-primary">Перейти к тикету</button>
-            </div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>AgentOps Nexus</h1>
+          <p>futuristic demo control center</p>
         </div>
-    </div>
-    
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toastContainer"></div>
-    
-    <script src="app.js"></script>
+      </div>
+
+      <div class="nav">
+        <button class="nav-item active" data-page="home">Главная <span>›</span></button>
+        <button class="nav-item" data-page="agents">Агенты <span>›</span></button>
+        <div class="group">
+          <button class="nav-sub" data-page="agent-settings">Настройки агента</button>
+          <button class="nav-sub small" data-page="gitops">Конфигурация gitOps</button>
+          <button class="nav-sub small" data-page="jenkins">Конфигурация Jenkins</button>
+        </div>
+        <button class="nav-item" data-page="monitoring">Мониторинг Агентов <span>›</span></button>
+        <div class="group">
+          <button class="nav-sub" data-page="monitoring-settings">Настройки</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-title">
+          <h2 id="pageTitle">Главная</h2>
+          <span id="pageSub">статус cluster k8s - agent</span>
+        </div>
+        <div class="search">
+          <input placeholder="Поиск по агентам, кластерам, релизам..." />
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="page active" id="home">
+          <div class="grid">
+            <div class="card">
+              <h3>Статус кластеров</h3>
+              <div class="status"><div><span class="dot"></span>k8s-prod-1</div><div class="badge">agent-01</div></div>
+              <div class="status"><div><span class="dot warn"></span>k8s-stage-2</div><div class="badge">agent-02</div></div>
+              <div class="status"><div><span class="dot"></span>k8s-prod-1</div><div class="badge">agent-03</div></div>
+              <div class="status"><div><span class="dot bad"></span>k8s-dev-7</div><div class="badge">agent-04</div></div>
+            </div>
+            <div class="card">
+              <h3>Дубли кластеров</h3>
+              <p class="muted">Кластеры могут отображаться несколько раз — это нормально для демо.</p>
+              <div class="list">
+                <div class="agent-row"><span>k8s-prod-1</span><span class="badge">3 agents</span></div>
+                <div class="agent-row"><span>k8s-stage-2</span><span class="badge">1 agent</span></div>
+                <div class="agent-row"><span>k8s-dev-7</span><span class="badge">2 agents</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Быстрые действия</h3>
+              <p class="muted">Переход к агентам, мониторингу и настройкам.</p>
+              <div class="btns">
+                <button class="btn" data-page="agents">Открыть агенты</button>
+                <button class="btn secondary" data-page="monitoring">Мониторинг</button>
+                <button class="btn secondary" data-page="gitops">GitOps</button>
+              </div>
+              <div class="footer-note">Темно-красный футуристичный стиль, без фреймворков.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="agents">
+          <div class="card">
+            <h3>Список агентов</h3>
+            <div class="list">
+              <div class="agent-row" data-page="agent-detail"><span>agent-01 · cluster k8s-prod-1</span><span class="badge">healthy</span></div>
+              <div class="agent-row" data-page="agent-detail"><span>agent-02 · cluster k8s-stage-2</span><span class="badge">deploying</span></div>
+              <div class="agent-row" data-page="agent-detail"><span>agent-03 · cluster k8s-prod-1</span><span class="badge">warning</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="agent-detail">
+          <div class="agent-panel">
+            <div class="card">
+              <h3>Окно агента</h3>
+              <p class="muted">Деление на ИФТ / ПСИ / ПРОМ</p>
+              <div class="tabs">
+                <button class="tab active">ИФТ</button>
+                <button class="tab">ПСИ</button>
+                <button class="tab">ПРОМ</button>
+              </div>
+              <div class="release">
+                <div class="release-item">
+                  <div>
+                    <div><strong>Release 1.24.8</strong></div>
+                    <div class="muted">jira: AGENT-2481</div>
+                  </div>
+                  <a href="#" style="color:#ff7d97;text-decoration:none">Открыть Jira</a>
+                </div>
+                <div class="release-item">
+                  <div>
+                    <div><strong>Release 1.24.9</strong></div>
+                    <div class="muted">jira: AGENT-2490</div>
+                  </div>
+                  <a href="#" style="color:#ff7d97;text-decoration:none">Открыть Jira</a>
+                </div>
+              </div>
+              <div class="btns">
+                <button class="btn">Установить</button>
+                <button class="btn secondary">Проверить</button>
+                <button class="btn secondary">Открыть namespace</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>GitOps настройки</h3>
+              <div class="list">
+                <div class="release-item"><span>Дистрибутив</span><span class="badge">v8.2.1</span></div>
+                <div class="release-item"><span>Кафки</span><span class="badge">3 nodes</span></div>
+                <div class="release-item"><span>Базы данных</span><span class="badge">2 instances</span></div>
+                <div class="release-item"><span>Секмана</span><span class="badge">enabled</span></div>
+              </div>
+              <div class="btns">
+                <button class="btn">Установить</button>
+                <button class="btn secondary">Проверить</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="agent-settings">
+          <div class="card">
+            <h3>Настройки агента</h3>
+            <p class="muted">Здесь можно разместить параметры окружения, namespace, токены и связи с GitOps/Jenkins.</p>
+          </div>
+        </section>
+
+        <section class="page" id="monitoring">
+          <div class="card">
+            <h3>Мониторинг агентов</h3>
+            <p class="muted">Панель мониторинга со статусами, latency, health checks и логикой алертов.</p>
+          </div>
+        </section>
+
+        <section class="page" id="gitops">
+          <div class="card">
+            <h3>Конфигурация GitOps</h3>
+            <p class="muted">Демо-раздел для репозиториев, манифестов и синхронизации.</p>
+          </div>
+        </section>
+
+        <section class="page" id="jenkins">
+          <div class="card">
+            <h3>Конфигурация Jenkins</h3>
+            <p class="muted">Демо-раздел для pipeline, job parameters и deploy stages.</p>
+          </div>
+        </section>
+
+        <section class="page" id="monitoring-settings">
+          <div class="card">
+            <h3>Настройки мониторинга</h3>
+            <p class="muted">Триггеры, пороги, уведомления и routing для статусов кластеров.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const pages = document.querySelectorAll('.page');
+    const navButtons = document.querySelectorAll('[data-page]');
+    const title = document.getElementById('pageTitle');
+    const sub = document.getElementById('pageSub');
+
+    const meta = {
+      home: ['Главная', 'статус cluster k8s - agent'],
+      agents: ['Агенты', 'список агентов и кластеров'],
+      'agent-detail': ['Агент', 'окно агента: ИФТ / ПСИ / ПРОМ'],
+      'agent-settings': ['Настройки агента', 'параметры и связи'],
+      monitoring: ['Мониторинг Агентов', 'health, alerts, metrics'],
+      gitops: ['Конфигурация gitOps', 'дистрибутивы и манифесты'],
+      jenkins: ['Конфигурация Jenkins', 'pipelines и deploy'],
+      'monitoring-settings': ['Настройки мониторинга', 'правила и алерты']
+    };
+
+    function openPage(id){
+      pages.forEach(p => p.classList.toggle('active', p.id === id));
+      document.querySelectorAll('.nav-item,.nav-sub').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`[data-page="${id}"]`).forEach(b => b.classList.add('active'));
+      if(meta[id]){ title.textContent = meta[id][0]; sub.textContent = meta[id][1]; }
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => openPage(btn.dataset.page));
+    });
+
+    document.querySelectorAll('.agent-row').forEach(row => {
+      row.addEventListener('click', () => openPage('agent-detail'));
+    });
+  </script>
 </body>
 </html>
