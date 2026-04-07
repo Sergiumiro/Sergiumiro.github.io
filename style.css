@@ -1371,3 +1371,456 @@ body::before {
 .stagger-delay:nth-child(3) { animation-delay: 0.3s; }
 .stagger-delay:nth-child(4) { animation-delay: 0.4s; }
 .stagger-delay:nth-child(5) { animation-delay: 0.5s; }
+
+/* ============================================
+   NEW PAGES STYLES (GitOps, Jenkins, Monitoring, Agent Settings)
+============================================ */
+
+/* Agents List */
+.agents-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.agent-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.agent-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--glow-md);
+    border-color: var(--color-primary);
+}
+
+.agent-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.agent-card-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    color: var(--color-primary);
+}
+
+.agent-card-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.agent-card-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* GitOps Styles */
+.gitops-content {
+    padding: var(--spacing-lg);
+    display: grid;
+    gap: var(--spacing-xl);
+}
+
+.git-repo-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+}
+
+.repo-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.repo-icon {
+    font-size: 2rem;
+}
+
+.repo-header h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary);
+}
+
+.repo-info p {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+}
+
+.repo-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.gitops-history h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary-light);
+    margin-bottom: var(--spacing-md);
+}
+
+.commit-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.commit-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px 100px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(0, 255, 136, 0.05);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    transition: background var(--transition-fast);
+}
+
+.commit-item:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.commit-hash {
+    font-family: monospace;
+    color: var(--color-primary);
+}
+
+.commit-message {
+    color: var(--text-primary);
+}
+
+.commit-author {
+    color: var(--text-secondary);
+}
+
+.commit-time {
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* Jenkins Styles */
+.jenkins-content {
+    padding: var(--spacing-lg);
+    display: grid;
+    gap: var(--spacing-xl);
+}
+
+.jenkins-status {
+    display: flex;
+    justify-content: center;
+}
+
+.status-card.jenkins {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    width: 100%;
+    max-width: 600px;
+}
+
+.status-icon {
+    font-size: 3rem;
+}
+
+.status-info h4 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.status-info p {
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.pipeline-list h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary-light);
+    margin-bottom: var(--spacing-md);
+}
+
+.pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.pipeline-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-normal);
+}
+
+.pipeline-card:hover {
+    box-shadow: var(--glow-sm);
+    border-color: var(--color-primary-mid);
+}
+
+.pipeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.pipeline-name {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.pipeline-status {
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.pipeline-status.running {
+    background: rgba(0, 204, 255, 0.2);
+    color: #00CCFF;
+}
+
+.pipeline-status.success {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--color-primary);
+}
+
+.pipeline-status.pending {
+    background: rgba(255, 170, 0, 0.2);
+    color: var(--status-warning);
+}
+
+.pipeline-progress {
+    margin-bottom: var(--spacing-md);
+}
+
+.progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.pipeline-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Monitoring Styles */
+.monitoring-content {
+    padding: var(--spacing-lg);
+    display: grid;
+    gap: var(--spacing-xl);
+}
+
+.metrics-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.metric-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: all var(--transition-normal);
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--glow-sm);
+}
+
+.metric-value {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-trend {
+    display: inline-block;
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.metric-trend.positive {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--color-primary);
+}
+
+.metric-trend.negative {
+    background: rgba(255, 68, 68, 0.2);
+    color: var(--status-danger);
+}
+
+.metric-trend.neutral {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.chart-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+}
+
+.chart-card h4 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary-light);
+    margin-bottom: var(--spacing-md);
+}
+
+.chart-placeholder {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.line-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.alerts-panel h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--color-primary-light);
+    margin-bottom: var(--spacing-md);
+}
+
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.alert-item {
+    display: grid;
+    grid-template-columns: 40px 1fr 120px;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md);
+    background: rgba(0, 255, 136, 0.05);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--color-primary);
+    transition: all var(--transition-fast);
+}
+
+.alert-item:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.alert-item.warning {
+    border-left-color: var(--status-warning);
+    background: rgba(255, 170, 0, 0.05);
+}
+
+.alert-item.error {
+    border-left-color: var(--status-danger);
+    background: rgba(255, 68, 68, 0.05);
+}
+
+.alert-item.info {
+    border-left-color: var(--status-info);
+    background: rgba(0, 204, 255, 0.05);
+}
+
+.alert-icon {
+    font-size: 1.5rem;
+}
+
+.alert-message {
+    color: var(--text-primary);
+}
+
+.alert-time {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* Responsive adjustments for new pages */
+@media (max-width: 768px) {
+    .commit-item {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    
+    .pipeline-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .alert-item {
+        grid-template-columns: 30px 1fr;
+    }
+    
+    .alert-time {
+        grid-column: 2;
+        text-align: left;
+    }
+}

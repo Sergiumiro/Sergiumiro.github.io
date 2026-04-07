@@ -343,26 +343,247 @@
                     </div>
                 </div>
             </section>
+            </section>
             
-            <!-- Placeholder pages -->
+            <!-- Page: Agent Settings -->
+            <section class="page" id="page-agent-settings" data-page="agent-settings">
+                <button class="back-button" id="backToHomeSettings">
+                    <span class="btn-icon">←</span>
+                    Назад к списку
+                </button>
+                
+                <div class="page-header">
+                    <h2 class="page-title">Настройки агентов</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="addAgentBtn">
+                            <span class="btn-icon">+</span>
+                            Добавить агента
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="agents-list" id="agentsList">
+                    <!-- Agents will be rendered here -->
+                </div>
+            </section>
+            
+            <!-- Page: GitOps -->
             <section class="page" id="page-gitops" data-page="gitops">
-                <div class="page-placeholder">
-                    <h2>GitOps Configuration</h2>
-                    <p>Module under development</p>
+                <button class="back-button" id="backToHomeGitops">
+                    <span class="btn-icon">←</span>
+                    Назад к списку
+                </button>
+                
+                <div class="page-header">
+                    <h2 class="page-title">GitOps Configuration</h2>
+                </div>
+                
+                <div class="gitops-content">
+                    <div class="git-repo-card">
+                        <div class="repo-header">
+                            <span class="repo-icon">📂</span>
+                            <h3>Основной репозиторий</h3>
+                        </div>
+                        <div class="repo-info">
+                            <p><strong>URL:</strong> https://github.com/company/k8s-configs.git</p>
+                            <p><strong>Branch:</strong> main</p>
+                            <p><strong>Last Sync:</strong> 5 minutes ago</p>
+                            <p><strong>Status:</strong> <span class="status-badge active">🟢 Synced</span></p>
+                        </div>
+                        <div class="repo-actions">
+                            <button class="btn btn-secondary" id="syncRepoBtn">
+                                <span class="btn-icon">⟳</span>
+                                Синхронизировать
+                            </button>
+                            <button class="btn btn-primary" id="configRepoBtn">
+                                <span class="btn-icon">⚙️</span>
+                                Настроить
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="gitops-history">
+                        <h3>История изменений</h3>
+                        <div class="commit-list" id="commitList">
+                            <div class="commit-item">
+                                <span class="commit-hash">a3f7c21</span>
+                                <span class="commit-message">Update production cluster config</span>
+                                <span class="commit-author">@devops-team</span>
+                                <span class="commit-time">2 hours ago</span>
+                            </div>
+                            <div class="commit-item">
+                                <span class="commit-hash">b8e4d92</span>
+                                <span class="commit-message">Add new agent deployment</span>
+                                <span class="commit-author">@john-doe</span>
+                                <span class="commit-time">5 hours ago</span>
+                            </div>
+                            <div class="commit-item">
+                                <span class="commit-hash">c1f9a45</span>
+                                <span class="commit-message">Fix Kafka topic configuration</span>
+                                <span class="commit-author">@jane-smith</span>
+                                <span class="commit-time">1 day ago</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
             
+            <!-- Page: Jenkins -->
             <section class="page" id="page-jenkins" data-page="jenkins">
-                <div class="page-placeholder">
-                    <h2>Jenkins Configuration</h2>
-                    <p>Module under development</p>
+                <button class="back-button" id="backToHomeJenkins">
+                    <span class="btn-icon">←</span>
+                    Назад к списку
+                </button>
+                
+                <div class="page-header">
+                    <h2 class="page-title">Jenkins Configuration</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="newJobBtn">
+                            <span class="btn-icon">+</span>
+                            Новый Job
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="jenkins-content">
+                    <div class="jenkins-status">
+                        <div class="status-card jenkins">
+                            <span class="status-icon">🔧</span>
+                            <div class="status-info">
+                                <h4>Jenkins Server</h4>
+                                <p>URL: https://jenkins.company.internal</p>
+                                <p>Status: <span class="status-badge active">🟢 Online</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pipeline-list">
+                        <h3>Active Pipelines</h3>
+                        <div class="pipeline-grid" id="pipelineGrid">
+                            <div class="pipeline-card">
+                                <div class="pipeline-header">
+                                    <span class="pipeline-name">deploy-prod-cluster</span>
+                                    <span class="pipeline-status running">🔄 Running</span>
+                                </div>
+                                <div class="pipeline-progress">
+                                    <div class="progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+                                    <span class="progress-text">Stage: Deploy Agents (65%)</span>
+                                </div>
+                                <div class="pipeline-meta">
+                                    <span>Build #1247</span>
+                                    <span>Started by: @devops-bot</span>
+                                </div>
+                            </div>
+                            <div class="pipeline-card">
+                                <div class="pipeline-header">
+                                    <span class="pipeline-name">test-psi-env</span>
+                                    <span class="pipeline-status success">✅ Success</span>
+                                </div>
+                                <div class="pipeline-meta">
+                                    <span>Build #892</span>
+                                    <span>Duration: 12m 34s</span>
+                                </div>
+                            </div>
+                            <div class="pipeline-card">
+                                <div class="pipeline-header">
+                                    <span class="pipeline-name">backup-databases</span>
+                                    <span class="pipeline-status pending">⏳ Pending</span>
+                                </div>
+                                <div class="pipeline-meta">
+                                    <span>Scheduled: 02:00 UTC</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
             
+            <!-- Page: Monitoring -->
             <section class="page" id="page-monitoring" data-page="monitoring">
-                <div class="page-placeholder">
-                    <h2>Monitoring Dashboard</h2>
-                    <p>Module under development</p>
+                <button class="back-button" id="backToHomeMonitoring">
+                    <span class="btn-icon">←</span>
+                    Назад к списку
+                </button>
+                
+                <div class="page-header">
+                    <h2 class="page-title">Monitoring Dashboard</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="exportMetricsBtn">
+                            <span class="btn-icon">📊</span>
+                            Экспорт
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="monitoring-content">
+                    <div class="metrics-overview">
+                        <div class="metric-card">
+                            <span class="metric-value">98.5%</span>
+                            <span class="metric-label">Uptime (24h)</span>
+                            <span class="metric-trend positive">↑ 0.2%</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-value">1.2s</span>
+                            <span class="metric-label">Avg Response</span>
+                            <span class="metric-trend negative">↓ 0.3s</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-value">847</span>
+                            <span class="metric-label">Requests/min</span>
+                            <span class="metric-trend positive">↑ 12%</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-value">3</span>
+                            <span class="metric-label">Active Alerts</span>
+                            <span class="metric-trend neutral">─</span>
+                        </div>
+                    </div>
+                    
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h4>CPU Usage (%)</h4>
+                            <div class="chart-placeholder" id="cpuChart">
+                                <svg viewBox="0 0 400 150" class="line-chart">
+                                    <polyline points="0,120 50,100 100,110 150,80 200,90 250,60 300,70 350,50 400,65" 
+                                              fill="none" stroke="#00FF88" stroke-width="2"/>
+                                    <polyline points="0,120 50,100 100,110 150,80 200,90 250,60 300,70 350,50 400,65 400,150 0,150" 
+                                              fill="rgba(0, 255, 136, 0.1)" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Memory Usage (GB)</h4>
+                            <div class="chart-placeholder" id="memoryChart">
+                                <svg viewBox="0 0 400 150" class="line-chart">
+                                    <polyline points="0,100 50,95 100,90 150,85 200,80 250,75 300,70 350,65 400,60" 
+                                              fill="none" stroke="#00CCFF" stroke-width="2"/>
+                                    <polyline points="0,100 50,95 100,90 150,85 200,80 250,75 300,70 350,65 400,60 400,150 0,150" 
+                                              fill="rgba(0, 204, 255, 0.1)" stroke="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alerts-panel">
+                        <h3>Recent Alerts</h3>
+                        <div class="alerts-list" id="alertsList">
+                            <div class="alert-item warning">
+                                <span class="alert-icon">⚠️</span>
+                                <span class="alert-message">High CPU usage on prod-cluster-04 (85%)</span>
+                                <span class="alert-time">10 min ago</span>
+                            </div>
+                            <div class="alert-item error">
+                                <span class="alert-icon">🔴</span>
+                                <span class="alert-message">Connection timeout: dev-cluster-01</span>
+                                <span class="alert-time">1 hour ago</span>
+                            </div>
+                            <div class="alert-item info">
+                                <span class="alert-icon">ℹ️</span>
+                                <span class="alert-message">Scheduled maintenance completed</span>
+                                <span class="alert-time">3 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

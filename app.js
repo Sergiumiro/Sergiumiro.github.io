@@ -60,6 +60,170 @@ const AGENT_DETAILS = {
                 }
             }
         }
+    },
+    'agent-beta': {
+        name: 'Agent Beta',
+        id: 'AGT-002',
+        version: 'v2.2.8',
+        jiraTicket: 'K8S-2455',
+        environments: {
+            ift: {
+                active: true,
+                version: 'v2.2.8',
+                jira: 'K8S-2455',
+                config: {
+                    distro: 'Ubuntu 20.04 LTS',
+                    kafka: 'beta-topic-a, beta-topic-b',
+                    databases: 'beta-mysql-main',
+                    securityManager: 'enabled'
+                }
+            },
+            psi: {
+                active: true,
+                version: 'v2.2.7',
+                jira: 'K8S-2450',
+                config: {
+                    distro: 'Ubuntu 20.04 LTS',
+                    kafka: 'beta-psi-kafka',
+                    databases: 'beta-psi-postgres',
+                    securityManager: 'enabled'
+                }
+            },
+            prod: {
+                active: false,
+                version: 'v2.2.5',
+                jira: 'K8S-2440',
+                config: {
+                    distro: 'Ubuntu 20.04 LTS',
+                    kafka: 'beta-prod-kafka',
+                    databases: 'beta-prod-mysql',
+                    securityManager: 'disabled'
+                }
+            }
+        }
+    },
+    'agent-gamma': {
+        name: 'Agent Gamma',
+        id: 'AGT-003',
+        version: 'v2.1.5',
+        jiraTicket: 'K8S-2430',
+        environments: {
+            ift: {
+                active: false,
+                version: 'v2.1.5',
+                jira: 'K8S-2430',
+                config: {
+                    distro: 'Debian 11',
+                    kafka: 'gamma-dev-topics',
+                    databases: 'gamma-dev-db',
+                    securityManager: 'disabled'
+                }
+            },
+            psi: {
+                active: false,
+                version: 'v2.1.4',
+                jira: 'K8S-2425',
+                config: {
+                    distro: 'Debian 11',
+                    kafka: 'gamma-psi-kafka',
+                    databases: 'gamma-psi-db',
+                    securityManager: 'disabled'
+                }
+            },
+            prod: {
+                active: false,
+                version: 'v2.1.0',
+                jira: 'K8S-2400',
+                config: {
+                    distro: 'Debian 11',
+                    kafka: 'gamma-prod-kafka',
+                    databases: 'gamma-prod-db',
+                    securityManager: 'disabled'
+                }
+            }
+        }
+    },
+    'agent-delta': {
+        name: 'Agent Delta',
+        id: 'AGT-004',
+        version: 'v2.3.0',
+        jiraTicket: 'K8S-2460',
+        environments: {
+            ift: {
+                active: true,
+                version: 'v2.3.0',
+                jira: 'K8S-2460',
+                config: {
+                    distro: 'Rocky Linux 9',
+                    kafka: 'delta-ift-kafka-01',
+                    databases: 'delta-ift-postgres-ha',
+                    securityManager: 'enabled'
+                }
+            },
+            psi: {
+                active: true,
+                version: 'v2.2.9',
+                jira: 'K8S-2458',
+                config: {
+                    distro: 'Rocky Linux 9',
+                    kafka: 'delta-psi-kafka-01',
+                    databases: 'delta-psi-mysql-cluster',
+                    securityManager: 'enabled'
+                }
+            },
+            prod: {
+                active: true,
+                version: 'v2.3.0',
+                jira: 'K8S-2462',
+                config: {
+                    distro: 'Rocky Linux 9',
+                    kafka: 'delta-prod-kafka-01, delta-prod-kafka-02',
+                    databases: 'delta-prod-postgres, delta-prod-mysql',
+                    securityManager: 'enabled'
+                }
+            }
+        }
+    },
+    'agent-epsilon': {
+        name: 'Agent Epsilon',
+        id: 'AGT-005',
+        version: 'v2.4.0-beta',
+        jiraTicket: 'K8S-2480',
+        environments: {
+            ift: {
+                active: true,
+                version: 'v2.4.0-beta',
+                jira: 'K8S-2480',
+                config: {
+                    distro: 'AlmaLinux 9',
+                    kafka: 'epsilon-next-gen-kafka',
+                    databases: 'epsilon-new-db-cluster',
+                    securityManager: 'enabled'
+                }
+            },
+            psi: {
+                active: false,
+                version: 'v2.3.5',
+                jira: 'K8S-2475',
+                config: {
+                    distro: 'AlmaLinux 9',
+                    kafka: 'epsilon-psi-kafka',
+                    databases: 'epsilon-psi-db',
+                    securityManager: 'testing'
+                }
+            },
+            prod: {
+                active: false,
+                version: 'v2.3.2',
+                jira: 'K8S-2470',
+                config: {
+                    distro: 'AlmaLinux 9',
+                    kafka: 'epsilon-prod-kafka',
+                    databases: 'epsilon-prod-db',
+                    securityManager: 'pending'
+                }
+            }
+        }
     }
 };
 
@@ -84,6 +248,90 @@ const JIRA_TICKETS = {
         assignee: 'DevOps Team',
         priority: 'Critical',
         description: 'Deploy latest agent version to production clusters'
+    },
+    'K8S-2455': {
+        title: 'Agent Beta IFT Deployment',
+        status: 'Done',
+        assignee: 'Beta Team',
+        priority: 'High',
+        description: 'Deploy Agent Beta to IFT environment with new Kafka configuration'
+    },
+    'K8S-2450': {
+        title: 'Agent Beta PSI Upgrade',
+        status: 'In Progress',
+        assignee: 'Beta Team',
+        priority: 'Medium',
+        description: 'Upgrade Agent Beta in PSI environment'
+    },
+    'K8S-2440': {
+        title: 'Agent Beta PROD Rollback',
+        status: 'To Do',
+        assignee: 'Beta Team',
+        priority: 'Low',
+        description: 'Rollback Agent Beta in PROD due to compatibility issues'
+    },
+    'K8S-2430': {
+        title: 'Agent Gamma Initial Setup',
+        status: 'Blocked',
+        assignee: 'Gamma Team',
+        priority: 'Medium',
+        description: 'Initial setup of Agent Gamma in development environment'
+    },
+    'K8S-2425': {
+        title: 'Agent Gamma PSI Configuration',
+        status: 'To Do',
+        assignee: 'Gamma Team',
+        priority: 'Low',
+        description: 'Configure Agent Gamma for PSI testing'
+    },
+    'K8S-2400': {
+        title: 'Agent Gamma PROD Planning',
+        status: 'To Do',
+        assignee: 'Gamma Team',
+        priority: 'Low',
+        description: 'Plan production deployment strategy for Agent Gamma'
+    },
+    'K8S-2460': {
+        title: 'Agent Delta IFT Release',
+        status: 'Done',
+        assignee: 'Delta Team',
+        priority: 'High',
+        description: 'Release Agent Delta to IFT with Rocky Linux support'
+    },
+    'K8S-2458': {
+        title: 'Agent Delta PSI Migration',
+        status: 'Done',
+        assignee: 'Delta Team',
+        priority: 'High',
+        description: 'Migrate Agent Delta to PSI environment'
+    },
+    'K8S-2462': {
+        title: 'Agent Delta Production Launch',
+        status: 'In Progress',
+        assignee: 'Delta Team',
+        priority: 'Critical',
+        description: 'Launch Agent Delta in production with full HA configuration'
+    },
+    'K8S-2480': {
+        title: 'Agent Epsilon Beta Testing',
+        status: 'In Progress',
+        assignee: 'Epsilon Team',
+        priority: 'High',
+        description: 'Beta testing of next-generation Agent Epsilon'
+    },
+    'K8S-2475': {
+        title: 'Agent Epsilon PSI Preparation',
+        status: 'To Do',
+        assignee: 'Epsilon Team',
+        priority: 'Medium',
+        description: 'Prepare PSI environment for Agent Epsilon deployment'
+    },
+    'K8S-2470': {
+        title: 'Agent Epsilon PROD Roadmap',
+        status: 'To Do',
+        assignee: 'Epsilon Team',
+        priority: 'Low',
+        description: 'Define production roadmap for Agent Epsilon'
     }
 };
 
@@ -477,6 +725,7 @@ const Navigation = {
         document.getElementById('agentId').textContent = `ID: ${agent.id}`;
         document.getElementById('agentVersion').textContent = agent.version;
         document.getElementById('jiraLink').textContent = `JIRA #${agent.jiraTicket}`;
+        document.getElementById('jiraLink').href = `#ticket-${agent.jiraTicket}`;
         
         // Update environment tabs
         this.updateEnvTabs(agent);
@@ -487,6 +736,8 @@ const Navigation = {
         Object.keys(agent.environments).forEach(env => {
             const envConfig = agent.environments[env];
             const tab = document.querySelector(`.env-tab[data-env="${env}"]`);
+            if (!tab) return;
+            
             const statusEl = tab.querySelector('.tab-status');
             const badgeEl = tab.querySelector('.tab-badge');
             
@@ -498,12 +749,45 @@ const Navigation = {
                 badgeEl.textContent = 'Inactive';
             }
             
-            // Update version and jira
+            // Update version and jira in release card
             const versionEl = document.getElementById(`version${env.toUpperCase()}`);
             if (versionEl) versionEl.textContent = envConfig.version;
             
             const jiraEl = document.querySelector(`[data-tab="${env}"] .jira-ticket`);
-            if (jiraEl) jiraEl.textContent = envConfig.jira;
+            if (jiraEl) {
+                jiraEl.textContent = envConfig.jira;
+                jiraEl.href = `#ticket-${envConfig.jira}`;
+            }
+            
+            // Update config values in release details
+            const tabContent = document.querySelector(`[data-tab="${env}"]`);
+            if (tabContent && envConfig.config) {
+                const configItems = tabContent.querySelectorAll('.config-item');
+                configItems.forEach(item => {
+                    const label = item.querySelector('.config-label')?.textContent;
+                    const valueEl = item.querySelector('.config-value');
+                    if (!label || !valueEl) return;
+                    
+                    let configKey;
+                    if (label.includes('Дистрибутив')) configKey = 'distro';
+                    else if (label.includes('Kafka')) configKey = 'kafka';
+                    else if (label.includes('Базы данных')) configKey = 'databases';
+                    else if (label.includes('Security')) configKey = 'securityManager';
+                    
+                    if (configKey && envConfig.config[configKey]) {
+                        valueEl.textContent = envConfig.config[configKey];
+                        valueEl.className = 'config-value';
+                        if (configKey === 'securityManager') {
+                            const val = envConfig.config[configKey];
+                            if (val === 'enabled' || val === 'testing') {
+                                valueEl.classList.add('enabled');
+                            } else if (val === 'disabled') {
+                                valueEl.classList.add('disabled');
+                            }
+                        }
+                    }
+                });
+            }
         });
     },
     
@@ -756,11 +1040,45 @@ const SidebarToggle = {
 // ============================================
 const BackButtonHandler = {
     init() {
+        // Main back button (agent page)
         const backBtn = document.getElementById('backToHome');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                Navigation.navigate('home');
+            });
+        }
         
-        backBtn.addEventListener('click', () => {
-            Navigation.navigate('home');
-        });
+        // Settings page back button
+        const backSettings = document.getElementById('backToHomeSettings');
+        if (backSettings) {
+            backSettings.addEventListener('click', () => {
+                Navigation.navigate('home');
+            });
+        }
+        
+        // GitOps page back button
+        const backGitops = document.getElementById('backToHomeGitops');
+        if (backGitops) {
+            backGitops.addEventListener('click', () => {
+                Navigation.navigate('home');
+            });
+        }
+        
+        // Jenkins page back button
+        const backJenkins = document.getElementById('backToHomeJenkins');
+        if (backJenkins) {
+            backJenkins.addEventListener('click', () => {
+                Navigation.navigate('home');
+            });
+        }
+        
+        // Monitoring page back button
+        const backMonitoring = document.getElementById('backToHomeMonitoring');
+        if (backMonitoring) {
+            backMonitoring.addEventListener('click', () => {
+                Navigation.navigate('home');
+            });
+        }
     }
 };
 
