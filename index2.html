@@ -47,16 +47,16 @@
       75%{transform:scale(1.02) rotate(-1deg)}
     }
     .scan-line{
-      position:fixed;top:0;left:0;right:0;height:2px;
+      position:fixed;top:0;left:0;right:0;height:1px;
       background:linear-gradient(90deg, transparent, var(--red), var(--cyan), transparent);
       box-shadow:0 0 20px var(--red), 0 0 40px var(--cyan);
-      animation:scan 4s linear infinite;
+      animation:scan 10s linear infinite;
       z-index:1000;
     }
     @keyframes scan{
       0%{top:-2px;opacity:0}
       10%{opacity:1}
-      90%{opacity:1}
+      40%{opacity:0}
       100%{top:100vh;opacity:0}
     }
     .app{
