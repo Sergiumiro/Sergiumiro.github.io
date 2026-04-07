@@ -1,480 +1,931 @@
-/* ---------------- ГЛОБАЛЬНЫЕ ---------------- */
-let currentDay = 1;
-let events = [];
-let filteredEvents = [];
-let selectedId = null;
+/**
+ * K8s Agent Dashboard - Application Logic
+ * Production-ready JavaScript with modular architecture
+ */
 
-let hallFilter = "all";
-let searchQuery = "";
-let selectedTags = new Set();
-let hidePast = false;
+// ============================================
+// MOCK DATA
+// ============================================
+const CLUSTERS_DATA = [
+    { id: 1, name: 'prod-cluster-01', agent: 'agent-alpha', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.2' },
+    { id: 2, name: 'prod-cluster-02', agent: 'agent-alpha', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.2' },
+    { id: 3, name: 'staging-ift', agent: 'agent-beta', k8sStatus: 'active', agentStatus: 'warning', version: 'v1.27.5' },
+    { id: 4, name: 'dev-cluster-01', agent: 'agent-gamma', k8sStatus: 'inactive', agentStatus: 'inactive', version: 'v1.28.0' },
+    { id: 5, name: 'prod-cluster-03', agent: 'agent-alpha', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.2' },
+    { id: 6, name: 'psi-cluster-01', agent: 'agent-delta', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.1' },
+    { id: 7, name: 'prod-cluster-04', agent: 'agent-alpha', k8sStatus: 'warning', agentStatus: 'active', version: 'v1.28.2' },
+    { id: 8, name: 'dev-cluster-02', agent: 'agent-gamma', k8sStatus: 'active', agentStatus: 'inactive', version: 'v1.27.8' },
+    { id: 9, name: 'staging-psi', agent: 'agent-beta', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.0' },
+    { id: 10, name: 'prod-cluster-05', agent: 'agent-epsilon', k8sStatus: 'active', agentStatus: 'active', version: 'v1.28.2' }
+];
 
-let favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
-
-// Переменная для состояния фильтра избранных событий
-let showFavoritesOnly = false;
-
-const listEl = document.getElementById("list");
-const hallFilterEl = document.getElementById("hall-filter");
-const searchInput = document.getElementById("search-input");
-const tagsContainer = document.getElementById("tags-filter");
-
-const mapWrapper = document.getElementById("map-wrapper");
-const mapEl = document.getElementById("map");
-const pointsLayer = document.getElementById("points-layer");
-
-const filesByDay = {
-    1: "event1.json",
-    2: "event2.json",
-    3: "event3.json"
+const AGENT_DETAILS = {
+    'agent-alpha': {
+        name: 'Agent Alpha',
+        id: 'AGT-001',
+        version: 'v2.3.2',
+        jiraTicket: 'K8S-2472',
+        environments: {
+            ift: {
+                active: true,
+                version: 'v2.3.1',
+                jira: 'K8S-2471',
+                config: {
+                    distro: 'Ubuntu 22.04 LTS',
+                    kafka: 'topic1, topic2, topic3',
+                    databases: 'postgres-main, mysql-replica',
+                    securityManager: 'enabled'
+                }
+            },
+            psi: {
+                active: false,
+                version: 'v2.3.0',
+                jira: 'K8S-2468',
+                config: {
+                    distro: 'CentOS 8.5',
+                    kafka: 'psi-kafka-cluster',
+                    databases: 'psi-postgres-ha',
+                    securityManager: 'disabled'
+                }
+            },
+            prod: {
+                active: true,
+                version: 'v2.3.2',
+                jira: 'K8S-2472',
+                config: {
+                    distro: 'RHEL 9.0',
+                    kafka: 'prod-kafka-01, prod-kafka-02, prod-kafka-03',
+                    databases: 'prod-pg-cluster, prod-mysql-cluster',
+                    securityManager: 'enabled'
+                }
+            }
+        }
+    }
 };
 
+const JIRA_TICKETS = {
+    'K8S-2471': {
+        title: 'Update IFT Environment Configuration',
+        status: 'In Progress',
+        assignee: 'John Doe',
+        priority: 'High',
+        description: 'Update Kafka topics and database connections for IFT environment'
+    },
+    'K8S-2468': {
+        title: 'PSI Environment Security Patch',
+        status: 'To Do',
+        assignee: 'Jane Smith',
+        priority: 'Medium',
+        description: 'Apply security patches to PSI environment components'
+    },
+    'K8S-2472': {
+        title: 'Production Release v2.3.2',
+        status: 'Done',
+        assignee: 'DevOps Team',
+        priority: 'Critical',
+        description: 'Deploy latest agent version to production clusters'
+    }
+};
 
-/* ============================================================
-   ЗАГРУЗКА ДНЯ
-============================================================ */
-async function loadDay(day){
-    const data = await fetch(filesByDay[day]).then(r => r.json());
-    events = data.slice().sort((a,b)=> new Date(a.startTime)-new Date(b.startTime));
+// ============================================
+// STATE MANAGEMENT
+// ============================================
+const AppState = {
+    currentPage: 'home',
+    currentAgent: null,
+    currentEnv: 'ift',
+    clusters: [...CLUSTERS_DATA],
+    searchQuery: '',
+    sidebarCollapsed: false,
+    
+    // Getters
+    getActiveClusters() {
+        return this.clusters.filter(c => c.k8sStatus === 'active').length;
+    },
+    
+    getWarningClusters() {
+        return this.clusters.filter(c => c.k8sStatus === 'warning').length;
+    },
+    
+    getInactiveClusters() {
+        return this.clusters.filter(c => c.k8sStatus === 'inactive').length;
+    }
+};
 
-    buildTagFilter();
-    applyFilters();
-}
+// ============================================
+// AUDIO MANAGER (Sound Effects)
+// ============================================
+const AudioManager = {
+    audioContext: null,
+    
+    init() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('Web Audio API not supported');
+        }
+    },
+    
+    playClick() {
+        if (!this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + 0.1);
+    },
+    
+    playSuccess() {
+        if (!this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.frequency.value = 600;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + 0.2);
+        
+        // Second tone
+        setTimeout(() => {
+            const osc2 = this.audioContext.createOscillator();
+            const gain2 = this.audioContext.createGain();
+            
+            osc2.connect(gain2);
+            gain2.connect(this.audioContext.destination);
+            
+            osc2.frequency.value = 900;
+            osc2.type = 'sine';
+            
+            gain2.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+            
+            osc2.start(this.audioContext.currentTime);
+            osc2.stop(this.audioContext.currentTime + 0.2);
+        }, 100);
+    },
+    
+    playError() {
+        if (!this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.frequency.value = 300;
+        oscillator.type = 'sawtooth';
+        
+        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + 0.3);
+    }
+};
 
+// ============================================
+// PARTICLE SYSTEM
+// ============================================
+const ParticleSystem = {
+    canvas: null,
+    ctx: null,
+    particles: [],
+    animationId: null,
+    
+    init() {
+        this.canvas = document.getElementById('particle-canvas');
+        if (!this.canvas) return;
+        
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        this.createParticles();
+        this.animate();
+        
+        window.addEventListener('resize', () => this.resize());
+    },
+    
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    },
+    
+    createParticles() {
+        this.particles = [];
+        const particleCount = Math.floor((this.canvas.width * this.canvas.height) / 15000);
+        
+        for (let i = 0; i < particleCount; i++) {
+            this.particles.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                size: Math.random() * 2 + 1,
+                opacity: Math.random() * 0.5 + 0.2
+            });
+        }
+    },
+    
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            // Wrap around edges
+            if (p.x < 0) p.x = this.canvas.width;
+            if (p.x > this.canvas.width) p.x = 0;
+            if (p.y < 0) p.y = this.canvas.height;
+            if (p.y > this.canvas.height) p.y = 0;
+            
+            // Draw particle
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            this.ctx.fillStyle = `rgba(0, 255, 136, ${p.opacity})`;
+            this.ctx.fill();
+        });
+        
+        // Draw connections
+        this.particles.forEach((p1, i) => {
+            this.particles.slice(i + 1).forEach(p2 => {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 100) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(p1.x, p1.y);
+                    this.ctx.lineTo(p2.x, p2.y);
+                    this.ctx.strokeStyle = `rgba(0, 255, 136, ${0.1 * (1 - dist / 100)})`;
+                    this.ctx.stroke();
+                }
+            });
+        });
+        
+        this.animationId = requestAnimationFrame(() => this.animate());
+    },
+    
+    destroy() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+};
 
-/* ============================================================
-   ПОИСК
-============================================================ */
-searchInput.addEventListener("input", ()=>{
-    searchQuery = searchInput.value.toLowerCase();
-    applyFilters();
-});
+// ============================================
+// UI MANAGER
+// ============================================
+const UIManager = {
+    // Show toast notification
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+        
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type]}</span>
+            <span class="toast-message">${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    },
+    
+    // Update stats display
+    updateStats() {
+        document.getElementById('totalClusters').textContent = AppState.clusters.length;
+        document.getElementById('activeClusters').textContent = AppState.getActiveClusters();
+        document.getElementById('warningClusters').textContent = AppState.getWarningClusters();
+        document.getElementById('inactiveClusters').textContent = AppState.getInactiveClusters();
+    },
+    
+    // Render cluster cards
+    renderClusters(filter = '') {
+        const grid = document.getElementById('clusterGrid');
+        const filtered = AppState.clusters.filter(c => 
+            c.name.toLowerCase().includes(filter.toLowerCase()) ||
+            c.agent.toLowerCase().includes(filter.toLowerCase())
+        );
+        
+        grid.innerHTML = '';
+        
+        filtered.forEach((cluster, index) => {
+            const card = document.createElement('div');
+            card.className = 'cluster-card stagger-delay';
+            card.style.animationDelay = `${index * 0.05}s`;
+            card.draggable = true;
+            card.dataset.id = cluster.id;
+            
+            const statusClass = cluster.k8sStatus === 'active' ? 'active' : 
+                               cluster.k8sStatus === 'warning' ? 'warning' : 'inactive';
+            const statusText = cluster.k8sStatus === 'active' ? '🟢 Active' :
+                              cluster.k8sStatus === 'warning' ? '🟡 Warning' : '🔴 Inactive';
+            
+            card.innerHTML = `
+                <div class="cluster-header">
+                    <div>
+                        <div class="cluster-name">${cluster.name}</div>
+                        <div class="cluster-meta">Agent: ${cluster.agent}</div>
+                        <div class="cluster-meta">Version: ${cluster.version}</div>
+                    </div>
+                    <span class="status-badge ${statusClass}">
+                        <span class="status-dot"></span>
+                        ${statusText}
+                    </span>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => Navigation.showAgentPage(cluster.agent));
+            grid.appendChild(card);
+        });
+        
+        this.setupDragAndDrop();
+    },
+    
+    // Setup drag and drop for cluster cards
+    setupDragAndDrop() {
+        const cards = document.querySelectorAll('.cluster-card');
+        let draggedCard = null;
+        
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                draggedCard = card;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                draggedCard = null;
+            });
+            
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedCard && draggedCard !== card) {
+                    const grid = document.getElementById('clusterGrid');
+                    const cards = Array.from(grid.querySelectorAll('.cluster-card'));
+                    const draggedIndex = cards.indexOf(draggedCard);
+                    const droppedIndex = cards.indexOf(card);
+                    
+                    if (draggedIndex < droppedIndex) {
+                        grid.insertBefore(draggedCard, card.nextSibling);
+                    } else {
+                        grid.insertBefore(draggedCard, card);
+                    }
+                    
+                    // Update state
+                    const temp = AppState.clusters[draggedIndex];
+                    AppState.clusters[draggedIndex] = AppState.clusters[droppedIndex];
+                    AppState.clusters[droppedIndex] = temp;
+                }
+            });
+        });
+    }
+};
 
-
-/* ============================================================
-   ФИЛЬТР ПО ЗАЛАМ
-============================================================ */
-hallFilterEl.querySelectorAll("button").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-        hallFilterEl.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
-        hallFilter = btn.dataset.hall;
-        applyFilters();
-    });
-});
-
-
-/* ============================================================
-   ФИЛЬТР ТЕГОВ
-============================================================ */
-function buildTagFilter(){
-    selectedTags.clear();
-    tagsContainer.innerHTML = "";
-
-    const tagSet = new Set();
-    events.forEach(ev => (ev.tags || []).forEach(tagSet.add, tagSet));
-
-    [...tagSet].sort().forEach(tag=>{
-        const b = document.createElement("button");
-        b.textContent = tag;
-
-        b.addEventListener("click", ()=>{
-            if (selectedTags.has(tag)) {
-                selectedTags.delete(tag);
-                b.classList.remove("active");
-            } else {
-                selectedTags.add(tag);
-                b.classList.add("active");
+// ============================================
+// NAVIGATION MANAGER
+// ============================================
+const Navigation = {
+    // Navigate to a page using History API
+    navigate(page, params = {}) {
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        Object.keys(params).forEach(key => url.searchParams.set(key, params[key]));
+        
+        window.history.pushState({ page, params }, '', url);
+        this.handleNavigation(page, params);
+    },
+    
+    // Handle navigation
+    handleNavigation(page, params = {}) {
+        AudioManager.playClick();
+        
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        
+        // Show target page
+        const targetPage = document.getElementById(`page-${page}`);
+        if (targetPage) {
+            targetPage.classList.add('active');
+            AppState.currentPage = page;
+        }
+        
+        // Update menu active state
+        document.querySelectorAll('.menu-item, .submenu-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.page === page || item.dataset.menu === page) {
+                item.classList.add('active');
             }
-            applyFilters();
         });
-
-        tagsContainer.appendChild(b);
-    });
-}
-
-
-/* ============================================================
-   СКРЫТИЕ ПРОШЕДШИХ
-============================================================ */
-document.getElementById("hide-past").addEventListener("change", (e)=>{
-    hidePast = e.target.checked;
-    applyFilters();
-});
-
-
-/* ============================================================
-   ИЗБРАННОЕ
-============================================================ */
-function toggleFavorite(id){
-    if (favorites.has(id)) favorites.delete(id);
-    else favorites.add(id);
-
-    localStorage.setItem("favorites", JSON.stringify([...favorites]));
-    renderList();
-}
-
-
-/* ============================================================
-   ОБЪЕДИНЁННЫЙ ФИЛЬТР
-============================================================ */
-function applyFilters(){
-    const now = new Date();
-
-    filteredEvents = events.filter(ev=>{
-        const start = new Date(ev.startTime);
-
-        if (hidePast && start < now) return false;
-
-        if (hallFilter !== "all" && String(ev.hall) !== hallFilter) return false;
-
-        if (searchQuery && !ev.title.toLowerCase().includes(searchQuery)) return false;
-
-        if (selectedTags.size > 0){
-            if (!ev.tags || !ev.tags.some(t => selectedTags.has(t))) return false;
+        
+        // Page-specific initialization
+        if (page === 'home') {
+            UIManager.renderClusters(AppState.searchQuery);
+            UIManager.updateStats();
+        } else if (page === 'agent' && params.agent) {
+            this.initAgentPage(params.agent);
         }
-
-        // Добавляем условие для фильтрации по избранным
-        if (showFavoritesOnly && !favorites.has(ev.id)) return false;
-
-        return true;
-    });
-
-    renderList();
-    renderPoints();
-    highlightTimeline();
-    scrollToNext();
-    updateTimers();
-    updatePointPositions();
-}
-
-
-/* ============================================================
-   СПИСОК
-============================================================ */
-function renderList(){
-    listEl.innerHTML = "";
-    const tpl = document.getElementById("event-card-template");
-
-    filteredEvents.forEach(ev=>{
-        const node = tpl.content.cloneNode(true);
-        const card = node.querySelector(".event-card");
-
-        card.dataset.id = ev.id;
-        card.querySelector(".title").textContent = ev.title;
-        card.querySelector(".time").textContent =
-            new Date(ev.startTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-        card.querySelector(".tags").textContent = ev.tags?.join(" · ") || "";
-        card.querySelector(".hall").textContent = `Зал ${ev.hall}`;
-
-        // избранное
-        const favBtn = node.querySelector(".fav-btn");
-        favBtn.classList.toggle("active", favorites.has(ev.id));
-        favBtn.onclick = (e)=>{ e.stopPropagation(); toggleFavorite(ev.id); };
-
-        // выбор события
-        card.addEventListener("click", ()=>selectEvent(ev.id));
-
-        listEl.appendChild(node);
-    });
-}
-
-
-/* ============================================================
-   ОТОБРАЖЕНИЕ ТОЧЕК
-============================================================ */
-function renderPoints(){
-    pointsLayer.innerHTML = "";
-
-    events.forEach(ev=>{
-        if (!ev.mapPoints || !ev.mapPoints[0]) return;
-
-        const p = document.createElement("div");
-        p.className = "map-point";
-        p.dataset.id = ev.id;
-
-        p.addEventListener("click", e=>{
-            e.stopPropagation();
-            selectEvent(ev.id);
+    },
+    
+    // Show agent details page
+    showAgentPage(agentId) {
+        this.navigate('agent', { agent: agentId });
+    },
+    
+    // Initialize agent page
+    initAgentPage(agentId) {
+        const agent = AGENT_DETAILS[agentId] || AGENT_DETAILS['agent-alpha'];
+        AppState.currentAgent = agentId;
+        
+        document.getElementById('agentName').textContent = agent.name;
+        document.getElementById('agentId').textContent = `ID: ${agent.id}`;
+        document.getElementById('agentVersion').textContent = agent.version;
+        document.getElementById('jiraLink').textContent = `JIRA #${agent.jiraTicket}`;
+        
+        // Update environment tabs
+        this.updateEnvTabs(agent);
+    },
+    
+    // Update environment tabs
+    updateEnvTabs(agent) {
+        Object.keys(agent.environments).forEach(env => {
+            const envConfig = agent.environments[env];
+            const tab = document.querySelector(`.env-tab[data-env="${env}"]`);
+            const statusEl = tab.querySelector('.tab-status');
+            const badgeEl = tab.querySelector('.tab-badge');
+            
+            if (envConfig.active) {
+                statusEl.className = 'tab-status status-active';
+                badgeEl.textContent = 'Active';
+            } else {
+                statusEl.className = 'tab-status status-inactive';
+                badgeEl.textContent = 'Inactive';
+            }
+            
+            // Update version and jira
+            const versionEl = document.getElementById(`version${env.toUpperCase()}`);
+            if (versionEl) versionEl.textContent = envConfig.version;
+            
+            const jiraEl = document.querySelector(`[data-tab="${env}"] .jira-ticket`);
+            if (jiraEl) jiraEl.textContent = envConfig.jira;
         });
-
-        pointsLayer.appendChild(p);
-    });
-}
-
-
-/* ============================================================
-   ВЫБОР СОБЫТИЯ
-============================================================ */
-function selectEvent(id){
-    selectedId = id;
-
-    document.querySelectorAll(".event-card")
-        .forEach(c=>c.classList.toggle("selected", c.dataset.id === id));
-
-    // Обновляем позиции точек, чтобы обеспечить корректное отображение выделения
-    updatePointPositions();
-}
-
-
-/* ============================================================
-   ТЕКУЩЕЕ / СЛЕДУЮЩЕЕ
-============================================================ */
-function highlightTimeline(){
-    const now = new Date();
-
-    document.querySelectorAll(".event-card").forEach(c=>{
-        c.classList.remove("now","next");
-    });
-
-    let current = null;
-    let next = null;
-
-    for (let ev of filteredEvents){
-        const start = new Date(ev.startTime);
-        const end = new Date(ev.endTime);
-
-        if (start <= now && now <= end){
-            current = ev;
-            break;
-        }
-        if (start > now && !next){
-            next = ev;
-        }
-    }
-
-    if (current){
-        const c = document.querySelector(`.event-card[data-id="${current.id}"]`);
-        if (c) c.classList.add("now");
-    }
-
-    if (next){
-        const c = document.querySelector(`.event-card[data-id="${next.id}"]`);
-        if (c) c.classList.add("next");
-    }
-
-    return {current,next};
-}
-
-
-/* ============================================================
-   АВТОПРОКРУТКА
-============================================================ */
-function scrollToNext(){
-    const {current, next} = highlightTimeline();
-    const target = current || next;
-    if (!target) return;
-
-    const card = document.querySelector(`.event-card[data-id="${target.id}"]`);
-    if (!card) return;
-
-    const listRect = listEl.getBoundingClientRect();
-    const cardRect = card.getBoundingClientRect();
-
-    const offset = cardRect.top - listRect.top - listRect.height/2 + cardRect.height/2;
-
-    listEl.scrollBy({ top: offset, behavior: "smooth" });
-}
-
-
-/* ============================================================
-   ТАЙМЕРЫ ОБРАТНОГО ОТСЧЁТА
-============================================================ */
-setInterval(updateTimers, 1000);
-
-function updateTimers(){
-    const now = new Date();
-
-    filteredEvents.forEach(ev=>{
-        const start = new Date(ev.startTime);
-        const end = new Date(ev.endTime);
-        const card = document.querySelector(`.event-card[data-id="${ev.id}"]`);
-        if (!card) return;
-
-        const t = card.querySelector(".timer");
-
-        if (now < start){
-            const diff = Math.floor((start - now) / 1000);
-            const m = Math.floor(diff/60);
-            const s = diff % 60;
-            t.textContent = `Начнётся через ${m} мин ${String(s).padStart(2,'0')} сек`;
-        }
-        else if (now >= start && now <= end){
-            const diff = Math.floor((end - now) / 1000);
-            const m = Math.floor(diff/60);
-            const s = diff % 60;
-            t.textContent = `Идёт: осталось ${m} мин ${String(s).padStart(2,'0')} сек`;
-        }
-        else {
-            t.textContent = `Завершено`;
-        }
-    });
-
-    highlightTimeline();
-}
-
-
-/* ============================================================
-   ЗУМ / ПАНОРАМА - отключено
-============================================================ */
-let scale = 1;
-let originX = 0, originY = 0;
-
-function updateTransform(){
-    mapEl.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    updatePointPositions(); // точки обновляем вручную
-}
-
-// Обновляем позиции точек при изменении размера окна
-window.addEventListener('resize', updatePointPositions);
-
-
-/* ============================================================
-   ТОЧКИ НА КАРТЕ С УЧЁТОМ OBJECT-FIT
-============================================================ */
-function updatePointPositions() {
-    // Получаем размеры элементов
-    const containerRect = mapWrapper.getBoundingClientRect();
-    const img = mapEl;
+    },
     
-    // Ждем, пока изображение полностью загрузится
-    if (!img.complete || img.naturalWidth === 0) {
-        img.onload = updatePointPositions; // Обновляем позиции после загрузки
-        return;
-    }
-    
-    // Получаем натуральные размеры изображения
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
-    
-    // Размеры контейнера
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
-    
-    // Рассчитываем, как изображение масштабируется с помощью object-fit: contain
-    const scaleRatio = Math.min(containerWidth / naturalWidth, containerHeight / naturalHeight);
-    
-    // Рассчитываем размеры изображения после масштабирования
-    const scaledWidth = naturalWidth * scaleRatio;
-    const scaledHeight = naturalHeight * scaleRatio;
-    
-    // Рассчитываем смещения для центрирования изображения в контейнере
-    const offsetX = (containerWidth - scaledWidth) / 2;
-    const offsetY = (containerHeight - scaledHeight) / 2;
-    
-    document.querySelectorAll(".map-point").forEach(p => {
-        const id = p.dataset.id;
-        const ev = events.find(e => e.id === id); // Используем все события, а не только отфильтрованные
-        if (!ev || !ev.mapPoints) return;
-
-        const mp = ev.mapPoints[0];
-
-        // Рассчитываем позицию точки в оригинальных координатах изображения
-        const originalX = naturalWidth * mp.x;
-        const originalY = naturalHeight * mp.y;
-
-        // Применяем масштабирование изображения (object-fit: contain)
-        let scaledX = originalX * scaleRatio;
-        let scaledY = originalY * scaleRatio;
-
-        // Добавляем смещение для центрирования изображения
-        const finalX = scaledX + offsetX;
-        const finalY = scaledY + offsetY;
-
-        p.style.left = finalX + "px";
-        p.style.top = finalY + "px";
+    // Handle browser back/forward
+    handlePopState(event) {
+        const params = new URLSearchParams(window.location.search);
+        const page = params.get('page') || 'home';
+        const agent = params.get('agent');
         
-        // Устанавливаем класс large для выбранной точки, чтобы анимация применялась
-        p.classList.toggle("large", p.dataset.id === selectedId);
+        this.handleNavigation(page, agent ? { agent } : {});
+    }
+};
+
+// ============================================
+// SEARCH MANAGER
+// ============================================
+const SearchManager = {
+    init() {
+        const input = document.getElementById('clusterSearch');
+        const dropdown = document.getElementById('searchDropdown');
         
-        // Применяем трансформацию
-        if (p.dataset.id === selectedId) {
-            // Для выделенной точки используем немного другой масштаб, чтобы она была больше обычной
-            p.style.transform = `translate(-50%, -50%) scale(1.25)`;
+        input.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            AppState.searchQuery = query;
+            
+            if (query.length > 0) {
+                this.showResults(query);
+                UIManager.renderClusters(query);
+            } else {
+                dropdown.classList.remove('active');
+                UIManager.renderClusters();
+            }
+        });
+        
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                dropdown.classList.remove('active');
+            }
+        });
+    },
+    
+    showResults(query) {
+        const dropdown = document.getElementById('searchDropdown');
+        const results = AppState.clusters.filter(c => 
+            c.name.toLowerCase().includes(query.toLowerCase()) ||
+            c.agent.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 5);
+        
+        if (results.length === 0) {
+            dropdown.innerHTML = '<div class="search-result-item">No results found</div>';
         } else {
-            p.style.transform = `translate(-50%, -50%) scale(1)`;
+            dropdown.innerHTML = results.map(r => `
+                <div class="search-result-item" data-agent="${r.agent}">
+                    <strong>${r.name}</strong>
+                    <span>${r.agent}</span>
+                </div>
+            `).join('');
+            
+            // Add click handlers
+            dropdown.querySelectorAll('.search-result-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const agent = item.dataset.agent;
+                    Navigation.showAgentPage(agent);
+                    dropdown.classList.remove('active');
+                    document.getElementById('clusterSearch').value = '';
+                });
+            });
         }
-    });
-}
-
-
-/* ============================================================
-   INIT
-============================================================ */
-document.querySelectorAll("#day-switcher button").forEach(b=>{
-    b.addEventListener("click", ()=>{
-        document.querySelectorAll("#day-switcher button").forEach(x=>x.classList.remove("active"));
-        b.classList.add("active");
-        currentDay = Number(b.dataset.day);
-        loadDay(currentDay);
-    });
-});
-
-loadDay(1);
-
-// Initialize sidebar as hidden on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const body = document.body;
-    
-    // Initially hide the sidebar
-    sidebar.classList.add('hidden');
-    body.classList.add('sidebar-hidden');
-    
-    // Сбрасываем состояние кнопки "Показать только избранное"
-    const favoritesButton = document.getElementById('show-favorites');
-    if (favoritesButton) {
-        favoritesButton.classList.remove('active');
+        
+        dropdown.classList.add('active');
     }
-});
+};
 
-/* ============================================================
-   SIDEBAR TOGGLE
-============================================================ */
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const body = document.body;
+// ============================================
+// TAB MANAGER
+// ============================================
+const TabManager = {
+    init() {
+        const tabs = document.querySelectorAll('.env-tab');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const env = tab.dataset.env;
+                this.switchTab(env);
+            });
+        });
+    },
     
-    sidebar.classList.toggle('hidden');
-    const isHidden = sidebar.classList.contains('hidden');
-    
-    if (isHidden) {
-        body.classList.add('sidebar-hidden');
-        overlay.classList.remove('active');
-    } else {
-        body.classList.remove('sidebar-hidden');
-        overlay.classList.add('active');
+    switchTab(env) {
+        AudioManager.playClick();
+        AppState.currentEnv = env;
+        
+        // Update tab buttons
+        document.querySelectorAll('.env-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.env === env);
+        });
+        
+        // Update tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.dataset.tab === env);
+        });
     }
-}
+};
 
-// Toggle sidebar open
-document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+// ============================================
+// RELEASE CARD MANAGER
+// ============================================
+const ReleaseManager = {
+    toggleExpand(env) {
+        AudioManager.playClick();
+        const card = document.getElementById(`releaseCard${env.charAt(0).toUpperCase() + env.slice(1)}`);
+        card.classList.toggle('expanded');
+        
+        const btn = card.querySelector('.toggle-expand-btn');
+        btn.style.transform = card.classList.contains('expanded') ? 'rotate(180deg)' : 'none';
+    }
+};
 
-// Close sidebar
-document.getElementById('close-sidebar').addEventListener('click', toggleSidebar);
+// Make toggleReleaseExpand globally available
+window.toggleReleaseExpand = (env) => ReleaseManager.toggleExpand(env);
 
-// Close sidebar with overlay click
-document.getElementById('overlay').addEventListener('click', toggleSidebar);
+// ============================================
+// JIRA MODAL MANAGER
+// ============================================
+const JiraModalManager = {
+    modal: null,
+    
+    init() {
+        this.modal = document.getElementById('jiraModal');
+        
+        // Close handlers
+        document.getElementById('closeJiraModal').addEventListener('click', () => this.close());
+        document.getElementById('closeJiraBtn').addEventListener('click', () => this.close());
+        
+        // JIRA link handlers
+        document.querySelectorAll('.jira-ticket, .jira-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const ticket = link.textContent.replace('Jira: ', '').replace('JIRA #', '');
+                this.show(ticket);
+            });
+        });
+        
+        // Close on overlay click
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) this.close();
+        });
+        
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+                this.close();
+            }
+        });
+    },
+    
+    show(ticketId) {
+        AudioManager.playClick();
+        const ticket = JIRA_TICKETS[ticketId];
+        
+        if (!ticket) return;
+        
+        document.getElementById('jiraModalTitle').textContent = ticketId;
+        document.getElementById('jiraModalBody').innerHTML = `
+            <p><strong>Title:</strong> ${ticket.title}</p>
+            <p><strong>Status:</strong> ${ticket.status}</p>
+            <p><strong>Assignee:</strong> ${ticket.assignee}</p>
+            <p><strong>Priority:</strong> ${ticket.priority}</p>
+            <p><strong>Description:</strong> ${ticket.description}</p>
+        `;
+        
+        this.modal.classList.add('active');
+    },
+    
+    close() {
+        this.modal.classList.remove('active');
+    }
+};
 
-// Close sidebar with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
+// ============================================
+// ACTION BUTTON HANDLERS
+// ============================================
+const ActionHandler = {
+    init() {
+        // Install button
+        document.querySelectorAll('[data-action="install"]').forEach(btn => {
+            btn.addEventListener('click', () => this.handleInstall(btn));
+        });
+        
+        // Check button
+        document.querySelectorAll('[data-action="check"]').forEach(btn => {
+            btn.addEventListener('click', () => this.handleCheck(btn));
+        });
+        
+        // Namespace button
+        document.querySelectorAll('[data-action="namespace"]').forEach(btn => {
+            btn.addEventListener('click', () => this.handleNamespace(btn));
+        });
+    },
+    
+    async handleInstall(btn) {
+        AudioManager.playClick();
+        btn.classList.add('loading');
+        
+        // Simulate async operation
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        btn.classList.remove('loading');
+        AudioManager.playSuccess();
+        UIManager.showToast('Installation completed successfully!', 'success');
+    },
+    
+    async handleCheck(btn) {
+        AudioManager.playClick();
+        btn.classList.add('loading');
+        
+        // Simulate async operation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        btn.classList.remove('loading');
+        AudioManager.playSuccess();
+        UIManager.showToast('Health check passed!', 'success');
+    },
+    
+    handleNamespace(btn) {
+        AudioManager.playClick();
+        UIManager.showToast('Opening namespace viewer...', 'info');
+    }
+};
+
+// ============================================
+// SIDEBAR TOGGLE
+// ============================================
+const SidebarToggle = {
+    init() {
+        const toggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('sidebar');
-        if (!sidebar.classList.contains('hidden')) {
-            toggleSidebar();
+        
+        toggle.addEventListener('click', () => {
+            AudioManager.playClick();
+            sidebar.classList.toggle('collapsed');
+            AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
+        });
+    }
+};
+
+// ============================================
+// BACK BUTTON HANDLER
+// ============================================
+const BackButtonHandler = {
+    init() {
+        const backBtn = document.getElementById('backToHome');
+        
+        backBtn.addEventListener('click', () => {
+            Navigation.navigate('home');
+        });
+    }
+};
+
+// ============================================
+// REFRESH BUTTON HANDLER
+// ============================================
+const RefreshHandler = {
+    init() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        refreshBtn.addEventListener('click', async () => {
+            AudioManager.playClick();
+            refreshBtn.classList.add('loading');
+            
+            // Simulate data refresh
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            refreshBtn.classList.remove('loading');
+            AudioManager.playSuccess();
+            UIManager.showToast('Data refreshed successfully!', 'success');
+            UIManager.renderClusters(AppState.searchQuery);
+            UIManager.updateStats();
+        });
+    }
+};
+
+// ============================================
+// ADD CLUSTER BUTTON (Placeholder)
+// ============================================
+const AddClusterHandler = {
+    init() {
+        const addBtn = document.getElementById('addClusterBtn');
+        
+        addBtn.addEventListener('click', () => {
+            AudioManager.playClick();
+            UIManager.showToast('Add cluster feature coming soon!', 'info');
+        });
+    }
+};
+
+// ============================================
+// MENU NAVIGATION
+// ============================================
+const MenuNavigation = {
+    init() {
+        // Main menu items
+        document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+            item.addEventListener('click', () => {
+                const menu = item.dataset.menu;
+                
+                // Toggle active state
+                document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+                item.classList.add('active');
+                
+                AudioManager.playClick();
+            });
+        });
+        
+        // Submenu items
+        document.querySelectorAll('.submenu-item[data-page]').forEach(item => {
+            item.addEventListener('click', () => {
+                const page = item.dataset.page;
+                
+                if (page === 'agent-settings') {
+                    Navigation.showAgentPage('agent-alpha');
+                } else {
+                    Navigation.navigate(page);
+                }
+            });
+        });
+    }
+};
+
+// ============================================
+// REAL-TIME STATUS UPDATES
+// ============================================
+const StatusUpdater = {
+    intervalId: null,
+    
+    start() {
+        // Update statuses every 30 seconds
+        this.intervalId = setInterval(() => {
+            this.updateRandomStatus();
+        }, 30000);
+    },
+    
+    stop() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+    },
+    
+    updateRandomStatus() {
+        // Randomly update one cluster status for demo purposes
+        const randomIndex = Math.floor(Math.random() * AppState.clusters.length);
+        const cluster = AppState.clusters[randomIndex];
+        const statuses = ['active', 'warning', 'inactive'];
+        const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+        
+        if (cluster.k8sStatus !== newStatus) {
+            cluster.k8sStatus = newStatus;
+            UIManager.renderClusters(AppState.searchQuery);
+            UIManager.updateStats();
+            
+            const statusMessages = {
+                active: `Cluster ${cluster.name} is now online`,
+                warning: `Warning: Cluster ${cluster.name} has issues`,
+                inactive: `Alert: Cluster ${cluster.name} is offline`
+            };
+            
+            const messageType = newStatus === 'active' ? 'success' : 
+                               newStatus === 'warning' ? 'warning' : 'error';
+            
+            UIManager.showToast(statusMessages[newStatus], messageType);
         }
     }
+};
+
+// ============================================
+// INITIALIZATION
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize all modules
+    AudioManager.init();
+    ParticleSystem.init();
+    
+    // Initial render
+    UIManager.updateStats();
+    UIManager.renderClusters();
+    
+    // Initialize managers
+    SearchManager.init();
+    TabManager.init();
+    JiraModalManager.init();
+    ActionHandler.init();
+    SidebarToggle.init();
+    BackButtonHandler.init();
+    RefreshHandler.init();
+    AddClusterHandler.init();
+    MenuNavigation.init();
+    
+    // Handle initial navigation from URL
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page') || 'home';
+    const agent = params.get('agent');
+    
+    if (agent) {
+        Navigation.handleNavigation('agent', { agent });
+    } else {
+        Navigation.handleNavigation(page);
+    }
+    
+    // Handle browser navigation
+    window.addEventListener('popstate', (e) => {
+        Navigation.handlePopState(e);
+    });
+    
+    // Start real-time updates
+    StatusUpdater.start();
+    
+    console.log('K8s Agent Dashboard initialized successfully!');
 });
 
-// Обработчик кнопки "Показать только избранное"
-document.getElementById('show-favorites').addEventListener('click', function() {
-    showFavoritesOnly = !showFavoritesOnly;
-    
-    // Обновляем класс активности кнопки
-    this.classList.toggle('active', showFavoritesOnly);
-    
-    // Применяем фильтры
-    applyFilters();
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    StatusUpdater.stop();
+    ParticleSystem.destroy();
 });
