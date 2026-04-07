@@ -1,104 +1,718 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Comic Con · Расписание</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K8s Agent Dashboard - Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(135deg, #0a0f0a 0%, #1a231a 50%, #0a0f0a 100%);
+            color: #00ff88;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 200, 100, 0.03) 0%, transparent 50%);
+            z-index: -1;
+            animation: pulse 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Левое меню */
+        .sidebar {
+            width: 280px;
+            background: rgba(10, 15, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 30px 20px;
+            overflow-y: auto;
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.1);
+        }
+
+        .menu-item {
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+        }
+
+        .menu-item:hover {
+            transform: translateX(10px);
+            color: #00ff88;
+        }
+
+        .menu-item.active {
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 0;
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            transition: height 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .menu-item.active::before,
+        .menu-item:hover::before {
+            height: 30px;
+        }
+
+        .submenu {
+            margin-left: 25px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .menu-item.active .submenu {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Поиск справа */
+        .search-panel {
+            width: 320px;
+            background: rgba(10, 15, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 30px 25px;
+            position: fixed;
+            right: -320px;
+            top: 0;
+            height: 100%;
+            transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 1000;
+        }
+
+        .search-panel.open {
+            right: 0;
+        }
+
+        .search-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .search-toggle {
+            background: none;
+            border: none;
+            color: #00ff88;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .search-toggle:hover {
+            background: rgba(0, 255, 136, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: #00ff88;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        /* Главная область */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            margin-left: 280px;
+            margin-right: 320px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Карточки кластеров */
+        .cluster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .cluster-card {
+            background: rgba(10, 25, 10, 0.8);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cluster-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00ff88, #00cc66, #00ff88);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .cluster-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .cluster-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .cluster-name {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .status-warning { background: rgba(255, 200, 0, 0.2); color: #ffcc00; }
+
+        /* Страница агента */
+        .agent-page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .agent-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 15px 30px;
+            color: #88ff88;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #00ff88;
+            text-shadow: 0 0 15px #00ff88;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            border-radius: 2px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .release-info {
+            background: rgba(0, 30, 0, 0.6);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .release-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1));
+            transition: width 0.4s ease;
+        }
+
+        .release-info:hover::before {
+            width: 100%;
+        }
+
+        .release-info.expanded {
+            height: auto;
+            max-height: 500px;
+        }
+
+        .release-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .release-version {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .expand-toggle {
+            background: none;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .expand-toggle:hover {
+            background: #00ff88;
+            color: #0a0f0a;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            display: none;
+        }
+
+        .release-info.expanded .config-grid {
+            display: grid;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .config-item {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-transform: uppercase;
+            font-size: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #0a0f0a;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 320px;
+            z-index: 100;
+            background: rgba(10, 15, 10, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                margin-right: 0;
+            }
+            .search-panel {
+                width: 100%;
+                right: -100%;
+            }
+            .search-panel.open {
+                right: 0;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Sidebar Toggle Button -->
-    <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
-    
-    <!-- Sidebar Panel -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2>Фильтры</h2>
-            <button class="close-sidebar" id="close-sidebar">×</button>
-        </div>
-        
-        <!-- Days filter section -->
-        <div class="filter-section">
-            <h3>Дни</h3>
-            <div id="day-switcher" class="day-switcher">
-                <button data-day="1" class="active">День 1</button>
-                <button data-day="2">День 2</button>
-                <button data-day="3">День 3</button>
+    <div class="container">
+        <!-- Левое меню -->
+        <div class="sidebar">
+            <div class="menu-item active" data-page="main">
+                <div>🚀 Агенты</div>
+                <div class="submenu">
+                    <div class="menu-item" data-page="agent-settings">⚙️ Настройки агента</div>
+                    <div class="menu-item submenu-item" data-page="gitops">📂 Конфигурация gitOps</div>
+                    <div class="menu-item submenu-item" data-page="jenkins">🔧 Конфигурация Jenkins</div>
+                </div>
+            </div>
+            <div class="menu-item" data-page="monitoring">
+                📊 Мониторинг Агентов
+                <div class="submenu">
+                    <div class="menu-item submenu-item" data-page="monitoring-settings">⚙️ Настройки</div>
+                </div>
             </div>
         </div>
 
-        <!-- Halls filter section -->
-        <div class="filter-section">
-            <h3>Залы</h3>
-            <div id="hall-filter" class="hall-filter">
-                <button data-hall="all" class="active">Все</button>
-                <button data-hall="3">Зал 3</button>
-                <button data-hall="4">Зал 4</button>
-                <button data-hall="5">Зал 5</button>
+        <!-- Основной контент -->
+        <div class="main-content">
+            <!-- Главная страница -->
+            <div id="main-page">
+                <h1 style="font-size: 32px; margin-bottom: 30px; background: linear-gradient(45deg, #00ff88, #00cc66); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Kubernetes Agent Dashboard</h1>
+                <div class="cluster-grid" id="cluster-grid">
+                    <!-- Карточки будут добавлены JS -->
+                </div>
+            </div>
+
+            <!-- Страница агента -->
+            <div id="agent-page" class="agent-page">
+                <button class="btn btn-secondary back-btn" onclick="showPage('main')">← Назад</button>
+                <h2 id="agent-title" style="font-size: 28px; margin-bottom: 20px;"></h2>
+                
+                <div class="agent-tabs">
+                    <button class="tab-button active" data-tab="ift">IFT</button>
+                    <button class="tab-button" data-tab="psi">PSI</button>
+                    <button class="tab-button" data-tab="prod">ПРОМ</button>
+                </div>
+
+                <div id="tab-contents">
+                    <div class="tab-content active" data-tab="ift">
+                        <div class="release-info" onclick="toggleExpand(this)">
+                            <div class="release-header">
+                                <div>
+                                    <div class="release-version">v2.3.1</div>
+                                    <div style="color: #88ff88; font-size: 14px;">Jira: <a href="#" style="color: #00ff88;">K8S-2471</a></div>
+                                </div>
+                                <button class="expand-toggle">Развернуть</button>
+                            </div>
+                            <div class="config-grid">
+                                <div class="config-item">
+                                    <strong>Дистрибутив:</strong><br>Ubuntu 22.04 LTS
+                                </div>
+                                <div class="config-item">
+                                    <strong>Кафки:</strong><br>kafka-01, kafka-02
+                                </div>
+                                <div class="config-item">
+                                    <strong>Базы данных:</strong><br>pg-cluster-1, mysql-main
+                                </div>
+                                <div class="config-item">
+                                    <strong>Секман:</strong><br>secman-vault-01
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary">🚀 Установить</button>
+                            <button class="btn btn-secondary">✅ Проверить</button>
+                            <button class="btn btn-secondary">📂 Открыть Namespace</button>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" data-tab="psi">
+                        <div class="release-info" onclick="toggleExpand(this)">
+                            <div class="release-header">
+                                <div>
+                                    <div class="release-version">v2.3.0</div>
+                                    <div style="color: #88ff88; font-size: 14px;">Jira: <a href="#" style="color: #00ff88;">K8S-2468</a></div>
+                                </div>
+                                <button class="expand-toggle">Развернуть</button>
+                            </div>
+                            <div class="config-grid">
+                                <div class="config-item">
+                                    <strong>Дистрибутив:</strong><br>CentOS 8.5
+                                </div>
+                                <div class="config-item">
+                                    <strong>Кафки:</strong><br>psi-kafka-cluster
+                                </div>
+                                <div class="config-item">
+                                    <strong>Базы данных:</strong><br>psi-postgres-ha
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary">🚀 Установить</button>
+                            <button class="btn btn-secondary">✅ Проверить</button>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" data-tab="prod">
+                        <div class="release-info" onclick="toggleExpand(this)">
+                            <div class="release-header">
+                                <div>
+                                    <div class="release-version">v2.3.2</div>
+                                    <div style="color: #88ff88; font-size: 14px;">Jira: <a href="#" style="color: #00ff88;">K8S-2472</a></div>
+                                </div>
+                                <button class="expand-toggle">Развернуть</button>
+                            </div>
+                            <div class="config-grid">
+                                <div class="config-item">
+                                    <strong>Дистрибутив:</strong><br>RHEL 9.0
+                                </div>
+                                <div class="config-item">
+                                    <strong>Кафки:</strong><br>prod-kafka-01, prod-kafka-02, prod-kafka-03
+                                </div>
+                                <div class="config-item">
+                                    <strong>Базы данных:</strong><br>prod-pg-cluster, prod-mysql-cluster
+                                </div>
+                                <div class="config-item">
+                                    <strong>Секман:</strong><br>prod-vault-cluster
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary">🚀 Установить</button>
+                            <button class="btn btn-secondary">✅ Проверить</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Search section -->
-        <div class="filter-section">
-            <h3>Поиск</h3>
-            <div class="search-panel">
-                <input id="search-input" type="text" placeholder="Поиск по названию…">
+        <!-- Панель поиска -->
+        <div class="search-panel" id="search-panel">
+            <div class="search-header">
+                <button class="search-toggle" onclick="toggleSearch()">🔍</button>
+                <input type="text" class="search-input" placeholder="Поиск агентов, кластеров..." oninput="searchClusters(this.value)">
+            </div>
+            <div id="search-results">
+                <!-- Результаты поиска -->
             </div>
         </div>
+    </div>
 
-        <!-- Tags filter section -->
-        <div class="filter-section">
-            <h3>Теги</h3>
-            <div id="tags-filter" class="tags-filter"></div>
-        </div>
+    <script>
+        // Данные для демо
+        const clusters = [
+            { id: 1, name: 'prod-cluster-01', agent: 'agent-alpha', status: 'active' },
+            { id: 2, name: 'prod-cluster-02', agent: 'agent-alpha', status: 'active' },
+            { id: 3, name: 'psi-cluster-01', agent: 'agent-beta', status: 'warning' },
+            { id: 4, name: 'ift-cluster-01', agent: 'agent-gamma', status: 'active' },
+            { id: 5, name: 'prod-cluster-03', agent: 'agent-alpha', status: 'active' }
+        ];
 
-        <!-- Favorites filter section -->
-        <div class="filter-section">
-            <h3>Избранное</h3>
-            <div class="favorites-filter">
-                <button id="show-favorites" class="">Показать только избранное</button>
-            </div>
-        </div>
+        let currentAgent = null;
 
-        <!-- Hide past events section -->
-        <div class="filter-section">
-            <h3>Настройки</h3>
-            <div class="toggle-past">
-                <label>
-                    <input type="checkbox" id="hide-past">
-                    Скрывать прошедшие
-                </label>
-            </div>
-        </div>
-    </aside>
-    
-    <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay"></div>
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            renderClusters();
+        });
 
-    <main class="main">
-        <section id="list" class="events-list"></section>
+        // Навигация по меню
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (this.dataset.page === 'agent-settings') {
+                    showAgentPage('agent-alpha');
+                } else {
+                    showPage(this.dataset.page || 'main');
+                }
+                updateMenuActive(this);
+            });
+        });
 
-    <section id="map-area" class="map-area">
-        <div id="map-wrapper" class="map-wrapper">
-            <img id="map" src="map/map_raw.jpg" alt="Карта фестиваля">
-            <div id="points-layer" class="points-layer"></div>
-        </div>
-    </section>
-</main>
+        function updateMenuActive(activeItem) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            activeItem.classList.add('active');
+            const parent = activeItem.closest('.menu-item');
+            if (parent) parent.classList.add('active');
+        }
 
-<template id="event-card-template">
-    <article class="event-card">
-        <div class="meta">
-            <div class="time"></div>
-            <div class="title"></div>
-            <div class="hall"></div>
-        </div>
-        <div class="tags"></div>
-        <div class="timer"></div>
-        <button class="fav-btn">★</button>
-    </article>
-</template>
+        function showPage(page) {
+            document.getElementById('main-page').style.display = page === 'main' ? 'block' : 'none';
+            document.getElementById('agent-page').style.display = page === 'agent-settings' ? 'block' : 'none';
+            
+            if (page === 'main') {
+                renderClusters();
+            }
+        }
 
-<script src="app.js"></script>
+        function showAgentPage(agentId) {
+            currentAgent = agentId;
+            document.getElementById('agent-title').textContent = `Agent: ${agentId}`;
+            document.getElementById('main-page').style.display = 'none';
+            document.getElementById('agent-page').style.display = 'block';
+        }
+
+        function renderClusters() {
+            const grid = document.getElementById('cluster-grid');
+            grid.innerHTML = '';
+            
+            clusters.forEach(cluster => {
+                const card = document.createElement('div');
+                card.className = 'cluster-card';
+                card.onclick = () => showAgentPage(cluster.agent);
+                card.innerHTML = `
+                    <div class="cluster-header">
+                        <div>
+                            <div class="cluster-name">${cluster.name}</div>
+                            <div style="color: #88ff88; font-size: 14px; margin-top: 5px;">Agent: ${cluster.agent}</div>
+                        </div>
+                        <div class="status-badge status-${cluster.status}">
+                            ${cluster.status === 'active' ? '🟢 Active' : '🟡 Warning'}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Вкладки агента
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            });
+        });
+
+        // Разворачивание release info
+        function toggleExpand(element) {
+            element.classList.toggle('expanded');
+            const toggle = element.querySelector('.expand-toggle');
+            toggle.textContent = element.classList.contains('expanded') ? 'Свернуть' : 'Развернуть';
+        }
+
+        // Поиск
+        function toggleSearch() {
+            const panel = document.getElementById('search-panel');
+            panel.classList.toggle('open');
+        }
+
+        function searchClusters(query) {
+            const filtered = clusters.filter(cluster => 
+                cluster.name.toLowerCase().includes(query.toLowerCase()) ||
+                cluster.agent.toLowerCase().includes(query.toLowerCase())
+            );
+            // Здесь можно обновить результаты поиска
+        }
+
+        // Закрытие поиска при клике вне
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('search-panel');
+            const toggle = document.querySelector('.search-toggle');
+            if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        });
+    </script>
 </body>
 </html>
