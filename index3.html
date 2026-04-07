@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentOps Nexus 2.1 - Config Forms</title>
+  <style>
+    :root{
+      --bg:#020307;
+      --panel:#0a0d14cc;
+      --panel2:#0f1422;
+      --line:#3a1a27;
+      --text:#f8fafd;
+      --muted:#b8c2d5;
+      --red:#ff1a47;
+      --red2:#d8133a;
+      --red3:#8a0c25;
+      --cyan:#00d4ff;
+      --glow:0 0 30px rgba(255,26,71,.3), 0 0 80px rgba(255,26,71,.15);
+      --shadow:0 25px 60px rgba(0,0,0,.6);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      overflow:hidden;
+      position:relative;
+    }
+    body::before{
+      content:"";
+      position:fixed;inset:0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,26,71,.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0,212,255,.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 90%, rgba(179,19,58,.1) 0%, transparent 50%);
+      animation:plasma 15s ease-in-out infinite alternate;
+      z-index:-2;
+    }
+    @keyframes plasma{
+      0%,100%{transform:scale(1) rotate(0deg)}
+      25%{transform:scale(1.05) rotate(1deg)}
+      75%{transform:scale(1.02) rotate(-1deg)}
+    }
+    /* Scan-line 10% прозрачности */
+    .scan-line{
+      position:fixed;top:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg, transparent, var(--red), var(--cyan), transparent);
+      box-shadow:0 0 20px rgba(255,26,71,.1), 0 0 40px rgba(0,212,255,.08);
+      opacity:.1;
+      animation:scan 5s linear infinite;
+      z-index:1000;
+    }
+    @keyframes scan{
+      0%{top:-2px}
+      100%{top:100vh}
+    }
+    /* Остальные стили без изменений... */
+    .app{
+      display:grid;
+      grid-template-columns:280px 1fr;
+      height:100vh;
+      transition:all .3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .sidebar{
+      padding:24px;
+      border-right:1px solid rgba(255,26,71,.18);
+      background:linear-gradient(180deg, rgba(10,13,20,.97), rgba(5,7,11,.93));
+      backdrop-filter:blur(20px);
+      position:relative;
+      overflow:hidden;
+    }
+    .sidebar::before{
+      content:"";
+      position:absolute;inset:0;
+      background:
+        linear-gradient(45deg, transparent 48%, rgba(255,26,71,.04) 50%, transparent 52%),
+        linear-gradient(-45deg, transparent 48%, rgba(0,212,255,.04) 50%, transparent 52%);
+      background-size:20px 20px;
+      animation:grids 20s linear infinite;
+    }
+    @keyframes grids{
+      0%{transform:translateX(-20px) translateY(-20px)}
+      100%{transform:translateX(-20px) translateY(calc(100vh + 20px))}
+    }
+    .brand{
+      display:flex;align-items:center;gap:14px;
+      padding:20px;
+      border:1px solid rgba(255,26,71,.2);
+      border-radius:22px;
+      background:linear-gradient(135deg, rgba(255,26,71,.16), rgba(0,212,255,.06));
+      box-shadow:var(--glow);
+      margin-bottom:22px;
+      position:relative;
+      z-index:1;
+    }
+    .orb{
+      width:16px;height:16px;border-radius:50%;
+      background:linear-gradient(135deg, var(--red), var(--cyan));
+      box-shadow:0 0 20px var(--red), 0 0 40px var(--cyan);
+      animation:pulse 2s ease-in-out infinite alternate;
+    }
+    @keyframes pulse{
+      from{box-shadow:0 0 20px var(--red), 0 0 40px var(--cyan), inset 0 0 10px rgba(255,255,255,.2)}
+      to{box-shadow:0 0 30px var(--red), 0 0 60px var(--cyan), inset 0 0 20px rgba(255,255,255,.4)}
+    }
+    .brand h1{font-size:18px;margin:0;font-weight:700}
+    .brand p{margin:3px 0 0;color:var(--muted);font-size:13px}
+    .nav{
+      display:flex;flex-direction:column;gap:12px;margin-top:18px;
+      position:relative;z-index:1;
+    }
+    .nav-item,.nav-sub{
+      width:100%;
+      border:none;
+      color:var(--text);
+      background:transparent;
+      padding:16px 18px;
+      border-radius:20px;
+      cursor:pointer;
+      transition:.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      display:flex;align-items:center;justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+    }
+    .nav-item:hover,.nav-sub:hover,.nav-item.active,.nav-sub.active{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,26,71,.3);
+      box-shadow:var(--glow);
+      transform:translateX(4px);
+    }
+    .group{margin-top:10px;padding-left:12px;border-left:2px solid rgba(255,26,71,.2)}
+    .nav-sub{padding-left:22px;color:#d5ddeb;font-size:14px}
+    .nav-sub.small{padding-left:36px;color:var(--muted);font-size:13px}
+    .mobile-menu-btn{
+      display:none;
+      position:fixed;top:20px;left:20px;z-index:2000;
+      width:50px;height:50px;border-radius:16px;
+      background:linear-gradient(135deg, var(--red), var(--red2));
+      border:none;color:white;
+      font-size:18px;
+      box-shadow:var(--glow);
+      backdrop-filter:blur(20px);
+    }
+    .main{
+      display:flex;flex-direction:column;
+      height:100vh;
+      position:relative;
+    }
+    .topbar{
+      height:88px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 28px;
+      border-bottom:1px solid rgba(255,26,71,.16);
+      background:rgba(10,13,20,.85);
+      backdrop-filter:blur(25px);
+      position:relative;
+      z-index:10;
+    }
+    .top-title{
+      display:flex;flex-direction:column;gap:6px;
+    }
+    .top-title h2{margin:0;font-size:24px;font-weight:700}
+    .top-title span{color:var(--muted);font-size:14px}
+    .search{
+      position:relative;
+      width:min(480px, 45vw);
+    }
+    .search input{
+      width:100%;
+      background:rgba(20,25,38,.9);
+      border:1px solid rgba(255,26,71,.22);
+      color:var(--text);
+      padding:16px 20px 16px 52px;
+      border-radius:999px;
+      outline:none;
+      font-size:14px;
+      backdrop-filter:blur(10px);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    .search input:focus{
+      border-color:var(--cyan);
+      box-shadow:var(--glow), inset 0 0 0 1px rgba(0,212,255,.2);
+    }
+    .search::before{
+      content:"🔍";
+      position:absolute;
+      left:20px;top:50%;
+      transform:translateY(-50%);
+      font-size:20px;
+      color:var(--cyan);
+    }
+    .content{
+      padding:28px;
+      overflow:auto;
+      height:calc(100vh - 88px);
+      position:relative;
+    }
+    .page{display:none;animation:slideIn .4s cubic-bezier(0.25, 0.46, 0.45, 0.94)}
+    .page.active{display:block}
+    @keyframes slideIn{
+      from{opacity:0;transform:translateY(20px) scale(.98)}
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
+    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:24px}
+    .card{
+      background:linear-gradient(180deg, rgba(20,25,38,.95), rgba(15,20,32,.92));
+      border:1px solid rgba(255,26,71,.18);
+      border-radius:var(--radius);
+      padding:24px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+      backdrop-filter:blur(15px);
+      transition:.3s;
+    }
+    .card::before{
+      content:"";
+      position:absolute;top:0;left:-100%;width:100%;height:3px;
+      background:linear-gradient(90deg, transparent, var(--red), var(--cyan), transparent);
+      animation:cardScan 4s linear infinite;
+    }
+    @keyframes cardScan{
+      0%{left:-100%}
+      100%{left:100%}
+    }
+    .card:hover{transform:translateY(-8px);box-shadow:0 35px 80px rgba(0,0,0,.7), var(--glow)}
+    .card h3{margin:0 0 14px;font-size:18px;font-weight:600}
+    .muted{color:var(--muted);font-size:14px;line-height:1.5}
+    .form-group{
+      margin-bottom:20px;
+    }
+    .form-group label{
+      display:block;
+      margin-bottom:8px;
+      font-size:14px;
+      font-weight:500;
+      color:var(--text);
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select{
+      width:100%;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,26,71,.2);
+      color:var(--text);
+      padding:14px 16px;
+      border-radius:14px;
+      font-size:14px;
+      backdrop-filter:blur(10px);
+      transition:.3s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus{
+      outline:none;
+      border-color:var(--cyan);
+      box-shadow:var(--glow);
+      background:rgba(255,255,255,.08);
+    }
+    .form-group textarea{height:80px;resize:vertical}
+    .form-row{display:flex;gap:16px}
+    .form-row .form-group{flex:1}
+    .credential-item{
+      background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,26,71,.12);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .credential-item:last-child{margin-bottom:0}
+    .cred-key{font-weight:500}
+    .cred-value{color:var(--muted);font-family:monospace;font-size:13px}
+    .btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+    .btn{
+      border:none;cursor:pointer;color:white;
+      padding:14px 24px;border-radius:18px;
+      background:linear-gradient(135deg, var(--red), var(--red2));
+      box-shadow:var(--glow);
+      font-weight:500;
+      transition:.3s;
+    }
+    .btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 0 40px var(--red), 0 0 80px rgba(255,26,71,.4)}
+    .btn.secondary{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,26,71,.22);
+      color:var(--text);
+    }
+    .btn.secondary:hover{background:rgba(255,26,71,.15);border-color:var(--red)}
+    .status-badge{
+      padding:6px 12px;border-radius:999px;
+      font-size:12px;font-weight:500;
+      border:1px solid;
+    }
+    .status-ok{background:rgba(57,255,20,.2);color:#39ff14;border-color:rgba(57,255,20,.4)}
+    .status-warning{background:rgba(255,170,0,.2);color:#ffaa00;border-color:rgba(255,170,0,.4)}
+    .status-error{background:rgba(255,71,87,.2);color:#ff4757;border-color:rgba(255,71,87,.4)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:3000;opacity:0;visibility:hidden;transition:.4s}
+    .modal.active{opacity:1;visibility:visible}
+    .modal-card{
+      background:linear-gradient(180deg, rgba(20,25,38,.98), rgba(15,20,32,.95));
+      border:1px solid rgba(255,26,71,.25);
+      border-radius:var(--radius);
+      padding:32px;
+      max-width:560px;width:90vw;
+      max-height:85vh;overflow:auto;
+      box-shadow:var(--shadow), var(--glow);
+      transform:scale(.8) translateY(30px);
+      transition:.4s;
+    }
+    .modal.active .modal-card{transform:scale(1) translateY(0)}
+    .modal h3{margin:0 0 18px;font-size:22px}
+    .close-btn{
+      position:absolute;top:20px;right:24px;
+      width:44px;height:44px;border-radius:50%;
+      border:none;background:rgba(255,26,71,.3);
+      color:white;font-size:20px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+    }
+    @media (max-width:1200px){
+      .app{grid-template-columns:1fr}
+      .sidebar{position:fixed;inset:0;height:100vh;transform:translateX(-100%);z-index:1001}
+      .sidebar.mobile-open{transform:translateX(0)}
+      .mobile-menu-btn{display:block}
+    }
+  </style>
+</head>
+<body>
+  <div class="scan-line"></div>
+  
+  <button class="mobile-menu-btn" id="mobileMenu">☰</button>
+
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>Nexus 2.1</h1>
+          <p>agent orchestration + config</p>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="nav-item active" data-page="home">Главная</button>
+        <button class="nav-item" data-page="agents">Агенты</button>
+        <div class="group">
+          <button class="nav-sub" data-page="agent-settings">Настройки агента</button>
+          <button class="nav-sub small active" data-page="gitops">GitOps конфигурация</button>
+          <button class="nav-sub small" data-page="jenkins">Jenkins конфигурация</button>
+        </div>
+        <button class="nav-item" data-page="monitoring">Мониторинг</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-title">
+          <h2 id="pageTitle">GitOps Config</h2>
+          <span id="pageSub">репозитории, токены, credentials</span>
+        </div>
+        <div class="search">
+          <input placeholder="🔍 Поиск репозиториев, токенов, Jenkins jobs..." />
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Главная -->
+        <section class="page" id="home">
+          <div class="grid">
+            <div class="card">
+              <h3>Cluster Status</h3>
+              <div class="status">
+                <div><span class="dot green"></span>k8s-prod-1</div>
+                <div class="badge status-ok">agent-01 ✓</div>
+              </div>
+              <div class="status">
+                <div><span class="dot orange"></span>k8s-stage-2</div>
+                <div class="badge status-warning">agent-02 ⚠</div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Config Status</h3>
+              <div class="status">
+                <div><span class="dot green"></span>GitOps</div>
+                <div class="badge status-ok">synced</div>
+              </div>
+              <div class="status">
+                <div><span class="dot green"></span>Jenkins</div>
+                <div class="badge status-ok">connected</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- GitOps Config -->
+        <section class="page active" id="gitops">
+          <div class="grid">
+            <div class="card">
+              <h3>GitOps Repository</h3>
+              <div class="form-group">
+                <label>Git Repository URL</label>
+                <input type="url" value="https://github.com/org/agent-manifests.git" placeholder="https://github.com/.../repo.git" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Branch</label>
+                  <input type="text" value="main" />
+                </div>
+                <div class="form-group">
+                  <label>Path</label>
+                  <input type="text" value="k8s/agents/ift" />
+                </div>
+              </div>
+              
+              <h4 style="margin:28px 0 16px;font-size:16px">Credentials</h4>
+              <div class="credential-item">
+                <div>
+                  <div class="cred-key">GitHub Token</div>
+                  <div class="cred-value">ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</div>
+                </div>
+                <button class="btn secondary" style="padding:8px 14px;font-size:12px">🔄 Refresh</button>
+              </div>
+              <div class="credential-item">
+                <div>
+                  <div class="cred-key">SSH Private Key</div>
+                  <div class="cred-value">-----BEGIN OPENSSH PRIVATE KEY-----</div>
+                </div>
+                <button class="btn secondary" style="padding:8px 14px;font-size:12px">📋 Copy</button>
+              </div>
+
+              <div class="btns">
+                <button class="btn">🔄 Test Connection</button>
+                <button class="btn secondary">💾 Save Config</button>
+                <div class="status-badge status-ok" style="margin-left:auto">Connected ✓</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Helm & Kustomize</h3>
+              <div class="form-group">
+                <label>Helm Chart Repository</label>
+                <input type="url" value="https://charts.helm.sh/stable" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chart Name</label>
+                  <select>
+                    <option>agent-operator</option>
+                    <option>agent-runtime</option>
+                    <option>kafka-operator</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Version</label>
+                  <input type="text" value="1.2.4" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Values Override (YAML)</label>
+                <textarea>replicaCount: 3
+image:
+  repository: registry.company/agent
+  tag: "v1.24.8"
+ingress:
+  enabled: true</textarea>
+              </div>
+              
+              <div class="btns">
+                <button class="btn">📦 Validate Chart</button>
+                <button class="btn secondary">🔍 Dry Run</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Jenkins Config -->
+        <section class="page" id="jenkins">
+          <div class="grid">
+            <div class="card">
+              <h3>Jenkins Master</h3>
+              <div class="form-group">
+                <label>Jenkins URL</label>
+                <input type="url" value="https://jenkins.company.internal:8080" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Username</label>
+                  <input type="text" value="agent-deployer" />
+                </div>
+                <div class="form-group">
+                  <label>API Token</label>
+                  <input type="password" value="11ab2cd3ef4g5h6ij7k8lm9nop" />
+                </div>
+              </div>
+
+              <h4 style="margin:28px 0 16px">Agent Nodes</h4>
+              <div class="credential-item">
+                <div>
+                  <div class="cred-key">node-ift-01</div>
+                  <div class="cred-value">online · 16 cores · 64GB</div>
+                </div>
+                <span class="status-badge status-ok">active</span>
+              </div>
+              <div class="credential-item">
+                <div>
+                  <div class="cred-key">node-psi-01</div>
+                  <div class="cred-value">offline · maintenance</div>
+                </div>
+                <span class="status-badge status-error">offline</span>
+              </div>
+
+              <div class="btns">
+                <button class="btn">🔌 Test Connection</button>
+                <button class="btn secondary">👥 Add Node</button>
+                <div class="status-badge status-ok" style="margin-left:auto">Connected ✓</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Pipeline Jobs</h3>
+              <div class="form-group">
+                <label>Deploy Pipeline</label>
+                <input type="text" value="agent-deploy-ift" />
+              </div>
+              <div class="form-group">
+                <label>Build Pipeline</label>
+                <input type="text" value="agent-build-main" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Concurrency</label>
+                  <select>
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Timeout</label>
+                  <input type="text" value="2h" />
+                </div>
+              </div>
+              
+              <div class="btns">
+                <button class="btn">🚀 Run Pipeline</button>
+                <button class="btn secondary">📋 Job History</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Модальное окно -->
+        <div class="modal" id="actionModal">
+          <div class="modal-card">
+            <button class="close-btn" id="closeModal">&times;</button>
+            <h3 id="modalTitle">Connection Success</h3>
+            <p id="modalText">GitOps repository connected successfully.</p>
+            <div class="btns" style="justify-content:center">
+              <button class="btn" id="confirmBtn">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Навигация и модалки (тот же код)
+    const pages = document.querySelectorAll('.page');
+    const navButtons = document.querySelectorAll('[data-page]');
+    const title = document.getElementById('pageTitle');
+    const sub = document.getElementById('pageSub');
+    const sidebar = document.getElementById('sidebar');
+    const app = document.getElementById('app');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const modal = document.getElementById('actionModal');
+    const closeModal = document.getElementById('closeModal');
+    const confirmBtn = document.getElementById('confirmBtn');
+
+    const pageMeta = {
+      home: ['Dashboard', 'cluster & agent status'],
+      gitops: ['GitOps Config', 'репозитории, токены, helm charts'],
+      jenkins: ['Jenkins Config', 'master, nodes, pipelines']
+    };
+
+    function openPage(id){
+      pages.forEach(p => p.classList.toggle('active', p.id === id));
+      document.querySelectorAll('.nav-item,.nav-sub').forEach(b => b.classList.toggle('active', b.dataset.page === id));
+      
+      if(pageMeta[id]){
+        title.textContent = pageMeta[id][0];
+        sub.textContent = pageMeta[id][1];
+      }
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        openPage(btn.dataset.page);
+        if(window.innerWidth < 1200) sidebar.classList.remove('mobile-open');
+      });
+    });
+
+    mobileMenu.addEventListener('click', () => {
+      sidebar.classList.toggle('mobile-open');
+    });
+
+    // Модалки для кнопок
+    document.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.querySelector('#modalTitle').textContent = 'Success!';
+        modal.querySelector('#modalText').textContent = 'Configuration saved and validated.';
+        modal.classList.add('active');
+      });
+    });
+
+    closeModal.onclick = confirmBtn.onclick = () => modal.classList.remove('active');
+    modal.onclick = (e) => { if(e.target === modal) modal.classList.remove('active'); };
+
+    // Автооткрытие GitOps
+    openPage('gitops');
+  </script>
+</body>
+</html>
