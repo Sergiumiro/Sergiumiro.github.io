@@ -153,7 +153,7 @@ class ParticleSystem {
             
             this.ctx.beginPath();
             this.ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-            this.ctx.fillStyle = `rgba(0, 255, 170, ${particle.alpha})`;
+            this.ctx.fillStyle = `rgba(255, 51, 51, ${particle.alpha})`;
             this.ctx.fill();
         });
         
@@ -168,7 +168,7 @@ class ParticleSystem {
                     this.ctx.beginPath();
                     this.ctx.moveTo(p1.x, p1.y);
                     this.ctx.lineTo(p2.x, p2.y);
-                    this.ctx.strokeStyle = `rgba(0, 255, 170, ${0.1 * (1 - distance / 100)})`;
+                    this.ctx.strokeStyle = `rgba(255, 51, 51, ${0.1 * (1 - distance / 100)})`;
                     this.ctx.stroke();
                 }
             });
