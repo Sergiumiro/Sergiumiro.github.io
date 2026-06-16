@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Редактор плана работ</title>
+<style>
+:root {
+  --bg:#f0f2f5; --surface:#fff; --surface2:#f7f8fa;
+  --border:#e2e6ea; --border2:#d0d5dd;
+  --text:#1a1d23; --text-muted:#6b7280; --text-light:#9ca3af;
+  --accent:#1a56db; --accent-hover:#1e429f; --accent-light:#ebf0ff;
+  --green:#057a55; --green-bg:#def7ec;
+  --red:#c81e1e; --red-bg:#fde8e8;
+  --orange:#b45309; --orange-bg:#fef3c7;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow:0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+  --radius:10px; --radius-sm:6px;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  /* row stripe colors light */
+  --row-even:#ffffff; --row-odd:#f5f7ff;
+}
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d2e; --surface2:#22263a;
+  --border:#2d3148; --border2:#3a3f5c;
+  --text:#e8eaf0; --text-muted:#8b91b0; --text-light:#5a6080;
+  --accent:#4f7eff; --accent-hover:#3a6bff; --accent-light:#1a2550;
+  --green:#10b981; --green-bg:#0d3327;
+  --red:#f87171; --red-bg:#3b1515;
+  --orange:#fb923c; --orange-bg:#3b2010;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow:0 4px 16px rgba(0,0,0,.5);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.6);
+  --row-even:#1a1d2e; --row-odd:#1e2238;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
+
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+.header-left{display:flex;align-items:center;gap:12px;}
+.logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;}
+.header-title{font-size:15px;font-weight:600;}
+.project-badge{font-size:12px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.header-actions{display:flex;gap:8px;align-items:center;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;border-radius:var(--radius-sm);padding:7px 14px;transition:background .15s,transform .1s;white-space:nowrap;text-decoration:none;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-hover);}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border2);}
+.btn-secondary:hover{background:var(--surface2);}
+.btn-ghost{background:transparent;color:var(--text-muted);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red-bg);}
+.btn-danger:hover{background:var(--red-bg);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-icon{padding:7px;}
+.btn svg{flex-shrink:0;}
+
+.main{max-width:1200px;margin:0 auto;padding:24px;}
+
+.meta-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow-sm);}
+.meta-item{display:flex;flex-direction:column;gap:2px;}
+.meta-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.meta-value{font-size:13px;color:var(--text);font-weight:500;}
+.meta-value.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent);}
+
+.empty-state{background:var(--surface);border:2px dashed var(--border2);border-radius:var(--radius);text-align:center;padding:64px 24px;}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+.empty-title{font-size:18px;font-weight:600;margin-bottom:8px;}
+.empty-sub{color:var(--text-muted);margin-bottom:24px;}
+.empty-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:16px;}
+.section-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.section-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff;}
+.icon-stage{background:var(--accent);}
+.icon-rollback{background:var(--orange);}
+.icon-contacts{background:var(--green);}
+.icon-comms{background:#6d28d9;}
+.section-title-static{flex:1;font-size:14px;font-weight:600;color:var(--text);}
+
+.col-name{flex:2;min-width:0;}
+.col-dur{width:130px;flex-shrink:0;}
+.col-channels{width:150px;flex-shrink:0;}
+.col-tool{width:180px;flex-shrink:0;}
+.tool-display{font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.4;min-height:14px;}
+/* all cells grow with content */
+.task-cell{overflow:visible;min-height:42px;}
+.cell-input{white-space:normal;overflow-wrap:break-word;}
+input.cell-input{min-width:0;width:100%;}
+textarea.cell-input{overflow:hidden;min-height:22px;resize:none;}
+/* channel tags */
+.ch-tags{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;}
+.ch-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;border:1.5px solid transparent;transition:all .15s;}
+.ch-tag.sms{background:#fef3c7;border-color:#fbbf24;color:#92400e;}
+.ch-tag.sms.active{background:#f59e0b;border-color:#d97706;color:#fff;}
+.ch-tag.outlook{background:#dbeafe;border-color:#60a5fa;color:#1e40af;}
+.ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
+.col-dt{width:188px;flex-shrink:0;}
+.col-resp{width:145px;flex-shrink:0;}
+.col-comment{flex:1.5;min-width:0;}
+.col-del{width:36px;flex-shrink:0;}
+.col-drag{width:28px;flex-shrink:0;padding:0!important;}
+
+.task-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch;min-height:42px;}
+.task-row.even{background:var(--row-even);}
+.task-row.odd{background:var(--row-odd);}
+.task-row.even:hover,.task-row.odd:hover{background:var(--accent-light);}
+.task-row.dragging{opacity:.5!important;background:var(--accent-light)!important;}
+.task-row:last-child{border-bottom:none;}
+.task-cell{padding:8px 10px;border-right:1px solid var(--border);display:flex;align-items:flex-start;flex-wrap:wrap;}
+.task-cell:last-child{border-right:none;justify-content:center;align-items:center;}
+
+.tasks-header{display:flex;background:#f9fafb;border-bottom:1px solid var(--border);}
+.th-cell{padding:6px 12px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;border-right:1px solid var(--border);}
+.th-cell:last-child{border-right:none;}
+
+.cell-input{width:100%;background:transparent;border:none;font-family:var(--font);font-size:13px;color:var(--text);outline:none;resize:none;line-height:1.45;}
+.cell-input::placeholder{color:var(--text-light);}
+.cell-input:focus{background:var(--accent-light);border-radius:4px;padding:2px 5px;margin:-2px -5px;}
+textarea.cell-input{overflow:hidden;min-height:22px;}
+
+.gap-warn{font-size:10px;color:var(--orange);display:flex;align-items:flex-start;gap:3px;margin-top:4px;width:100%;flex-wrap:wrap;}
+.gap-actions{display:flex;flex-direction:column;gap:3px;margin-top:4px;width:100%;}
+.gap-btn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap;text-align:left;line-height:1.4;}
+.gap-btn:hover{background:var(--orange);color:#fff;}
+/* drag-and-drop */
+.drag-handle{cursor:grab;color:var(--text-light);padding:0 6px;display:flex;align-items:center;flex-shrink:0;user-select:none;touch-action:none;}
+.drag-handle:active{cursor:grabbing;}
+.drag-handle svg{pointer-events:none;}
+.task-row.dragging{opacity:.45;outline:2px solid var(--accent);outline-offset:-1px;}
+.task-row.drop-above{border-top:3px solid var(--accent);}
+.task-row.drop-below{border-bottom:3px solid var(--accent);}
+/* comment popup */
+.comment-popup{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px;min-width:240px;max-width:320px;display:none;flex-direction:column;gap:6px;}
+.comment-popup.open{display:flex;}
+.comment-snippet{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;}
+.comment-snippet:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.comment-wrap{width:100%;}
+/* validation error */
+.field-err{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(200,30,30,.15)!important;}
+.field-err-msg{font-size:10px;color:var(--red);margin-top:2px;}
+/* ci hint */
+.form-hint{font-size:11px;color:var(--text-light);margin-top:3px;}
+/* ров поле */
+.rov-row{display:flex;align-items:center;gap:8px;padding:8px 24px 0;}
+.rov-label{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;}
+.rov-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 10px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;width:100px;}
+.rov-input:focus{border-color:var(--accent);}
+
+.add-row{padding:9px 14px;border-top:1px solid var(--border);background:#f9fafb;}
+
+.row-del{background:transparent;border:none;cursor:pointer;color:var(--text-light);padding:4px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;}
+.row-del:hover{color:var(--red);background:var(--red-bg);}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;transform:translateY(16px) scale(.98);transition:transform .2s;max-height:90vh;display:flex;flex-direction:column;}
+.modal-overlay.open .modal{transform:none;}
+.modal-header{padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:16px;font-weight:700;}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;}
+.modal-footer{padding:14px 24px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;}
+
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+.form-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,219,.12);}
+.form-divider{display:flex;align-items:center;gap:10px;color:var(--text-light);font-size:12px;margin:4px 0;}
+.form-divider::before,.form-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.import-area{border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+.import-area:hover{border-color:var(--accent);background:var(--accent-light);}
+.import-area input{display:none;}
+.import-area p{font-size:13px;color:var(--text-muted);margin-top:6px;}
+
+.notify-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;flex-shrink:0;}
+.notify-tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font);}
+.notify-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:100px;max-height:340px;overflow-y:auto;margin-top:14px;}
+
+/* WORD preview */
+.modal-wide{max-width:900px;}
+.word-preview{overflow:auto;max-height:62vh;}
+/* A4 proportional container */
+.word-page{width:100%;font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;background:#fff;}
+.word-page-title{font-size:12pt;font-weight:bold;text-align:center;margin-bottom:12px;line-height:1.4;}
+.word-page-subtitle{font-size:11pt;text-align:center;margin-bottom:16px;}
+.word-table{border-collapse:collapse;width:100%;table-layout:fixed;}
+.word-table th,.word-table td{border:1px solid #000;padding:4px 6px;vertical-align:top;word-break:break-word;font-size:10pt;}
+.word-table th{background:#dae8fc;font-weight:bold;text-align:center;}
+.word-table .stage-row td{background:#e2efda;font-weight:bold;font-size:10pt;}
+.word-table .rollback-title td{background:#fce4d6;font-weight:bold;}
+.word-section-gap{height:14px;}
+.word-section-label{font-weight:bold;font-size:11pt;margin:14px 0 6px;}
+
+/* col widths for main table: №(4%) | Работы(28%) | Нач(13%) | Окон(13%) | Исп(15%) | Влияние(9%) | Комм(18%) */
+.wc-n{width:4%} .wc-work{width:28%} .wc-dt{width:13%} .wc-resp{width:15%} .wc-inf{width:9%} .wc-comm{width:18%}
+
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:999;}
+.toast{background:#1a1d23;color:#fff;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;animation:slideIn .2s ease;max-width:320px;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <div class="logo">П</div>
+    <span class="header-title">План работ</span>
+    <span class="project-badge" id="headerBadge">Нет проекта</span>
+    <span class="project-badge" id="headerCI" style="display:none;font-family:var(--font-mono);font-size:11px"></span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="openWordModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Таблица Word
+    </button>
+    <button class="btn btn-ghost" onclick="openNotifyModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63 19.79 19.79 0 01.92 5.18 2 2 0 012.92 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Рассылка
+    </button>
+    <button class="btn btn-secondary" onclick="exportJSON()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Экспорт JSON
+    </button>
+    <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" id="themeBtn" title="Переключить тему">
+      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="btn btn-primary" onclick="openSetupModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Настройки
+    </button>
+  </div>
+</header>
+
+<main class="main">
+  <div id="appContent">
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Нет плана работ</div>
+      <div class="empty-sub">Создайте новый план или загрузите существующий из JSON</div>
+      <div class="empty-actions">
+        <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" id="themeBtn" title="Переключить тему">
+      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="btn btn-primary" onclick="openSetupModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Создать план
+        </button>
+        <label class="btn btn-secondary" style="cursor:pointer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Импорт JSON
+          <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <!-- PLAN VIEW -->
+    <div id="planView" style="display:none">
+      <div class="meta-bar" id="metaBar"></div>
+
+      <!-- Fixed 3 stages -->
+      <div id="stagesContainer"></div>
+
+      <!-- Rollback -->
+      <div class="section-card" style="margin-top:8px">
+        <div class="section-header">
+          <div class="section-icon icon-rollback">↩</div>
+          <span class="section-title-static">План отката</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">Работы</div>
+          <div class="th-cell col-dur">Начало (Час X +)</div>
+          <div class="th-cell col-dur">Окончание (Час X +)</div>
+          <div class="th-cell col-resp">Исполнитель</div>
+          <div class="th-cell col-comment">Комментарий</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="rollbackTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addRollbackTask()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить шаг отката
+          </button>
+        </div>
+      </div>
+
+      <!-- Contacts -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-contacts">👤</div>
+          <span class="section-title-static">Контактная информация</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">ФИО / контакт</div>
+          <div class="th-cell col-comment">Роль</div>
+          <div class="th-cell col-resp">Телефон / контакт</div>
+          <div class="th-cell col-comment">Примечание</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="contactsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addContact()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить контакт
+          </button>
+        </div>
+      </div>
+
+      <!-- Communications -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-comms">💬</div>
+          <span class="section-title-static">План коммуникаций</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-resp">Событие</div>
+          <div class="th-cell col-channels">Вид коммуникации</div>
+          <div class="th-cell col-tool">Средство коммуникации</div>
+          <div class="th-cell col-name">Участники</div>
+          <div class="th-cell col-resp">Ответственный</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="commsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addComm()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить событие
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ Настройки плана</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('setupModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Название проекта</label>
+        <input class="form-input" id="f_project" placeholder="Например: Обновление сервиса X">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">CI стенда</label>
+          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10"
+            oninput="validateCI(this)" pattern="CI\d{8}">
+          <div class="form-hint">Формат: CI + 8 цифр</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">CI проекта</label>
+          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10"
+            oninput="validateCI(this)" pattern="CI\d{8}">
+          <div class="form-hint">Формат: CI + 8 цифр</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Начало работ (дата и время МСК)</label>
+        <input class="form-input" id="f_start" type="datetime-local">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <input class="form-input" id="f_responsible" placeholder="Иванов И.И.">
+      </div>
+      <div class="form-divider">или загрузить из JSON</div>
+      <label class="import-area">
+        <input type="file" accept=".json" onchange="importJSON(event)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-light)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Нажмите для выбора JSON-файла</p>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('setupModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="applySetup()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Применить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFY MODAL -->
+<div class="modal-overlay" id="notifyModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title">📨 Текст рассылки</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('notifyModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:0;padding:0">
+      <div class="rov-row">
+        <span class="rov-label">№ РоВ:</span>
+        <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
+      </div>
+      <div style="padding:10px 24px 0">
+        <div class="notify-tabs">
+          <button class="notify-tab active" onclick="switchTab('email')"          id="tab-email">📧 Открытие</button>
+          <button class="notify-tab"        onclick="switchTab('chat')"           id="tab-chat">💬 Открытие чат</button>
+          <button class="notify-tab"        onclick="switchTab('email-close')"    id="tab-email-close">📧 Закрытие</button>
+          <button class="notify-tab"        onclick="switchTab('chat-close')"     id="tab-chat-close">💬 Закрытие чат</button>
+          <button class="notify-tab"        onclick="switchTab('email-rollback')" id="tab-email-rollback" style="color:var(--red)">📧 Откат</button>
+        </div>
+      </div>
+      <!-- email recipients row — only visible on email tab -->
+      <div id="recipientsRow" style="padding:10px 24px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">Кому:</span>
+        <span id="recipientsList" style="font-size:13px;color:var(--text)"></span>
+      </div>
+      <div style="padding:12px 24px 20px">
+        <div class="notify-text" id="notifyText"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('notifyModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyNotify()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать текст
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WORD TABLE MODAL -->
+<div class="modal-overlay" id="wordModal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">📊 Итоговая таблица для Word</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('wordModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <div class="word-preview" id="wordPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('wordModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyWordTable()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать — вставить в Word
+      </button>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────
+const STAGE_TITLES = [
+  'Этап 1. Подготовительные работы',
+  'Этап 2. Основные работы',
+  'Этап 3. Заключительные мероприятия и мониторинг работоспособности'
+];
+
+// ─── STATE ───────────────────────────────────────────────
+let plan = null;
+let notifyMode = 'email';
+
+// ─── COMMENT SNIPPETS ────────────────────────────────────
+const COMMENT_SNIPPETS = [
+  'Возможна временная недоступность до 5 минут',
+  'Возможна временная недоступность до 15 минут',
+  'Возможна временная недоступность до 30 минут',
+  'Сервис будет недоступен на время проведения работ',
+  'Без влияния на доступность сервиса',
+  'Возможно замедление работы сервиса',
+  'Требуется подтверждение успешности от команды',
+  'Параллельно ведётся мониторинг',
+];
+
+let activePopup = null;
+let activePopupMeta = null;
+let closeTimer = null;
+
+function getOrCreatePopup() {
+  let p = document.getElementById('__commentPopup');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = '__commentPopup';
+    p.className = 'comment-popup';
+    p.addEventListener('mousedown', e => e.preventDefault()); // prevent blur on textarea
+    document.body.appendChild(p);
+  }
+  return p;
+}
+
+function openCommentPopup(ta, si, ti) {
+  clearTimeout(closeTimer);
+  const popup = getOrCreatePopup();
+  activePopup = popup;
+  activePopupMeta = {si, ti};
+
+  // Build content (no template literal nesting to avoid parse issues)
+  let html = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны комментариев</div>';
+  COMMENT_SNIPPETS.forEach(function(s, idx) {
+    html += '<div class="comment-snippet" onmousedown="insertComment(' + si + ',' + ti + ',' + idx + ')">' + esc(s) + '</div>';
+  });
+  popup.innerHTML = html;
+
+  // Position: below the textarea, aligned to left edge, visible on screen
+  const rect = ta.getBoundingClientRect();
+  popup.style.display = 'flex';
+  let top = rect.bottom + 4;
+  let left = rect.left;
+  // Ensure it doesn't go off right edge
+  const popW = 280;
+  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+  // Ensure it doesn't go off bottom
+  const popH = 320;
+  if (top + popH > window.innerHeight - 8) top = rect.top - popH - 4;
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+  popup.classList.add('open');
+}
+
+function scheduleClosePopup() {
+  closeTimer = setTimeout(closeAllPopups, 150);
+}
+
+function closeAllPopups() {
+  const p = document.getElementById('__commentPopup');
+  if (p) { p.classList.remove('open'); p.style.display = 'none'; }
+  activePopup = null;
+  activePopupMeta = null;
+}
+
+function insertComment(si, ti, idx) {
+  const snippet = COMMENT_SNIPPETS[idx];
+  plan.stages[si].tasks[ti].comment = snippet;
+  closeAllPopups();
+  renderStages();
+}
+
+// ─── INIT ────────────────────────────────────────────────
+function initPlan(meta) {
+  // always exactly 3 stages with fixed titles
+  const incoming = meta.stages || [];
+  const stages = STAGE_TITLES.map((title, i) => ({
+    title,
+    tasks: (incoming[i] && incoming[i].tasks) ? incoming[i].tasks : []
+  }));
+
+  plan = {
+    project:        meta.project        || '',
+    ci_stand:       meta.ci_stand       || '',
+    ci_project:     meta.ci_project     || '',
+    start:          meta.start          || '',
+    responsible:    meta.responsible    || '',
+    stages,
+    rollback:       meta.rollback       || [],
+    contacts:       meta.contacts       || [],
+    communications: meta.communications || []
+  };
+  render();
+}
+
+// ─── RENDER ──────────────────────────────────────────────
+function render() {
+  if (!plan) return;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('planView').style.display   = 'block';
+
+  document.getElementById('metaBar').innerHTML = `
+    <div class="meta-item"><div class="meta-label">Проект</div><div class="meta-value">${esc(plan.project||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">CI стенда</div><div class="meta-value mono">${esc(plan.ci_stand||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">CI проекта</div><div class="meta-value mono">${esc(plan.ci_project||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">Начало работ</div><div class="meta-value">${fmtDT(plan.start)}</div></div>
+    <div class="meta-item"><div class="meta-label">Ответственный</div><div class="meta-value">${esc(plan.responsible||'—')}</div></div>
+  `;
+  document.getElementById('headerBadge').textContent = plan.project || 'Нет проекта';
+  const ciEl = document.getElementById('headerCI');
+  if (plan.ci_stand || plan.ci_project) {
+    ciEl.textContent = [plan.ci_stand, plan.ci_project].filter(Boolean).join(' · ');
+    ciEl.style.display = '';
+  } else {
+    ciEl.style.display = 'none';
+  }
+
+  renderStages();
+  renderRollback();
+  renderContacts();
+  renderComms();
+}
+
+// ─── STAGES (fixed 3) ────────────────────────────────────
+function renderStages() {
+  const c = document.getElementById('stagesContainer');
+  c.innerHTML = '';
+  plan.stages.forEach((stage, si) => {
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.innerHTML = `
+      <div class="section-header">
+        <div class="section-icon icon-stage">${si+1}</div>
+        <span class="section-title-static">${esc(stage.title)}</span>
+      </div>
+      <div class="tasks-header">
+        <div class="th-cell col-drag"></div>
+        <div class="th-cell col-name">Работы</div>
+        <div class="th-cell col-dt">Начало (МСК)</div>
+        <div class="th-cell col-dur">Продолжит.</div>
+        <div class="th-cell col-dt">Окончание (МСК)</div>
+        <div class="th-cell col-resp">Исполнитель</div>
+        <div class="th-cell col-comment">Комментарий</div>
+        <div class="th-cell col-del"></div>
+      </div>
+      <div id="stage-tasks-${si}"></div>
+      <div class="add-row">
+        <button class="btn btn-ghost btn-sm" onclick="addTask(${si})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить задачу
+        </button>
+      </div>`;
+    c.appendChild(card);
+
+    const container = card.querySelector(`#stage-tasks-${si}`);
+    stage.tasks.forEach((task, ti) => {
+      container.appendChild(createTaskRow(si, ti, task, stage.tasks));
+    });
+  });
+}
+
+function createTaskRow(si, ti, task, allTasks) {
+  const row = document.createElement('div');
+  row.className = 'task-row ' + (ti % 2 === 0 ? 'even' : 'odd');
+  row.dataset.si = si;
+  row.dataset.ti = ti;
+
+  // Gap detection
+  let hasGap = false;
+  let gapHtml = '';
+  if (ti > 0) {
+    const prev = allTasks[ti-1];
+    if (prev.end && task.start && prev.end !== task.start) {
+      hasGap = true;
+      const prevEndMs = new Date(prev.end).getTime();
+      const thisStartMs = new Date(task.start).getTime();
+      const diffMin = Math.round((thisStartMs - prevEndMs) / 60000);
+      const diffLabel = diffMin > 0 ? `+${diffMin}м` : `${diffMin}м`;
+      gapHtml = `
+        <div class="gap-warn">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Разрыв ${diffLabel}: ${fmtTime(prev.end)}→${fmtTime(task.start)}
+        </div>
+        <div class="gap-actions">
+          <button class="gap-btn" onclick="fixGapShrinkPrev(${si},${ti-1},${ti})">↑ Сдвинуть конец пред.</button>
+          <button class="gap-btn" onclick="fixGapShiftNext(${si},${ti})">↓ Сдвинуть начало след.</button>
+        </div>`;
+    }
+  }
+
+  // Duration options
+  const durOptions = [5,10,15,20,25,30,35,40,45,50,55,60,75,90,105,120,150,180,210,240];
+  const durSelect = durOptions.map(m => {
+    const h = Math.floor(m/60), mn = m%60;
+    const label = h > 0 ? (mn > 0 ? h+'ч '+mn+'м' : h+'ч') : m+'м';
+    return `<option value="${m}">${label}</option>`;
+  }).join('');
+
+  // Duration badge: show computed duration if both start and end are set
+  let durBadge = '';
+  if (task.start && task.end) {
+    const diffMs = new Date(task.end) - new Date(task.start);
+    if (diffMs > 0) {
+      const totalMin = Math.round(diffMs / 60000);
+      const h = Math.floor(totalMin / 60), m = totalMin % 60;
+      const label = h > 0 ? (m > 0 ? h + 'ч ' + m + 'м' : h + 'ч') : m + 'м';
+      durBadge = `<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:3px">⏱ ${label}</div>`;
+    }
+  }
+
+  // Responsible: use task value if explicitly set, otherwise plan.responsible
+  const respVal = (task.responsible !== undefined && task.responsible !== null && task.responsible !== '')
+    ? task.responsible : (plan.responsible||'');
+
+  const nameErr = (!task.name || !task.name.trim()) ? '<div class="field-err-msg">⚠ Обязательное поле</div>' : '';
+
+  row.innerHTML = `
+    <div class="task-cell col-drag" style="align-items:center;justify-content:center;cursor:grab">
+      <div class="drag-handle">
+        <svg width="12" height="16" viewBox="0 0 12 16" fill="none"><circle cx="4" cy="3" r="1.5" fill="currentColor"/><circle cx="8" cy="3" r="1.5" fill="currentColor"/><circle cx="4" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="4" cy="13" r="1.5" fill="currentColor"/><circle cx="8" cy="13" r="1.5" fill="currentColor"/></svg>
+      </div>
+    </div>
+    <div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">
+      <textarea class="cell-input ${!task.name||!task.name.trim()?'field-err':''}" rows="1" placeholder="Название работы *"
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)"
+        onchange="plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)">${esc(task.name||'')}</textarea>
+      ${nameErr}
+    </div>
+    <div class="task-cell col-dt" style="align-items:center">
+      <input class="cell-input" type="datetime-local" value="${task.start||''}"
+        onchange="onStartChange(${si},${ti},this.value)" style="font-size:11px;width:100%">
+    </div>
+    <div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">
+      <select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
+        onchange="onDurChange(${si},${ti},this.value)">
+        <option value="">—</option>
+        ${durSelect}
+      </select>
+      ${durBadge}
+      ${gapHtml}
+    </div>
+    <div class="task-cell col-dt" style="align-items:center">
+      <input class="cell-input" type="datetime-local" value="${task.end||''}"
+        onchange="onEndChange(${si},${ti},this.value)" style="font-size:11px;width:100%">
+    </div>
+    <div class="task-cell col-resp" style="align-items:flex-start">
+      <textarea class="cell-input" rows="1" placeholder="Исполнитель"
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].responsible=this.value"
+        onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">${esc(respVal)}</textarea>
+    </div>
+    <div class="task-cell col-comment" style="align-items:flex-start">
+      <div class="comment-wrap">
+        <textarea class="cell-input" rows="1" placeholder="Комментарий"
+          oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value"
+          onchange="plan.stages[${si}].tasks[${ti}].comment=this.value"
+          onfocus="openCommentPopup(this,${si},${ti})">${esc(task.comment||'')}</textarea>
+        <div class="comment-popup" id="cpop-${si}-${ti}">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:2px">Шаблоны комментариев</div>
+          ${COMMENT_SNIPPETS.map((s,idx) => `<div class="comment-snippet" onclick="insertComment(${si},${ti},${idx})">${esc(s)}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="task-cell col-del">
+      <button class="row-del" onclick="removeTask(${si},${ti})" title="Удалить">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+
+  setTimeout(() => {
+    row.querySelectorAll('textarea').forEach(ta => autoResize(ta));
+    // wire pointer-based drag (smooth, no jank, preserves task data)
+    const handle = row.querySelector('.drag-handle');
+    if (handle) {
+      handle.addEventListener('pointerdown', e => startDrag(e, si, ti));
+    }
+  }, 0);
+  return row;
+}
+
+// Fix gap: move previous task's END to match this task's START
+function fixGapShrinkPrev(si, prevTi, thisTi) {
+  plan.stages[si].tasks[prevTi].end = plan.stages[si].tasks[thisTi].start;
+  renderStages();
+  toast('Окончание предыдущей задачи скорректировано','✅');
+}
+
+// Fix gap: move this task's START to match previous task's END
+function fixGapShiftNext(si, thisTi) {
+  plan.stages[si].tasks[thisTi].start = plan.stages[si].tasks[thisTi-1].end;
+  renderStages();
+  toast('Начало задачи скорректировано','✅');
+}
+
+function onEndChange(si, ti, val) {
+  plan.stages[si].tasks[ti].end = val;
+  // auto-propagate start of next task if it's empty
+  const tasks = plan.stages[si].tasks;
+  if (ti + 1 < tasks.length && !tasks[ti+1].start) {
+    tasks[ti+1].start = val;
+  }
+  renderStages();
+}
+
+function onStartChange(si, ti, val) {
+  plan.stages[si].tasks[ti].start = val;
+  renderStages();
+}
+
+function onDurChange(si, ti, minutes) {
+  if (!minutes) return;
+  const start = plan.stages[si].tasks[ti].start;
+  if (!start) { toast('Сначала укажите время начала','⚠️'); return; }
+  const endDate = new Date(new Date(start).getTime() + parseInt(minutes) * 60000);
+  // format as datetime-local value
+  const pad = n => String(n).padStart(2,'0');
+  const endVal = endDate.getFullYear()+'-'+pad(endDate.getMonth()+1)+'-'+pad(endDate.getDate())+'T'+pad(endDate.getHours())+':'+pad(endDate.getMinutes());
+  plan.stages[si].tasks[ti].end = endVal;
+  // propagate to next task start if empty
+  const tasks = plan.stages[si].tasks;
+  if (ti + 1 < tasks.length && !tasks[ti+1].start) {
+    tasks[ti+1].start = endVal;
+  }
+  renderStages();
+}
+
+// ─── ROLLBACK ────────────────────────────────────────────
+function renderRollback() {
+  const c = document.getElementById('rollbackTasks');
+  c.innerHTML = '';
+  (plan.rollback||[]).forEach((row, ri) => {
+    const el = document.createElement('div');
+    el.className = 'task-row';
+    el.innerHTML = `
+      <div class="task-cell col-name">
+        <textarea class="cell-input" rows="1" placeholder="Работа"
+          oninput="autoResize(this);plan.rollback[${ri}].name=this.value">${esc(row.name||'')}</textarea>
+      </div>
+      <div class="task-cell col-dur" style="padding:6px 8px">
+        ${buildRollbackSelect(ri,'start',row.start||'')}
+      </div>
+      <div class="task-cell col-dur" style="padding:6px 8px">
+        ${buildRollbackSelect(ri,'end',row.end||'')}
+      </div>
+      <div class="task-cell col-resp">
+        <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||plan.responsible||'')}"
+          onchange="plan.rollback[${ri}].responsible=this.value">
+      </div>
+      <div class="task-cell col-comment">
+        <input class="cell-input" placeholder="Комментарий / ссылка" value="${esc(row.comment||'')}"
+          onchange="plan.rollback[${ri}].comment=this.value">
+      </div>
+      <div class="task-cell col-del">
+        <button class="row-del" onclick="removeRollback(${ri})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    setTimeout(() => { const ta=el.querySelector('textarea'); if(ta) autoResize(ta); }, 0);
+    c.appendChild(el);
+  });
+}
+
+// ─── CONTACTS ────────────────────────────────────────────
+function renderContacts() {
+  const c = document.getElementById('contactsTasks');
+  c.innerHTML = '';
+  (plan.contacts||[]).forEach((row, ci) => {
+    const el = document.createElement('div');
+    el.className = 'task-row';
+    el.innerHTML = `
+      <div class="task-cell col-name">
+        <input class="cell-input" placeholder="ФИО / название" value="${esc(row.name||'')}"
+          onchange="plan.contacts[${ci}].name=this.value">
+      </div>
+      <div class="task-cell col-comment">
+        <input class="cell-input" placeholder="Роль" value="${esc(row.role||'')}"
+          onchange="plan.contacts[${ci}].role=this.value">
+      </div>
+      <div class="task-cell col-resp">
+        <input class="cell-input" placeholder="8-xxx-xxx-xxxx" value="${esc(row.phone||'')}"
+          onchange="plan.contacts[${ci}].phone=this.value">
+      </div>
+      <div class="task-cell col-comment">
+        <input class="cell-input" placeholder="Примечание" value="${esc(row.note||'')}"
+          onchange="plan.contacts[${ci}].note=this.value">
+      </div>
+      <div class="task-cell col-del">
+        <button class="row-del" onclick="removeContact(${ci})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    c.appendChild(el);
+  });
+}
+
+// ─── COMMUNICATIONS ──────────────────────────────────────
+// Channel → label mapping
+const CH_LABELS = {
+  sms:     { tag:'📱 SMS',     tool:'Сервер отправки SMS' },
+  outlook: { tag:'📧 Outlook', tool:'Outlook'             }
+};
+
+function getToolText(channels) {
+  if (!channels) return '—';
+  const tools = [];
+  if (channels.sms)     tools.push(CH_LABELS.sms.tool);
+  if (channels.outlook) tools.push(CH_LABELS.outlook.tool);
+  return tools.length ? tools.join(', ') : '—';
+}
+
+function renderComms() {
+  const c = document.getElementById('commsTasks');
+  c.innerHTML = '';
+  (plan.communications||[]).forEach((row, ci) => {
+    const partsVal   = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
+    const hasSms     = !!(row.channels && row.channels.sms);
+    const hasOutlook = !!(row.channels && row.channels.outlook);
+    const toolText   = getToolText(row.channels);
+    const el = document.createElement('div');
+    el.className = 'task-row';
+    el.innerHTML = `
+      <div class="task-cell col-resp" style="align-items:flex-start">
+        <textarea class="cell-input" rows="1" placeholder="Событие"
+          oninput="autoResize(this);plan.communications[${ci}].event=this.value"
+          onchange="plan.communications[${ci}].event=this.value">${esc(row.event||'')}</textarea>
+      </div>
+      <div class="task-cell col-channels" style="flex-direction:column;align-items:flex-start;gap:4px;padding-top:8px">
+        <div class="ch-tags">
+          <span class="ch-tag sms ${hasSms?'active':''}" onclick="toggleChannel(${ci},'sms')">📱 SMS</span>
+          <span class="ch-tag outlook ${hasOutlook?'active':''}" onclick="toggleChannel(${ci},'outlook')">📧 Outlook</span>
+        </div>
+      </div>
+      <div class="task-cell col-tool" style="align-items:flex-start">
+        <div class="tool-display">${esc(toolText)}</div>
+      </div>
+      <div class="task-cell col-name" style="align-items:flex-start">
+        <textarea class="cell-input" rows="1" placeholder="Участники (через запятую)"
+          oninput="autoResize(this);plan.communications[${ci}].participants=this.value"
+          onchange="plan.communications[${ci}].participants=this.value">${esc(partsVal)}</textarea>
+      </div>
+      <div class="task-cell col-resp" style="align-items:flex-start">
+        <input class="cell-input" placeholder="Ответственный" value="${esc(row.responsible||'')}"
+          onchange="plan.communications[${ci}].responsible=this.value">
+      </div>
+      <div class="task-cell col-del">
+        <button class="row-del" onclick="removeComm(${ci})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    setTimeout(() => { el.querySelectorAll('textarea').forEach(ta => autoResize(ta)); }, 0);
+    c.appendChild(el);
+  });
+}
+
+function toggleChannel(ci, ch) {
+  if (!plan.communications[ci].channels) plan.communications[ci].channels = {};
+  plan.communications[ci].channels[ch] = !plan.communications[ci].channels[ch];
+  renderComms();
+}
+
+// ─── CRUD ────────────────────────────────────────────────
+function addTask(si) {
+  const tasks = plan.stages[si].tasks;
+  let startVal = '';
+  if (tasks.length > 0) {
+    startVal = tasks[tasks.length-1].end || '';
+  } else if (si === 1 && plan.start) {
+    startVal = plan.start;
+  }
+  // responsible is intentionally left '' so createTaskRow falls back to plan.responsible
+  tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
+  renderStages();
+}
+function removeTask(si,ti) { plan.stages[si].tasks.splice(ti,1); renderStages(); }
+
+function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:plan.responsible||'',comment:''}); renderRollback(); }
+function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); }
+
+function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); }
+function removeContact(ci)  { plan.contacts.splice(ci,1); renderContacts(); }
+
+function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false},participants:'',responsible:''}); renderComms(); }
+function removeComm(ci)     { plan.communications.splice(ci,1); renderComms(); }
+
+// ─── SETUP ───────────────────────────────────────────────
+function openSetupModal() {
+  if (plan) {
+    document.getElementById('f_project').value    = plan.project    || '';
+    document.getElementById('f_ci_stand').value   = plan.ci_stand   || '';
+    document.getElementById('f_ci_project').value = plan.ci_project || '';
+    document.getElementById('f_start').value      = plan.start      || '';
+    document.getElementById('f_responsible').value= plan.responsible|| '';
+  }
+  document.getElementById('setupModal').classList.add('open');
+}
+
+function applySetup() {
+  const project = document.getElementById('f_project').value.trim();
+  if (!project) { toast('Введите название проекта','⚠️'); return; }
+  const meta = {
+    project,
+    ci_stand:    document.getElementById('f_ci_stand').value.trim(),
+    ci_project:  document.getElementById('f_ci_project').value.trim(),
+    start:       document.getElementById('f_start').value,
+    responsible: document.getElementById('f_responsible').value.trim(),
+    stages:      plan ? plan.stages : [],
+    rollback:    plan ? plan.rollback : [],
+    contacts:    plan ? plan.contacts : [],
+    communications: plan ? plan.communications : []
+  };
+  initPlan(meta);
+  closeModal('setupModal');
+  toast('Настройки сохранены','✅');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── NOTIFY ──────────────────────────────────────────────
+function openNotifyModal() {
+  if (!plan) { toast('Сначала создайте план','⚠️'); return; }
+  notifyMode = 'email';
+  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  document.getElementById('tab-email').classList.add('active');
+  updateNotifyText();
+  document.getElementById('notifyModal').classList.add('open');
+}
+
+function switchTab(mode) {
+  notifyMode = mode;
+  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', id === 'tab-'+mode.replace('email','email').replace('chat','chat') || id === 'tab-'+mode);
+  });
+  // simpler approach: just match by id
+  document.getElementById('tab-email').classList.toggle('active', mode==='email');
+  document.getElementById('tab-chat').classList.toggle('active', mode==='chat');
+  document.getElementById('tab-email-close').classList.toggle('active', mode==='email-close');
+  document.getElementById('tab-chat-close').classList.toggle('active', mode==='chat-close');
+  document.getElementById('tab-email-rollback').classList.toggle('active', mode==='email-rollback');
+  updateNotifyText();
+}
+
+function getRecipients(channelFilter) {
+  // Collect unique participants; optionally filter by channel (sms/outlook/null=all)
+  const all = new Set();
+  (plan.communications||[]).forEach(c => {
+    if (channelFilter) {
+      if (!c.channels || !c.channels[channelFilter]) return;
+    }
+    const parts = Array.isArray(c.participants)
+      ? c.participants
+      : (c.participants||'').split(',').map(s=>s.trim()).filter(Boolean);
+    parts.forEach(p => { if(p) all.add(p); });
+  });
+  return [...all];
+}
+
+function updateNotifyText() {
+  const startFmt = plan.start
+    ? new Date(plan.start).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '[дата/время не указаны]';
+  const rovEl = document.getElementById('rovNumber');
+  const rovNum = rovEl ? rovEl.value.trim() : '';
+  const rovLine = rovNum ? `\nРаботы производились по РоВ № ${rovNum}.` : '';
+
+  const recipRow = document.getElementById('recipientsRow');
+  const recipList = document.getElementById('recipientsList');
+  const isEmail = notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback';
+  const isClose = notifyMode === 'email-close' || notifyMode === 'chat-close';
+
+  const smsRec     = getRecipients('sms');
+  const outlookRec = getRecipients('outlook');
+  const hasSms     = smsRec.length > 0;
+  const hasOutlook = outlookRec.length > 0;
+
+  recipRow.style.display = isEmail ? 'flex' : 'none';
+  if (isEmail) {
+    let recipHtml = '';
+    if (hasSms)     recipHtml += '<span style="margin-right:12px"><b>📱 SMS:</b> ' + smsRec.join('; ') + '</span>';
+    if (hasOutlook) recipHtml += '<span><b>📧 Outlook:</b> ' + outlookRec.join('; ') + '</span>';
+    if (!hasSms && !hasOutlook) recipHtml = '<span style="color:var(--text-light)">—</span>';
+    recipList.innerHTML = recipHtml;
+  }
+
+  if (notifyMode === 'email') {
+    document.getElementById('notifyText').textContent =
+`Уважаемые коллеги,
+
+Информируем вас о начале регламентных работ.
+
+Проект: ${plan.project||'—'}
+CI стенда: ${plan.ci_stand||'—'}
+CI проекта: ${plan.ci_project||'—'}
+Начало работ: ${startFmt} (МСК)
+Ответственный: ${plan.responsible||'—'}
+
+В период проведения работ возможна временная недоступность сервиса.
+По вопросам обращайтесь к ответственному исполнителю.${rovLine}
+
+С уважением,
+${plan.responsible||'Команда'}`;
+
+  } else if (notifyMode === 'chat') {
+    document.getElementById('notifyText').textContent =
+`🔧 *Начало регламентных работ*
+
+📋 *Проект:* ${plan.project||'—'}
+🖥 *CI стенда:* \`${plan.ci_stand||'—'}\`
+📦 *CI проекта:* \`${plan.ci_project||'—'}\`
+⏰ *Начало:* ${startFmt} МСК
+👤 *Ответственный:* ${plan.responsible||'—'}
+
+⚠️ Возможна временная недоступность сервиса.`;
+
+  } else if (notifyMode === 'email-close') {
+    document.getElementById('notifyText').textContent =
+`Уважаемые коллеги,
+
+Информируем вас о завершении регламентных работ.
+
+Проект: ${plan.project||'—'}
+CI стенда: ${plan.ci_stand||'—'}
+CI проекта: ${plan.ci_project||'—'}
+Ответственный: ${plan.responsible||'—'}
+
+Работы завершены успешно. Сервис доступен в штатном режиме.${rovLine}
+
+С уважением,
+${plan.responsible||'Команда'}`;
+
+  } else if (notifyMode === 'chat-close') {
+    document.getElementById('notifyText').textContent =
+`✅ *Регламентные работы завершены*
+
+📋 *Проект:* ${plan.project||'—'}
+🖥 *CI стенда:* \`${plan.ci_stand||'—'}\`
+📦 *CI проекта:* \`${plan.ci_project||'—'}\`
+👤 *Ответственный:* ${plan.responsible||'—'}
+
+🟢 Работы завершены успешно. Сервис работает в штатном режиме.`;
+
+  } else if (notifyMode === 'email-rollback') {
+    document.getElementById('notifyText').textContent =
+`Уважаемые коллеги,
+
+Информируем вас о завершении регламентных работ с применением плана отката.
+
+Проект: ${plan.project||'—'}
+CI стенда: ${plan.ci_stand||'—'}
+CI проекта: ${plan.ci_project||'—'}
+Ответственный: ${plan.responsible||'—'}
+
+В ходе проведения работ возникли проблемы, в связи с чем был применён план отката.
+Сервис восстановлен на предыдущую версию и работает в штатном режиме.
+
+Повторное проведение работ будет запланировано дополнительно.${rovLine}
+
+С уважением,
+${plan.responsible||'Команда'}`;
+  }
+}
+
+function copyNotify() {
+  // For email also prepend recipients line
+  let text = document.getElementById('notifyText').textContent;
+  if (notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback') {
+    const smsRec     = getRecipients('sms');
+    const outlookRec = getRecipients('outlook');
+    let recLine = '';
+    if (smsRec.length)     recLine += 'SMS: ' + smsRec.join('; ') + '\n';
+    if (outlookRec.length) recLine += 'Outlook: ' + outlookRec.join('; ') + '\n';
+    if (recLine) text = recLine + '\n' + text;
+  }
+  navigator.clipboard.writeText(text).then(()=>toast('Скопировано в буфер','📋'));
+}
+
+// ─── WORD TABLE ──────────────────────────────────────────
+function openWordModal() {
+  if (!plan) { toast('Сначала создайте план','⚠️'); return; }
+  document.getElementById('wordPreview').innerHTML = buildWordHTML();
+  document.getElementById('wordModal').classList.add('open');
+}
+
+function buildWordHTML() {
+  const title = `План-график работ по обновлению ${plan.project||'[проект]'} (${plan.ci_project||'CI проекта'}) на стенде ${plan.ci_stand||'CI стенда'} ПРОМ.`;
+
+  // ── Main plan table ──
+  let h = `<div class="word-page">
+  <p class="word-page-title">${esc(title)}</p>
+  <table class="word-table">
+    <colgroup>
+      <col style="width:4%"><col style="width:28%"><col style="width:13%">
+      <col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>№</th>
+        <th>Работы</th>
+        <th>Дата и время начала (МСК)</th>
+        <th>Дата и время окончания (МСК)</th>
+        <th>Отв. Исполнитель</th>
+        <th>Влияние на услугу</th>
+        <th>Комментарий</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  plan.stages.forEach(stage => {
+    h += `<tr class="stage-row"><td colspan="7">${esc(stage.title)}</td></tr>`;
+    stage.tasks.forEach(task => {
+      h += `<tr>
+        <td style="text-align:center"></td>
+        <td>${esc(task.name||'')}</td>
+        <td>${fmtDT(task.start)}</td>
+        <td>${fmtDT(task.end)}</td>
+        <td>${esc(task.responsible||'')}</td>
+        <td></td>
+        <td>${esc(task.comment||'')}</td>
+      </tr>`;
+    });
+  });
+  h += `</tbody></table>`;
+
+  // ── Rollback table ──
+  if ((plan.rollback||[]).length) {
+    h += `<p class="word-section-label">План отката</p>
+    <table class="word-table">
+      <colgroup>
+        <col style="width:32%"><col style="width:17%"><col style="width:17%">
+        <col style="width:18%"><col style="width:16%">
+      </colgroup>
+      <thead><tr>
+        <th>Работы</th><th>Дата и время начала</th><th>Дата и время окончания</th>
+        <th>Отв. Исполнитель</th><th>Комментарий</th>
+      </tr></thead><tbody>`;
+    plan.rollback.forEach(r => {
+      h += `<tr>
+        <td>${esc(r.name||'')}</td><td>${esc(r.start||'')}</td>
+        <td>${esc(r.end||'')}</td><td>${esc(r.responsible||'')}</td>
+        <td>${esc(r.comment||'')}</td>
+      </tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+
+  // ── Contacts table ──
+  if ((plan.contacts||[]).length) {
+    h += `<p class="word-section-label">Контактная информация</p>
+    <table class="word-table">
+      <colgroup>
+        <col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%">
+      </colgroup>
+      <thead><tr>
+        <th>ФИО, контакт</th><th>Роль во внедрении</th>
+        <th>Контактная информация</th><th>Примечание</th>
+      </tr></thead><tbody>`;
+    plan.contacts.forEach(c => {
+      h += `<tr><td>${esc(c.name||'')}</td><td>${esc(c.role||'')}</td>
+        <td>${esc(c.phone||'')}</td><td>${esc(c.note||'')}</td></tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+
+  // ── Communications table ──
+  if ((plan.communications||[]).length) {
+    h += `<p class="word-section-label">План коммуникаций в период проведения работ</p>
+    <table class="word-table">
+      <colgroup>
+        <col style="width:16%"><col style="width:18%"><col style="width:22%">
+        <col style="width:28%"><col style="width:16%">
+      </colgroup>
+      <thead><tr>
+        <th>Событие</th><th>Вид коммуникации</th><th>Средство коммуникации</th>
+        <th>Участники</th><th>Ответственный</th>
+      </tr></thead><tbody>`;
+    plan.communications.forEach(c => {
+      const parts = Array.isArray(c.participants) ? c.participants.join(', ') : (c.participants||'');
+      const vidArr = [], toolArr = [];
+      if (c.channels && c.channels.sms)     { vidArr.push('Рассылка SMS-сообщений'); toolArr.push('Сервер отправки SMS'); }
+      if (c.channels && c.channels.outlook) { vidArr.push('Outlook');                toolArr.push('Outlook');              }
+      h += `<tr>
+        <td>${esc(c.event||'')}</td>
+        <td>${esc(vidArr.join(', ')||'—')}</td>
+        <td>${esc(toolArr.join(', ')||'—')}</td>
+        <td>${esc(parts)}</td>
+        <td>${esc(c.responsible||'')}</td>
+      </tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+
+  h += `</div>`;
+  return h;
+}
+
+function copyWordTable() {
+  const el = document.getElementById('wordPreview');
+  const range = document.createRange();
+  range.selectNode(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  document.execCommand('copy');
+  window.getSelection().removeAllRanges();
+  toast('Таблица скопирована — вставьте в Word (Ctrl+V)','📋');
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────
+
+
+function exportJSON() {
+  if (!plan) { toast('Нет данных для экспорта','⚠️'); return; }
+  const blob = new Blob([JSON.stringify(plan,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `work_plan_${(plan.project||'plan').replace(/[^а-яёa-z0-9]/gi,'_').toLowerCase()}.json`;
+  a.click();
+  toast('JSON экспортирован','✅');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      initPlan(JSON.parse(e.target.result));
+      closeModal('setupModal');
+      toast('План загружен из JSON','✅');
+    } catch { toast('Ошибка чтения JSON','❌'); }
+  };
+  r.readAsText(file);
+  event.target.value = '';
+}
+
+// ─── UTILS ───────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDT(val) {
+  if (!val) return '—';
+  try { return new Date(val).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch { return val; }
+}
+function fmtTime(val) {
+  if (!val) return '';
+  try { return new Date(val).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
+  catch { return val; }
+}
+function buildRollbackSelect(ri, field, val) {
+  const opts = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
+  const options = opts.map(m => {
+    const h = Math.floor(m/60), mn = m%60;
+    const label = h > 0 ? (mn > 0 ? 'Час X + '+h+'ч '+mn+'м' : 'Час X + '+h+'ч') : 'Час X + '+m+'м';
+    const stored = 'Час X + ' + (h>0?(mn>0?h+'ч '+mn+'м':h+'ч'):m+'м');
+    return `<option value="${stored}" ${val===stored?'selected':''}>${label}</option>`;
+  }).join('');
+  return `<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
+    onchange="plan.rollback[${ri}].${field}=this.value">
+    <option value="">—</option>
+    ${options}
+  </select>`;
+}
+
+function validateCI(input) {
+  const val = input.value.trim();
+  const ok = /^CI\d{8}$/.test(val) || val === '';
+  input.classList.toggle('field-err', !ok && val !== '');
+}
+
+function validateTaskName(ta) {
+  const ok = ta.value.trim().length > 0;
+  ta.classList.toggle('field-err', !ok);
+  const msg = ta.parentElement.querySelector('.field-err-msg');
+  if (msg) msg.style.display = ok ? 'none' : '';
+}
+
+function formatRollbackTime(input) {
+  // strip everything except digits and colon
+  let raw = input.value.replace(/[^0-9:]/g,'');
+  // if user typed just digits like "0030" or "30", format as HH:MM
+  if (raw && !raw.includes(':')) {
+    if (raw.length <= 2) raw = raw.padStart(2,'0') + ':00';
+    else raw = raw.slice(0,-2).padStart(2,'0') + ':' + raw.slice(-2);
+  }
+  if (raw) {
+    input.value = 'Час X + ' + raw;
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// ─── THEME ───────────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.innerHTML = isDark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  }
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+// Restore saved theme
+(function(){
+  const t = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  const icon = document.getElementById('themeIcon');
+  if (icon && t === 'dark') {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  }
+})();
+
+// ─── POINTER DRAG ────────────────────────────────────────────
+let _drag = null;
+
+function startDrag(e, si, ti) {
+  e.preventDefault();
+  const srcRow = e.currentTarget.closest('.task-row');
+  if (!srcRow) return;
+  _drag = { si, ti, srcRow };
+  srcRow.classList.add('dragging');
+  document.addEventListener('pointermove', onDragMove, {passive:false});
+  document.addEventListener('pointerup',   onDragEnd,  {once:true});
+}
+
+function onDragMove(e) {
+  if (!_drag) return;
+  e.preventDefault();
+  // Find which row we're over
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const targetRow = el && el.closest('.task-row');
+  // Clear all indicators
+  document.querySelectorAll('.drop-above,.drop-below').forEach(r => {
+    r.classList.remove('drop-above','drop-below');
+  });
+  if (!targetRow || targetRow === _drag.srcRow) return;
+  // Determine above/below by midpoint
+  const rect = targetRow.getBoundingClientRect();
+  const mid  = rect.top + rect.height / 2;
+  targetRow.classList.add(e.clientY < mid ? 'drop-above' : 'drop-below');
+}
+
+function onDragEnd(e) {
+  document.removeEventListener('pointermove', onDragMove);
+  if (!_drag) return;
+  const {si, ti: fromTi, srcRow} = _drag;
+  _drag = null;
+  srcRow.classList.remove('dragging');
+  document.querySelectorAll('.drop-above,.drop-below').forEach(r => r.classList.remove('drop-above','drop-below'));
+
+  // Find drop target
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const targetRow = el && el.closest('.task-row[data-ti]');
+  if (!targetRow) return;
+  const toSi = parseInt(targetRow.dataset.si);
+  const toTi = parseInt(targetRow.dataset.ti);
+  if (toSi !== si || toTi === fromTi) return;
+
+  // Determine insert position
+  const rect = targetRow.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+  const insertAt = insertAfter ? toTi + 1 : toTi;
+
+  const tasks = plan.stages[si].tasks;
+  // Preserve task data exactly — no time changes
+  const [moved] = tasks.splice(fromTi, 1);
+  const adjustedInsert = insertAt > fromTi ? insertAt - 1 : insertAt;
+  tasks.splice(adjustedInsert, 0, moved);
+  renderStages();
+}
+function toast(msg, icon='ℹ️') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${icon}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
