@@ -89,6 +89,7 @@ textarea.cell-input{overflow:hidden;min-height:22px;resize:none;}
 .col-resp{width:145px;flex-shrink:0;}
 .col-comment{flex:1.5;min-width:0;}
 .col-del{width:36px;flex-shrink:0;}
+.col-drag{width:28px;flex-shrink:0;padding:0!important;}
 
 .task-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch;min-height:42px;}
 .task-row:last-child{border-bottom:none;}
@@ -108,6 +109,28 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 .gap-actions{display:flex;flex-direction:column;gap:3px;margin-top:4px;width:100%;}
 .gap-btn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap;text-align:left;line-height:1.4;}
 .gap-btn:hover{background:var(--orange);color:#fff;}
+/* drag-and-drop */
+.drag-handle{cursor:grab;color:var(--text-light);padding:0 6px;display:flex;align-items:center;flex-shrink:0;user-select:none;}
+.drag-handle:active{cursor:grabbing;}
+.drag-handle svg{pointer-events:none;}
+.task-row.dragging{opacity:.4;background:var(--accent-light);}
+.task-row.drag-over{border-top:2px solid var(--accent);}
+/* comment popup */
+.comment-popup{position:absolute;z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px;min-width:240px;max-width:320px;display:none;flex-direction:column;gap:6px;}
+.comment-popup.open{display:flex;}
+.comment-snippet{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;}
+.comment-snippet:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.comment-wrap{position:relative;width:100%;}
+/* validation error */
+.field-err{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(200,30,30,.15)!important;}
+.field-err-msg{font-size:10px;color:var(--red);margin-top:2px;}
+/* ci hint */
+.form-hint{font-size:11px;color:var(--text-light);margin-top:3px;}
+/* ров поле */
+.rov-row{display:flex;align-items:center;gap:8px;padding:8px 24px 0;}
+.rov-label{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;}
+.rov-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 10px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;width:100px;}
+.rov-input:focus{border-color:var(--accent);}
 
 .add-row{padding:9px 14px;border-top:1px solid var(--border);background:#f9fafb;}
 
@@ -229,8 +252,8 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
         </div>
         <div class="tasks-header">
           <div class="th-cell col-name">Работы</div>
-          <div class="th-cell col-dt">Начало (Час X +)</div>
-          <div class="th-cell col-dt">Окончание (Час X +)</div>
+          <div class="th-cell col-dur">Начало (Час X +)</div>
+          <div class="th-cell col-dur">Окончание (Час X +)</div>
           <div class="th-cell col-resp">Исполнитель</div>
           <div class="th-cell col-comment">Комментарий</div>
           <div class="th-cell col-del"></div>
@@ -309,11 +332,15 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group">
           <label class="form-label">CI стенда</label>
-          <input class="form-input" id="f_ci_stand" placeholder="CI0000000">
+          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10"
+            oninput="validateCI(this)" pattern="CI\d{8}">
+          <div class="form-hint">Формат: CI + 8 цифр</div>
         </div>
         <div class="form-group">
           <label class="form-label">CI проекта</label>
-          <input class="form-input" id="f_ci_project" placeholder="CI0000000">
+          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10"
+            oninput="validateCI(this)" pattern="CI\d{8}">
+          <div class="form-hint">Формат: CI + 8 цифр</div>
         </div>
       </div>
       <div class="form-group">
@@ -351,7 +378,11 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
       </button>
     </div>
     <div class="modal-body" style="gap:0;padding:0">
-      <div style="padding:16px 24px 0">
+      <div class="rov-row">
+        <span class="rov-label">№ РоВ:</span>
+        <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
+      </div>
+      <div style="padding:10px 24px 0">
         <div class="notify-tabs">
           <button class="notify-tab active" onclick="switchTab('email')"          id="tab-email">📧 Открытие</button>
           <button class="notify-tab"        onclick="switchTab('chat')"           id="tab-chat">💬 Открытие чат</button>
@@ -415,6 +446,52 @@ const STAGE_TITLES = [
 let plan = null;
 let notifyMode = 'email';
 
+// ─── COMMENT SNIPPETS ────────────────────────────────────
+const COMMENT_SNIPPETS = [
+  'Возможна временная недоступность до 5 минут',
+  'Возможна временная недоступность до 15 минут',
+  'Возможна временная недоступность до 30 минут',
+  'Сервис будет недоступен на время проведения работ',
+  'Без влияния на доступность сервиса',
+  'Возможно замедление работы сервиса',
+  'Требуется подтверждение успешности от команды',
+  'Параллельно ведётся мониторинг',
+];
+
+let activePopup = null;
+
+function openCommentPopup(ta, si, ti) {
+  closeAllPopups();
+  const popup = document.getElementById(`cpop-${si}-${ti}`);
+  if (!popup) return;
+  popup.classList.add('open');
+  activePopup = popup;
+  // close on outside click
+  setTimeout(() => {
+    document.addEventListener('mousedown', outsideClickHandler, {once:true});
+  }, 50);
+}
+
+function outsideClickHandler(e) {
+  if (activePopup && !activePopup.contains(e.target)) {
+    closeAllPopups();
+  } else if (activePopup) {
+    document.addEventListener('mousedown', outsideClickHandler, {once:true});
+  }
+}
+
+function closeAllPopups() {
+  document.querySelectorAll('.comment-popup.open').forEach(p => p.classList.remove('open'));
+  activePopup = null;
+}
+
+function insertComment(si, ti, idx) {
+  const snippet = COMMENT_SNIPPETS[idx];
+  plan.stages[si].tasks[ti].comment = snippet;
+  closeAllPopups();
+  renderStages();
+}
+
 // ─── INIT ────────────────────────────────────────────────
 function initPlan(meta) {
   // always exactly 3 stages with fixed titles
@@ -472,6 +549,7 @@ function renderStages() {
         <span class="section-title-static">${esc(stage.title)}</span>
       </div>
       <div class="tasks-header">
+        <div class="th-cell col-drag"></div>
         <div class="th-cell col-name">Работы</div>
         <div class="th-cell col-dt">Начало (МСК)</div>
         <div class="th-cell col-dur">Продолжит.</div>
@@ -535,10 +613,19 @@ function createTaskRow(si, ti, task, allTasks) {
   const respVal = (task.responsible !== undefined && task.responsible !== null && task.responsible !== '')
     ? task.responsible : (plan.responsible||'');
 
+  const nameErr = (!task.name || !task.name.trim()) ? '<div class="field-err-msg">⚠ Обязательное поле</div>' : '';
+
   row.innerHTML = `
+    <div class="task-cell col-drag" style="align-items:center;justify-content:center;cursor:grab">
+      <div class="drag-handle" draggable="true">
+        <svg width="12" height="16" viewBox="0 0 12 16" fill="none"><circle cx="4" cy="3" r="1.5" fill="currentColor"/><circle cx="8" cy="3" r="1.5" fill="currentColor"/><circle cx="4" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="4" cy="13" r="1.5" fill="currentColor"/><circle cx="8" cy="13" r="1.5" fill="currentColor"/></svg>
+      </div>
+    </div>
     <div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">
-      <textarea class="cell-input" rows="1" placeholder="Название работы"
-        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value">${esc(task.name||'')}</textarea>
+      <textarea class="cell-input ${!task.name||!task.name.trim()?'field-err':''}" rows="1" placeholder="Название работы *"
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)"
+        onchange="plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)">${esc(task.name||'')}</textarea>
+      ${nameErr}
     </div>
     <div class="task-cell col-dt" style="align-items:center">
       <input class="cell-input" type="datetime-local" value="${task.start||''}"
@@ -561,10 +648,17 @@ function createTaskRow(si, ti, task, allTasks) {
         oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].responsible=this.value"
         onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">${esc(respVal)}</textarea>
     </div>
-    <div class="task-cell col-comment" style="align-items:flex-start">
-      <textarea class="cell-input" rows="1" placeholder="Комментарий"
-        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value"
-        onchange="plan.stages[${si}].tasks[${ti}].comment=this.value">${esc(task.comment||'')}</textarea>
+    <div class="task-cell col-comment" style="align-items:flex-start;position:relative">
+      <div class="comment-wrap">
+        <textarea class="cell-input" rows="1" placeholder="Комментарий"
+          oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value"
+          onchange="plan.stages[${si}].tasks[${ti}].comment=this.value"
+          onfocus="openCommentPopup(this,${si},${ti})">${esc(task.comment||'')}</textarea>
+        <div class="comment-popup" id="cpop-${si}-${ti}">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:2px">Шаблоны комментариев</div>
+          ${COMMENT_SNIPPETS.map((s,idx) => `<div class="comment-snippet" onclick="insertComment(${si},${ti},${idx})">${esc(s)}</div>`).join('')}
+        </div>
+      </div>
     </div>
     <div class="task-cell col-del">
       <button class="row-del" onclick="removeTask(${si},${ti})" title="Удалить">
@@ -574,6 +668,29 @@ function createTaskRow(si, ti, task, allTasks) {
 
   setTimeout(() => {
     row.querySelectorAll('textarea').forEach(ta => autoResize(ta));
+    // wire drag events
+    const handle = row.querySelector('.drag-handle');
+    if (handle) {
+      handle.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({si,ti}));
+        setTimeout(() => row.classList.add('dragging'), 0);
+      });
+      handle.addEventListener('dragend', () => row.classList.remove('dragging'));
+    }
+    row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      try {
+        const {si: fromSi, ti: fromTi} = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if (fromSi !== si || fromTi === ti) return;
+        const tasks = plan.stages[si].tasks;
+        const [moved] = tasks.splice(fromTi, 1);
+        tasks.splice(ti, 0, moved);
+        renderStages();
+      } catch {}
+    });
   }, 0);
   return row;
 }
@@ -636,15 +753,11 @@ function renderRollback() {
         <textarea class="cell-input" rows="1" placeholder="Работа"
           oninput="autoResize(this);plan.rollback[${ri}].name=this.value">${esc(row.name||'')}</textarea>
       </div>
-      <div class="task-cell col-dt">
-        <input class="cell-input" placeholder="00:30" value="${esc(row.start||'')}"
-          oninput="formatRollbackTime(this)"
-          onchange="plan.rollback[${ri}].start=this.value;formatRollbackTime(this)">
+      <div class="task-cell col-dur" style="padding:6px 8px">
+        ${buildRollbackSelect(ri,'start',row.start||'')}
       </div>
-      <div class="task-cell col-dt">
-        <input class="cell-input" placeholder="01:00" value="${esc(row.end||'')}"
-          oninput="formatRollbackTime(this)"
-          onchange="plan.rollback[${ri}].end=this.value;formatRollbackTime(this)">
+      <div class="task-cell col-dur" style="padding:6px 8px">
+        ${buildRollbackSelect(ri,'end',row.end||'')}
       </div>
       <div class="task-cell col-resp">
         <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||plan.responsible||'')}"
@@ -866,6 +979,9 @@ function updateNotifyText() {
   const startFmt = plan.start
     ? new Date(plan.start).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
     : '[дата/время не указаны]';
+  const rovEl = document.getElementById('rovNumber');
+  const rovNum = rovEl ? rovEl.value.trim() : '';
+  const rovLine = rovNum ? `\nРаботы производились по РоВ № ${rovNum}.` : '';
 
   const recipRow = document.getElementById('recipientsRow');
   const recipList = document.getElementById('recipientsList');
@@ -899,7 +1015,7 @@ CI проекта: ${plan.ci_project||'—'}
 Ответственный: ${plan.responsible||'—'}
 
 В период проведения работ возможна временная недоступность сервиса.
-По вопросам обращайтесь к ответственному исполнителю.
+По вопросам обращайтесь к ответственному исполнителю.${rovLine}
 
 С уважением,
 ${plan.responsible||'Команда'}`;
@@ -927,7 +1043,7 @@ CI стенда: ${plan.ci_stand||'—'}
 CI проекта: ${plan.ci_project||'—'}
 Ответственный: ${plan.responsible||'—'}
 
-Работы завершены успешно. Сервис доступен в штатном режиме.
+Работы завершены успешно. Сервис доступен в штатном режиме.${rovLine}
 
 С уважением,
 ${plan.responsible||'Команда'}`;
@@ -957,7 +1073,7 @@ CI проекта: ${plan.ci_project||'—'}
 В ходе проведения работ возникли проблемы, в связи с чем был применён план отката.
 Сервис восстановлен на предыдущую версию и работает в штатном режиме.
 
-Повторное проведение работ будет запланировано дополнительно.
+Повторное проведение работ будет запланировано дополнительно.${rovLine}
 
 С уважением,
 ${plan.responsible||'Команда'}`;
@@ -1148,6 +1264,34 @@ function fmtTime(val) {
   try { return new Date(val).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
   catch { return val; }
 }
+function buildRollbackSelect(ri, field, val) {
+  const opts = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
+  const options = opts.map(m => {
+    const h = Math.floor(m/60), mn = m%60;
+    const label = h > 0 ? (mn > 0 ? 'Час X + '+h+'ч '+mn+'м' : 'Час X + '+h+'ч') : 'Час X + '+m+'м';
+    const stored = 'Час X + ' + (h>0?(mn>0?h+'ч '+mn+'м':h+'ч'):m+'м');
+    return `<option value="${stored}" ${val===stored?'selected':''}>${label}</option>`;
+  }).join('');
+  return `<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
+    onchange="plan.rollback[${ri}].${field}=this.value">
+    <option value="">—</option>
+    ${options}
+  </select>`;
+}
+
+function validateCI(input) {
+  const val = input.value.trim();
+  const ok = /^CI\d{8}$/.test(val) || val === '';
+  input.classList.toggle('field-err', !ok && val !== '');
+}
+
+function validateTaskName(ta) {
+  const ok = ta.value.trim().length > 0;
+  ta.classList.toggle('field-err', !ok);
+  const msg = ta.parentElement.querySelector('.field-err-msg');
+  if (msg) msg.style.display = ok ? 'none' : '';
+}
+
 function formatRollbackTime(input) {
   // strip everything except digits and colon
   let raw = input.value.replace(/[^0-9:]/g,'');
