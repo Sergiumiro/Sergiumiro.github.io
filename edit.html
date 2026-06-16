@@ -502,7 +502,7 @@ const COMMENT_SNIPPETS = [
 
 let activePopup = null;
 let activePopupMeta = null;
-let closeTimer = null;
+let _popupDocListener = null;
 
 function getOrCreatePopup() {
   let p = document.getElementById('__commentPopup');
@@ -510,43 +510,49 @@ function getOrCreatePopup() {
     p = document.createElement('div');
     p.id = '__commentPopup';
     p.className = 'comment-popup';
-    p.addEventListener('mousedown', e => e.preventDefault()); // prevent blur on textarea
     document.body.appendChild(p);
   }
   return p;
 }
 
 function openCommentPopup(ta, si, ti) {
-  clearTimeout(closeTimer);
   const popup = getOrCreatePopup();
   activePopup = popup;
   activePopupMeta = {si, ti};
 
-  // Build content (no template literal nesting to avoid parse issues)
+  // Build content
   let html = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны комментариев</div>';
   COMMENT_SNIPPETS.forEach(function(s, idx) {
-    html += '<div class="comment-snippet" onmousedown="insertComment(' + si + ',' + ti + ',' + idx + ')">' + esc(s) + '</div>';
+    html += '<div class="comment-snippet" onpointerdown="insertComment(' + si + ',' + ti + ',' + idx + ')">' + esc(s) + '</div>';
   });
   popup.innerHTML = html;
 
-  // Position: below the textarea, aligned to left edge, visible on screen
+  // Position below textarea
   const rect = ta.getBoundingClientRect();
   popup.style.display = 'flex';
-  let top = rect.bottom + 4;
+  const popW = 280, popH = 320;
+  let top  = rect.bottom + 4;
   let left = rect.left;
-  // Ensure it doesn't go off right edge
-  const popW = 280;
-  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-  // Ensure it doesn't go off bottom
-  const popH = 320;
-  if (top + popH > window.innerHeight - 8) top = rect.top - popH - 4;
+  if (left + popW > window.innerWidth - 8)  left = window.innerWidth  - popW - 8;
+  if (top  + popH > window.innerHeight - 8) top  = rect.top - popH - 4;
   popup.style.top  = top  + 'px';
   popup.style.left = left + 'px';
   popup.classList.add('open');
-}
 
-function scheduleClosePopup() {
-  closeTimer = setTimeout(closeAllPopups, 150);
+  // Remove previous outside listener if any
+  if (_popupDocListener) {
+    document.removeEventListener('pointerdown', _popupDocListener, true);
+  }
+  // Close when clicking anything outside the popup
+  _popupDocListener = function(e) {
+    if (!popup.contains(e.target)) {
+      closeAllPopups();
+    }
+  };
+  // Use capture + slight delay so the current click doesn't immediately close it
+  setTimeout(() => {
+    document.addEventListener('pointerdown', _popupDocListener, true);
+  }, 0);
 }
 
 function closeAllPopups() {
@@ -554,7 +560,13 @@ function closeAllPopups() {
   if (p) { p.classList.remove('open'); p.style.display = 'none'; }
   activePopup = null;
   activePopupMeta = null;
+  if (_popupDocListener) {
+    document.removeEventListener('pointerdown', _popupDocListener, true);
+    _popupDocListener = null;
+  }
 }
+
+function scheduleClosePopup() { /* no-op — handled by document listener */ }
 
 function insertComment(si, ti, idx) {
   const snippet = COMMENT_SNIPPETS[idx];
@@ -784,6 +796,22 @@ function fixGapShiftNext(si, thisTi) {
   toast('Начало задачи скорректировано','✅');
 }
 
+// ── helpers ──────────────────────────────────────────────────
+function padDT(n) { return String(n).padStart(2,'0'); }
+
+function toDatetimeLocal(d) {
+  return d.getFullYear()+'-'+padDT(d.getMonth()+1)+'-'+padDT(d.getDate())
+    +'T'+padDT(d.getHours())+':'+padDT(d.getMinutes());
+}
+
+// After any end-time change on task ti, push start of ti+1 = new end (always)
+function propagateNext(si, ti, endVal) {
+  const tasks = plan.stages[si].tasks;
+  if (ti + 1 < tasks.length) {
+    tasks[ti+1].start = endVal;
+  }
+}
+
 function onEndChange(si, ti, val) {
   const task = plan.stages[si].tasks[ti];
   // Validate: end must not be before start
@@ -793,11 +821,8 @@ function onEndChange(si, ti, val) {
     return;
   }
   task.end = val;
-  // auto-propagate start of next task if it's empty
-  const tasks = plan.stages[si].tasks;
-  if (ti + 1 < tasks.length && !tasks[ti+1].start) {
-    tasks[ti+1].start = val;
-  }
+  // Always propagate start of next task to this end time
+  propagateNext(si, ti, val);
   renderStages();
 }
 
@@ -815,18 +840,13 @@ function onStartChange(si, ti, val) {
 
 function onDurChange(si, ti, minutes) {
   if (!minutes) return;
-  const start = plan.stages[si].tasks[ti].start;
-  if (!start) { toast('Сначала укажите время начала','⚠️'); return; }
-  const endDate = new Date(new Date(start).getTime() + parseInt(minutes) * 60000);
-  // format as datetime-local value
-  const pad = n => String(n).padStart(2,'0');
-  const endVal = endDate.getFullYear()+'-'+pad(endDate.getMonth()+1)+'-'+pad(endDate.getDate())+'T'+pad(endDate.getHours())+':'+pad(endDate.getMinutes());
-  plan.stages[si].tasks[ti].end = endVal;
-  // propagate to next task start if empty
-  const tasks = plan.stages[si].tasks;
-  if (ti + 1 < tasks.length && !tasks[ti+1].start) {
-    tasks[ti+1].start = endVal;
-  }
+  const task = plan.stages[si].tasks[ti];
+  if (!task.start) { toast('Сначала укажите время начала','⚠️'); return; }
+  const endDate = new Date(new Date(task.start).getTime() + parseInt(minutes) * 60000);
+  const endVal  = toDatetimeLocal(endDate);
+  task.end = endVal;
+  // Always propagate: start of next task = our new end
+  propagateNext(si, ti, endVal);
   renderStages();
 }
 
