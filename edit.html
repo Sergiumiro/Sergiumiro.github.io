@@ -38,6 +38,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
 body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
+[data-theme="dark"] body::after{background-image:url('./back2.png');mix-blend-mode:screen;}
 
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
 .header-left{display:flex;align-items:center;gap:12px;}
@@ -769,7 +770,14 @@ function fixGapShiftNext(si, thisTi) {
 }
 
 function onEndChange(si, ti, val) {
-  plan.stages[si].tasks[ti].end = val;
+  const task = plan.stages[si].tasks[ti];
+  // Validate: end must not be before start
+  if (val && task.start && val < task.start) {
+    toast('Окончание не может быть раньше начала', '⚠️');
+    renderStages();
+    return;
+  }
+  task.end = val;
   // auto-propagate start of next task if it's empty
   const tasks = plan.stages[si].tasks;
   if (ti + 1 < tasks.length && !tasks[ti+1].start) {
@@ -779,7 +787,14 @@ function onEndChange(si, ti, val) {
 }
 
 function onStartChange(si, ti, val) {
-  plan.stages[si].tasks[ti].start = val;
+  const task = plan.stages[si].tasks[ti];
+  // Validate: start must not be after end
+  if (val && task.end && val > task.end) {
+    toast('Начало не может быть позже окончания', '⚠️');
+    renderStages();
+    return;
+  }
+  task.start = val;
   renderStages();
 }
 
@@ -1439,18 +1454,26 @@ function onDragEnd(e) {
   const toTi = parseInt(targetRow.dataset.ti);
   if (toSi !== si || toTi === fromTi) return;
 
-  // Determine insert position
+  // Take a deep-copy snapshot of ALL tasks BEFORE any DOM mutation
+  const tasks = plan.stages[si].tasks;
+  const snapshot = tasks.map(t => Object.assign({}, t));
+
+  // Determine insert index in original array
   const rect = targetRow.getBoundingClientRect();
   const insertAfter = e.clientY >= rect.top + rect.height / 2;
-  const insertAt = insertAfter ? toTi + 1 : toTi;
+  let insertAt = insertAfter ? toTi + 1 : toTi;
 
-  const tasks = plan.stages[si].tasks;
-  // Preserve task data exactly — no time changes
-  const [moved] = tasks.splice(fromTi, 1);
-  const adjustedInsert = insertAt > fromTi ? insertAt - 1 : insertAt;
-  tasks.splice(adjustedInsert, 0, moved);
+  // Remove from original position, adjust target if needed
+  const moved = snapshot.splice(fromTi, 1)[0];
+  if (insertAt > fromTi) insertAt--;
+  snapshot.splice(insertAt, 0, moved);
+
+  // Write back — replace array contents without reassigning reference
+  tasks.length = 0;
+  snapshot.forEach(t => tasks.push(t));
   renderStages();
 }
+
 function toast(msg, icon='ℹ️') {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
