@@ -70,7 +70,9 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 
 .col-name{flex:2;min-width:0;}
 .col-dur{width:130px;flex-shrink:0;}
-.col-channels{width:160px;flex-shrink:0;}
+.col-channels{width:150px;flex-shrink:0;}
+.col-tool{width:180px;flex-shrink:0;}
+.tool-display{font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.4;min-height:14px;}
 /* all cells grow with content */
 .task-cell{overflow:visible;min-height:42px;}
 .cell-input{white-space:normal;overflow-wrap:break-word;}
@@ -272,7 +274,8 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
         </div>
         <div class="tasks-header">
           <div class="th-cell col-resp">Событие</div>
-          <div class="th-cell col-channels">Каналы рассылки</div>
+          <div class="th-cell col-channels">Вид коммуникации</div>
+          <div class="th-cell col-tool">Средство коммуникации</div>
           <div class="th-cell col-name">Участники</div>
           <div class="th-cell col-resp">Ответственный</div>
           <div class="th-cell col-del"></div>
@@ -695,32 +698,51 @@ function renderContacts() {
 }
 
 // ─── COMMUNICATIONS ──────────────────────────────────────
+// Channel → label mapping
+const CH_LABELS = {
+  sms:     { tag:'📱 SMS',     tool:'Сервер отправки SMS' },
+  outlook: { tag:'📧 Outlook', tool:'Outlook'             }
+};
+
+function getToolText(channels) {
+  if (!channels) return '—';
+  const tools = [];
+  if (channels.sms)     tools.push(CH_LABELS.sms.tool);
+  if (channels.outlook) tools.push(CH_LABELS.outlook.tool);
+  return tools.length ? tools.join(', ') : '—';
+}
+
 function renderComms() {
   const c = document.getElementById('commsTasks');
   c.innerHTML = '';
   (plan.communications||[]).forEach((row, ci) => {
-    const partsVal = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
+    const partsVal   = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
     const hasSms     = !!(row.channels && row.channels.sms);
     const hasOutlook = !!(row.channels && row.channels.outlook);
+    const toolText   = getToolText(row.channels);
     const el = document.createElement('div');
     el.className = 'task-row';
     el.innerHTML = `
-      <div class="task-cell col-resp">
-        <input class="cell-input" placeholder="Событие" value="${esc(row.event||'')}"
-          onchange="plan.communications[${ci}].event=this.value">
+      <div class="task-cell col-resp" style="align-items:flex-start">
+        <textarea class="cell-input" rows="1" placeholder="Событие"
+          oninput="autoResize(this);plan.communications[${ci}].event=this.value"
+          onchange="plan.communications[${ci}].event=this.value">${esc(row.event||'')}</textarea>
       </div>
-      <div class="task-cell col-channels" style="flex-direction:column;gap:4px;align-items:flex-start;justify-content:center">
+      <div class="task-cell col-channels" style="flex-direction:column;align-items:flex-start;gap:4px;padding-top:8px">
         <div class="ch-tags">
           <span class="ch-tag sms ${hasSms?'active':''}" onclick="toggleChannel(${ci},'sms')">📱 SMS</span>
           <span class="ch-tag outlook ${hasOutlook?'active':''}" onclick="toggleChannel(${ci},'outlook')">📧 Outlook</span>
         </div>
       </div>
-      <div class="task-cell col-name">
+      <div class="task-cell col-tool" style="align-items:flex-start">
+        <div class="tool-display">${esc(toolText)}</div>
+      </div>
+      <div class="task-cell col-name" style="align-items:flex-start">
         <textarea class="cell-input" rows="1" placeholder="Участники (через запятую)"
           oninput="autoResize(this);plan.communications[${ci}].participants=this.value"
           onchange="plan.communications[${ci}].participants=this.value">${esc(partsVal)}</textarea>
       </div>
-      <div class="task-cell col-resp">
+      <div class="task-cell col-resp" style="align-items:flex-start">
         <input class="cell-input" placeholder="Ответственный" value="${esc(row.responsible||'')}"
           onchange="plan.communications[${ci}].responsible=this.value">
       </div>
@@ -729,7 +751,7 @@ function renderComms() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>`;
-    setTimeout(() => { const ta=el.querySelector('textarea'); if(ta) autoResize(ta); }, 0);
+    setTimeout(() => { el.querySelectorAll('textarea').forEach(ta => autoResize(ta)); }, 0);
     c.appendChild(el);
   });
 }
@@ -1048,20 +1070,22 @@ function buildWordHTML() {
     h += `<p class="word-section-label">План коммуникаций в период проведения работ</p>
     <table class="word-table">
       <colgroup>
-        <col style="width:18%"><col style="width:22%">
-        <col style="width:40%"><col style="width:20%">
+        <col style="width:16%"><col style="width:18%"><col style="width:22%">
+        <col style="width:28%"><col style="width:16%">
       </colgroup>
       <thead><tr>
-        <th>Событие</th><th>Каналы рассылки</th>
+        <th>Событие</th><th>Вид коммуникации</th><th>Средство коммуникации</th>
         <th>Участники</th><th>Ответственный</th>
       </tr></thead><tbody>`;
     plan.communications.forEach(c => {
       const parts = Array.isArray(c.participants) ? c.participants.join(', ') : (c.participants||'');
-      const chs = [];
-      if (c.channels && c.channels.sms) chs.push('SMS-рассылка');
-      if (c.channels && c.channels.outlook) chs.push('Outlook');
+      const vidArr = [], toolArr = [];
+      if (c.channels && c.channels.sms)     { vidArr.push('Рассылка SMS-сообщений'); toolArr.push('Сервер отправки SMS'); }
+      if (c.channels && c.channels.outlook) { vidArr.push('Outlook');                toolArr.push('Outlook');              }
       h += `<tr>
-        <td>${esc(c.event||'')}</td><td>${esc(chs.join(', '))}</td>
+        <td>${esc(c.event||'')}</td>
+        <td>${esc(vidArr.join(', ')||'—')}</td>
+        <td>${esc(toolArr.join(', ')||'—')}</td>
         <td>${esc(parts)}</td>
         <td>${esc(c.responsible||'')}</td>
       </tr>`;
