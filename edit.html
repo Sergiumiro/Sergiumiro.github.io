@@ -37,6 +37,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+body.json-drag-over::before{content:'Отпустите для импорта JSON';position:fixed;inset:0;background:rgba(26,86,219,.18);border:3px dashed var(--accent);z-index:9998;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--accent);pointer-events:none;}
 body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
 [data-theme="dark"] body::after{background-image:url('./back2.png');mix-blend-mode:screen;}
 
@@ -492,12 +493,9 @@ let notifyChannel = 'chat'; // chat | outlook | sms
 const COMMENT_SNIPPETS = [
   'Возможна временная недоступность до 5 минут',
   'Возможна временная недоступность до 15 минут',
-  'Возможна временная недоступность до 30 минут',
-  'Сервис будет недоступен на время проведения работ',
-  'Без влияния на доступность сервиса',
   'Возможно замедление работы сервиса',
-  'Требуется подтверждение успешности от команды',
-  'Параллельно ведётся мониторинг',
+  'Требуется подтверждение успешности работы от команды',
+  'Без влияния на доступность сервиса',
 ];
 
 let activePopup = null;
@@ -929,7 +927,7 @@ function renderContacts() {
 const CH_LABELS = {
   sms:      { tag:'📱 SMS',      tool:'Сервер отправки SMS' },
   outlook:  { tag:'📧 Outlook',  tool:'Outlook'             },
-  sberchat: { tag:'💚 СберЧат',  tool:'СберЧат'             }
+  sberchat: { tag:'💚 СберЧат',  tool:'Группа в СберЧат'    }
 };
 
 function getToolText(channels) {
@@ -1032,17 +1030,32 @@ function openSetupModal() {
 function applySetup() {
   const project = document.getElementById('f_project').value.trim();
   if (!project) { toast('Введите название проекта','⚠️'); return; }
+  const newResp = document.getElementById('f_responsible').value.trim();
+  const oldResp = plan ? plan.responsible : '';
   const meta = {
     project,
     ci_stand:    document.getElementById('f_ci_stand').value.trim(),
     ci_project:  document.getElementById('f_ci_project').value.trim(),
     start:       document.getElementById('f_start').value,
-    responsible: document.getElementById('f_responsible').value.trim(),
+    responsible: newResp,
     stages:      plan ? plan.stages : [],
     rollback:    plan ? plan.rollback : [],
     contacts:    plan ? plan.contacts : [],
     communications: plan ? plan.communications : []
   };
+  // Propagate new responsible to tasks that still have the old global responsible
+  if (plan && newResp && oldResp !== newResp) {
+    (meta.stages||[]).forEach(stage => {
+      (stage.tasks||[]).forEach(task => {
+        if (!task.responsible || task.responsible === oldResp) {
+          task.responsible = newResp;
+        }
+      });
+    });
+    (meta.rollback||[]).forEach(r => {
+      if (!r.responsible || r.responsible === oldResp) r.responsible = newResp;
+    });
+  }
   initPlan(meta);
   closeModal('setupModal');
   toast('Настройки сохранены','✅');
@@ -1119,6 +1132,16 @@ function updateNotifyText() {
     recipRow.style.display = 'none';
   }
 
+
+  // Collect unique non-empty task comments for notify
+  var commentSet = [];
+  (plan.stages||[]).forEach(function(s){ (s.tasks||[]).forEach(function(t){
+    var ct = t.comment && t.comment.trim();
+    if (ct && commentSet.indexOf(ct) === -1) commentSet.push(ct);
+  }); });
+  var commentsBlock = commentSet.length
+    ? '\n\nПримечания:\n' + commentSet.map(function(c){ return '\u2022 ' + c; }).join('\n')
+    : '';
   var text = '';
   var nl = '\n';
 
@@ -1206,7 +1229,7 @@ function openWordModal() {
 }
 
 function buildWordHTML() {
-  const title = `План-график работ по обновлению ${plan.project||'[проект]'} (${plan.ci_project||'CI проекта'}) на стенде ${plan.ci_stand||'CI стенда'} ПРОМ.`;
+  const title = `План-график работ по ${plan.project||'[проект]'} (${plan.ci_project||'CI проекта'}) стенд ${plan.ci_stand||'CI стенда'} ПРОМ`;
 
   // ── Main plan table ──
   let h = `<div class="word-page">
@@ -1230,7 +1253,7 @@ function buildWordHTML() {
     <tbody>`;
 
   plan.stages.forEach(stage => {
-    h += `<tr class="stage-row"><td colspan="7">${esc(stage.title)}</td></tr>`;
+    h += `<tr class="stage-row"><td colspan="7" style="text-align:center">${esc(stage.title)}</td></tr>`;
     stage.tasks.forEach(task => {
       h += `<tr>
         <td style="text-align:center"></td>
@@ -1246,9 +1269,12 @@ function buildWordHTML() {
   h += `</tbody></table>`;
 
   // ── Rollback table ──
-  if ((plan.rollback||[]).length) {
-    h += `<p class="word-section-label">План отката</p>
-    <table class="word-table">
+  const rbFilled = (plan.rollback||[]).some(r => r.name && r.name.trim());
+  h += `<p class="word-section-label">План отката</p>`;
+  if (!rbFilled) {
+    h += `<p style="font-size:11pt;font-style:italic;margin:4px 0 12px">План отката не предусмотрен.</p>`;
+  } else {
+    h += `<table class="word-table">
       <colgroup>
         <col style="width:32%"><col style="width:17%"><col style="width:17%">
         <col style="width:18%"><col style="width:16%">
@@ -1371,6 +1397,11 @@ function fmtTime(val) {
   catch { return val; }
 }
 function buildRollbackSelect(ri, field, val) {
+  // start field is always fixed to "Час X + 0м"
+  if (field === 'start') {
+    plan.rollback[ri].start = 'Час X + 0м';
+    return '<span style="font-size:12px;color:var(--text-muted);padding:2px 0;display:block">Час X + 0м</span>';
+  }
   const opts = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
   const options = opts.map(m => {
     const h = Math.floor(m/60), mn = m%60;
@@ -1512,6 +1543,35 @@ function toast(msg, icon='ℹ️') {
   c.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
+
+// ─── BODY JSON DRAG-DROP ─────────────────────────────────
+document.addEventListener('dragover', function(e) {
+  if (e.dataTransfer && e.dataTransfer.types && e.dataTransfer.types.includes('Files')) {
+    e.preventDefault();
+    document.body.classList.add('json-drag-over');
+  }
+});
+document.addEventListener('dragleave', function(e) {
+  if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+    document.body.classList.remove('json-drag-over');
+  }
+});
+document.addEventListener('drop', function(e) {
+  document.body.classList.remove('json-drag-over');
+  if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+  const file = e.dataTransfer.files[0];
+  if (!file.name.endsWith('.json')) { toast('Ожидается JSON-файл','⚠️'); return; }
+  e.preventDefault();
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      initPlan(JSON.parse(ev.target.result));
+      closeModal('setupModal');
+      toast('План загружен из JSON','✅');
+    } catch { toast('Ошибка чтения JSON','❌'); }
+  };
+  reader.readAsText(file);
+});
 
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
