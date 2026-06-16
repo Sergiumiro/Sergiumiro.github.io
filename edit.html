@@ -19,7 +19,6 @@
   --radius:10px; --radius-sm:6px;
   --font:'Inter',system-ui,-apple-system,sans-serif;
   --font-mono:'JetBrains Mono','Fira Code',monospace;
-  /* row stripe colors light */
   --row-even:#ffffff; --row-odd:#f5f7ff;
 }
 [data-theme="dark"] {
@@ -37,9 +36,6 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
-body.json-drag-over::before{content:'Отпустите для импорта JSON';position:fixed;inset:0;background:rgba(26,86,219,.18);border:3px dashed var(--accent);z-index:9998;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--accent);pointer-events:none;}
-body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
-[data-theme="dark"] body::after{background-image:url('./back2.png');mix-blend-mode:screen;}
 
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
 .header-left{display:flex;align-items:center;gap:12px;}
@@ -47,6 +43,12 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .header-title{font-size:15px;font-weight:600;}
 .project-badge{font-size:12px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .header-actions{display:flex;gap:8px;align-items:center;}
+
+/* ── Save indicator ── */
+.save-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-light);padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);transition:all .3s;white-space:nowrap;}
+.save-indicator.saving{color:var(--orange);border-color:var(--orange);background:var(--orange-bg);}
+.save-indicator.saved{color:var(--green);border-color:var(--green-bg);background:var(--green-bg);}
+.save-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
 
 .btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;border-radius:var(--radius-sm);padding:7px 14px;transition:background .15s,transform .1s;white-space:nowrap;text-decoration:none;}
 .btn:active{transform:scale(.97);}
@@ -90,12 +92,10 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .col-channels{width:150px;flex-shrink:0;}
 .col-tool{width:180px;flex-shrink:0;}
 .tool-display{font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.4;min-height:14px;}
-/* all cells grow with content */
 .task-cell{overflow:visible;min-height:42px;}
 .cell-input{white-space:normal;overflow-wrap:break-word;}
 input.cell-input{min-width:0;width:100%;}
 textarea.cell-input{overflow:hidden;min-height:22px;resize:none;}
-/* channel tags */
 .ch-tags{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;}
 .ch-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;border:1.5px solid transparent;transition:all .15s;}
 .ch-tag.sms{background:#fef3c7;border-color:#fbbf24;color:#92400e;}
@@ -132,25 +132,20 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 .gap-actions{display:flex;flex-direction:column;gap:3px;margin-top:4px;width:100%;}
 .gap-btn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap;text-align:left;line-height:1.4;}
 .gap-btn:hover{background:var(--orange);color:#fff;}
-/* drag-and-drop */
 .drag-handle{cursor:grab;color:var(--text-light);padding:0 6px;display:flex;align-items:center;flex-shrink:0;user-select:none;touch-action:none;}
 .drag-handle:active{cursor:grabbing;}
 .drag-handle svg{pointer-events:none;}
 .task-row.dragging{opacity:.45;outline:2px solid var(--accent);outline-offset:-1px;}
 .task-row.drop-above{border-top:3px solid var(--accent);}
 .task-row.drop-below{border-bottom:3px solid var(--accent);}
-/* comment popup */
 .comment-popup{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px;min-width:240px;max-width:320px;display:none;flex-direction:column;gap:6px;}
 .comment-popup.open{display:flex;}
 .comment-snippet{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;}
 .comment-snippet:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
 .comment-wrap{width:100%;}
-/* validation error */
 .field-err{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(200,30,30,.15)!important;}
 .field-err-msg{font-size:10px;color:var(--red);margin-top:2px;}
-/* ci hint */
 .form-hint{font-size:11px;color:var(--text-light);margin-top:3px;}
-/* ров поле */
 .rov-row{display:flex;align-items:center;gap:8px;padding:8px 24px 0;}
 .rov-label{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;}
 .rov-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 10px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;width:100px;}
@@ -161,7 +156,6 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 .row-del{background:transparent;border:none;cursor:pointer;color:var(--text-light);padding:4px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;}
 .row-del:hover{color:var(--red);background:var(--red-bg);}
 
-/* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
 .modal-overlay.open{opacity:1;pointer-events:all;}
 .modal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;transform:translateY(16px) scale(.98);transition:transform .2s;max-height:90vh;display:flex;flex-direction:column;}
@@ -185,33 +179,23 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 .notify-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;flex-shrink:0;}
 .notify-tab{padding:8px 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font);}
 .notify-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-/* notify 2-panel */
 .notify-body{display:flex;min-height:180px;}
 .notify-channels{width:130px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:2px;padding:8px 6px;}
 .notify-ch-btn{background:none;border:none;border-radius:var(--radius-sm);padding:8px 10px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:background .12s,color .12s;}
 .notify-ch-btn:hover{background:var(--surface2);color:var(--text);}
 .notify-ch-btn.active{background:var(--accent-light);color:var(--accent);font-weight:600;}
 .notify-content{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 16px 14px;}
-.notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:120px;max-height:300px;overflow-y:auto;flex:1;}
 .notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:100px;max-height:340px;overflow-y:auto;margin-top:14px;}
 
-/* WORD preview */
 .modal-wide{max-width:900px;}
 .word-preview{overflow:auto;max-height:62vh;}
-/* A4 proportional container */
 .word-page{width:100%;font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;background:#fff;}
 .word-page-title{font-size:12pt;font-weight:bold;text-align:center;margin-bottom:12px;line-height:1.4;}
-.word-page-subtitle{font-size:11pt;text-align:center;margin-bottom:16px;}
 .word-table{border-collapse:collapse;width:100%;table-layout:fixed;}
 .word-table th,.word-table td{border:1px solid #000;padding:4px 6px;vertical-align:top;word-break:break-word;font-size:10pt;}
 .word-table th{background:#dae8fc;font-weight:bold;text-align:center;}
 .word-table .stage-row td{background:#e2efda;font-weight:bold;font-size:10pt;}
-.word-table .rollback-title td{background:#fce4d6;font-weight:bold;}
-.word-section-gap{height:14px;}
 .word-section-label{font-weight:bold;font-size:11pt;margin:14px 0 6px;}
-
-/* col widths for main table: №(4%) | Работы(28%) | Нач(13%) | Окон(13%) | Исп(15%) | Влияние(9%) | Комм(18%) */
-.wc-n{width:4%} .wc-work{width:28%} .wc-dt{width:13%} .wc-resp{width:15%} .wc-inf{width:9%} .wc-comm{width:18%}
 
 .toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:999;}
 .toast{background:#1a1d23;color:#fff;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;animation:slideIn .2s ease;max-width:320px;}
@@ -230,6 +214,11 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
     <span class="project-badge" id="headerCI" style="display:none;font-family:var(--font-mono);font-size:11px"></span>
   </div>
   <div class="header-actions">
+    <!-- ── Save indicator ── -->
+    <div class="save-indicator" id="saveIndicator" style="display:none">
+      <div class="save-dot"></div>
+      <span id="saveText">Сохранено</span>
+    </div>
     <button class="btn btn-ghost" onclick="openWordModal()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       Таблица Word
@@ -241,6 +230,10 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
     <button class="btn btn-secondary" onclick="exportJSON()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Экспорт JSON
+    </button>
+    <button class="btn btn-danger btn-sm" onclick="clearCache()" title="Очистить сохранённый план из кеша">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Сбросить
     </button>
     <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" id="themeBtn" title="Переключить тему">
       <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -254,17 +247,12 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 
 <main class="main">
   <div id="appContent">
-
-    <!-- EMPTY STATE -->
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">📋</div>
       <div class="empty-title">Нет плана работ</div>
       <div class="empty-sub">Создайте новый план или загрузите существующий из JSON</div>
       <div class="empty-actions">
-        <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" id="themeBtn" title="Переключить тему">
-      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-    <button class="btn btn-primary" onclick="openSetupModal()">
+        <button class="btn btn-primary" onclick="openSetupModal()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Создать план
         </button>
@@ -276,11 +264,8 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
       </div>
     </div>
 
-    <!-- PLAN VIEW -->
     <div id="planView" style="display:none">
       <div class="meta-bar" id="metaBar"></div>
-
-      <!-- Fixed 3 stages -->
       <div id="stagesContainer"></div>
 
       <!-- Rollback -->
@@ -417,7 +402,6 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
       </button>
     </div>
     <div class="modal-body" style="gap:0;padding:0;flex:1;overflow:hidden;display:flex;flex-direction:column">
-      <!-- РоВ + event tabs -->
       <div style="padding:12px 20px 0;border-bottom:1px solid var(--border)">
         <div class="rov-row" style="padding:0 0 10px;margin:0">
           <span class="rov-label">№ РоВ:</span>
@@ -429,7 +413,6 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
           <button class="notify-tab"        onclick="switchEvent('rollback')" id="ev-rollback" style="color:var(--red)">↩ Неуспешные работы</button>
         </div>
       </div>
-      <!-- 2-panel: channel sidebar + text -->
       <div class="notify-body">
         <div class="notify-channels">
           <div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:4px 4px 8px">Канал</div>
@@ -474,6 +457,7 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
     </div>
   </div>
 </div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -483,23 +467,76 @@ const STAGE_TITLES = [
   'Этап 2. Основные работы',
   'Этап 3. Заключительные мероприятия и мониторинг работоспособности'
 ];
+const STORAGE_KEY = 'work_plan_v1';
 
 // ─── STATE ───────────────────────────────────────────────
 let plan = null;
-let notifyEvent = 'start'; // start | close | rollback
-let notifyChannel = 'chat'; // chat | outlook | sms
+let notifyEvent = 'start';
+let notifyChannel = 'chat';
+let _saveTimer = null;
+
+// ─── LOCALSTORAGE SAVE / RESTORE ─────────────────────────
+function scheduleSave() {
+  showSaveIndicator('saving');
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    if (!plan) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
+      showSaveIndicator('saved');
+    } catch(e) {
+      console.warn('localStorage save failed:', e);
+    }
+  }, 800); // debounce: сохраняем через 800мс после последнего изменения
+}
+
+function showSaveIndicator(state) {
+  const el = document.getElementById('saveIndicator');
+  const txt = document.getElementById('saveText');
+  if (!el || !txt) return;
+  el.style.display = 'inline-flex';
+  el.className = 'save-indicator ' + state;
+  txt.textContent = state === 'saving' ? 'Сохранение…' : 'Сохранено в кеше';
+  if (state === 'saved') {
+    // скрыть через 3 секунды
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
+}
+
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function clearCache() {
+  if (!confirm('Удалить сохранённый план из кеша браузера?\n\nЭто не удалит файлы — только кешированные данные.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  plan = null;
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('planView').style.display = 'none';
+  document.getElementById('headerBadge').textContent = 'Нет проекта';
+  document.getElementById('headerCI').style.display = 'none';
+  document.getElementById('saveIndicator').style.display = 'none';
+  toast('Кеш очищен', '🗑️');
+}
 
 // ─── COMMENT SNIPPETS ────────────────────────────────────
 const COMMENT_SNIPPETS = [
   'Возможна временная недоступность до 5 минут',
   'Возможна временная недоступность до 15 минут',
-  'Возможно замедление работы сервиса',
-  'Требуется подтверждение успешности работы от команды',
+  'Возможна временная недоступность до 30 минут',
+  'Сервис будет недоступен на время проведения работ',
   'Без влияния на доступность сервиса',
+  'Возможно замедление работы сервиса',
+  'Требуется подтверждение успешности от команды',
+  'Параллельно ведётся мониторинг',
 ];
 
 let activePopup = null;
-let activePopupMeta = null;
 let _popupDocListener = null;
 
 function getOrCreatePopup() {
@@ -516,16 +553,11 @@ function getOrCreatePopup() {
 function openCommentPopup(ta, si, ti) {
   const popup = getOrCreatePopup();
   activePopup = popup;
-  activePopupMeta = {si, ti};
-
-  // Build content
   let html = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны комментариев</div>';
   COMMENT_SNIPPETS.forEach(function(s, idx) {
     html += '<div class="comment-snippet" onpointerdown="insertComment(' + si + ',' + ti + ',' + idx + ')">' + esc(s) + '</div>';
   });
   popup.innerHTML = html;
-
-  // Position below textarea
   const rect = ta.getBoundingClientRect();
   popup.style.display = 'flex';
   const popW = 280, popH = 320;
@@ -536,52 +568,37 @@ function openCommentPopup(ta, si, ti) {
   popup.style.top  = top  + 'px';
   popup.style.left = left + 'px';
   popup.classList.add('open');
-
-  // Remove previous outside listener if any
-  if (_popupDocListener) {
-    document.removeEventListener('pointerdown', _popupDocListener, true);
-  }
-  // Close when clicking anything outside the popup
+  if (_popupDocListener) document.removeEventListener('pointerdown', _popupDocListener, true);
   _popupDocListener = function(e) {
-    if (!popup.contains(e.target)) {
-      closeAllPopups();
-    }
+    if (!popup.contains(e.target)) closeAllPopups();
   };
-  // Use capture + slight delay so the current click doesn't immediately close it
-  setTimeout(() => {
-    document.addEventListener('pointerdown', _popupDocListener, true);
-  }, 0);
+  setTimeout(() => { document.addEventListener('pointerdown', _popupDocListener, true); }, 0);
 }
 
 function closeAllPopups() {
   const p = document.getElementById('__commentPopup');
   if (p) { p.classList.remove('open'); p.style.display = 'none'; }
   activePopup = null;
-  activePopupMeta = null;
   if (_popupDocListener) {
     document.removeEventListener('pointerdown', _popupDocListener, true);
     _popupDocListener = null;
   }
 }
 
-function scheduleClosePopup() { /* no-op — handled by document listener */ }
-
 function insertComment(si, ti, idx) {
-  const snippet = COMMENT_SNIPPETS[idx];
-  plan.stages[si].tasks[ti].comment = snippet;
+  plan.stages[si].tasks[ti].comment = COMMENT_SNIPPETS[idx];
   closeAllPopups();
   renderStages();
+  scheduleSave();
 }
 
 // ─── INIT ────────────────────────────────────────────────
 function initPlan(meta) {
-  // always exactly 3 stages with fixed titles
   const incoming = meta.stages || [];
   const stages = STAGE_TITLES.map((title, i) => ({
     title,
     tasks: (incoming[i] && incoming[i].tasks) ? incoming[i].tasks : []
   }));
-
   plan = {
     project:        meta.project        || '',
     ci_stand:       meta.ci_stand       || '',
@@ -594,6 +611,7 @@ function initPlan(meta) {
     communications: meta.communications || []
   };
   render();
+  scheduleSave(); // сохраняем сразу после инициализации
 }
 
 // ─── RENDER ──────────────────────────────────────────────
@@ -601,7 +619,6 @@ function render() {
   if (!plan) return;
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('planView').style.display   = 'block';
-
   document.getElementById('metaBar').innerHTML = `
     <div class="meta-item"><div class="meta-label">Проект</div><div class="meta-value">${esc(plan.project||'—')}</div></div>
     <div class="meta-item"><div class="meta-label">CI стенда</div><div class="meta-value mono">${esc(plan.ci_stand||'—')}</div></div>
@@ -617,14 +634,13 @@ function render() {
   } else {
     ciEl.style.display = 'none';
   }
-
   renderStages();
   renderRollback();
   renderContacts();
   renderComms();
 }
 
-// ─── STAGES (fixed 3) ────────────────────────────────────
+// ─── STAGES ──────────────────────────────────────────────
 function renderStages() {
   const c = document.getElementById('stagesContainer');
   c.innerHTML = '';
@@ -654,7 +670,6 @@ function renderStages() {
         </button>
       </div>`;
     c.appendChild(card);
-
     const container = card.querySelector(`#stage-tasks-${si}`);
     stage.tasks.forEach((task, ti) => {
       container.appendChild(createTaskRow(si, ti, task, stage.tasks));
@@ -668,16 +683,11 @@ function createTaskRow(si, ti, task, allTasks) {
   row.dataset.si = si;
   row.dataset.ti = ti;
 
-  // Gap detection
-  let hasGap = false;
   let gapHtml = '';
   if (ti > 0) {
     const prev = allTasks[ti-1];
     if (prev.end && task.start && prev.end !== task.start) {
-      hasGap = true;
-      const prevEndMs = new Date(prev.end).getTime();
-      const thisStartMs = new Date(task.start).getTime();
-      const diffMin = Math.round((thisStartMs - prevEndMs) / 60000);
+      const diffMin = Math.round((new Date(task.start) - new Date(prev.end)) / 60000);
       const diffLabel = diffMin > 0 ? `+${diffMin}м` : `${diffMin}м`;
       gapHtml = `
         <div class="gap-warn">
@@ -691,7 +701,6 @@ function createTaskRow(si, ti, task, allTasks) {
     }
   }
 
-  // Duration options
   const durOptions = [5,10,15,20,25,30,35,40,45,50,55,60,75,90,105,120,150,180,210,240];
   const durSelect = durOptions.map(m => {
     const h = Math.floor(m/60), mn = m%60;
@@ -699,27 +708,22 @@ function createTaskRow(si, ti, task, allTasks) {
     return `<option value="${m}">${label}</option>`;
   }).join('');
 
-  // Duration badge: show computed duration if both start and end are set
   let durBadge = '';
   if (task.start && task.end) {
     const diffMs = new Date(task.end) - new Date(task.start);
     if (diffMs > 0) {
       const totalMin = Math.round(diffMs / 60000);
       const h = Math.floor(totalMin / 60), m = totalMin % 60;
-      const label = h > 0 ? (m > 0 ? h + 'ч ' + m + 'м' : h + 'ч') : m + 'м';
-      durBadge = `<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:3px">⏱ ${label}</div>`;
+      durBadge = `<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:3px">⏱ ${h>0?(m>0?h+'ч '+m+'м':h+'ч'):m+'м'}</div>`;
     } else if (diffMs < 0) {
       const totalMin = Math.round(Math.abs(diffMs) / 60000);
       const h = Math.floor(totalMin / 60), m = totalMin % 60;
-      const label = h > 0 ? (m > 0 ? h + 'ч ' + m + 'м' : h + 'ч') : m + 'м';
-      durBadge = `<div style="font-size:11px;color:var(--red);font-weight:700;margin-top:3px;display:flex;align-items:center;gap:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>−${label}</div>`;
+      durBadge = `<div style="font-size:11px;color:var(--red);font-weight:700;margin-top:3px">⚠ −${h>0?(m>0?h+'ч '+m+'м':h+'ч'):m+'м'}</div>`;
     }
   }
 
-  // Responsible: use task value if explicitly set, otherwise plan.responsible
   const respVal = (task.responsible !== undefined && task.responsible !== null && task.responsible !== '')
     ? task.responsible : (plan.responsible||'');
-
   const nameErr = (!task.name || !task.name.trim()) ? '<div class="field-err-msg">⚠ Обязательное поле</div>' : '';
 
   row.innerHTML = `
@@ -730,8 +734,8 @@ function createTaskRow(si, ti, task, allTasks) {
     </div>
     <div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">
       <textarea class="cell-input ${!task.name||!task.name.trim()?'field-err':''}" rows="1" placeholder="Название работы *"
-        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)"
-        onchange="plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this)">${esc(task.name||'')}</textarea>
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value;validateTaskName(this);scheduleSave()"
+        onchange="plan.stages[${si}].tasks[${ti}].name=this.value;scheduleSave()">${esc(task.name||'')}</textarea>
       ${nameErr}
     </div>
     <div class="task-cell col-dt" style="align-items:center">
@@ -753,19 +757,15 @@ function createTaskRow(si, ti, task, allTasks) {
     </div>
     <div class="task-cell col-resp" style="align-items:flex-start">
       <textarea class="cell-input" rows="1" placeholder="Исполнитель"
-        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].responsible=this.value"
-        onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">${esc(respVal)}</textarea>
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].responsible=this.value;scheduleSave()"
+        onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value;scheduleSave()">${esc(respVal)}</textarea>
     </div>
     <div class="task-cell col-comment" style="align-items:flex-start">
       <div class="comment-wrap">
         <textarea class="cell-input" rows="1" placeholder="Комментарий"
-          oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value"
-          onchange="plan.stages[${si}].tasks[${ti}].comment=this.value"
+          oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value;scheduleSave()"
+          onchange="plan.stages[${si}].tasks[${ti}].comment=this.value;scheduleSave()"
           onfocus="openCommentPopup(this,${si},${ti})">${esc(task.comment||'')}</textarea>
-        <div class="comment-popup" id="cpop-${si}-${ti}">
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:2px">Шаблоны комментариев</div>
-          ${COMMENT_SNIPPETS.map((s,idx) => `<div class="comment-snippet" onclick="insertComment(${si},${ti},${idx})">${esc(s)}</div>`).join('')}
-        </div>
       </div>
     </div>
     <div class="task-cell col-del">
@@ -776,69 +776,53 @@ function createTaskRow(si, ti, task, allTasks) {
 
   setTimeout(() => {
     row.querySelectorAll('textarea').forEach(ta => autoResize(ta));
-    // wire pointer-based drag (smooth, no jank, preserves task data)
     const handle = row.querySelector('.drag-handle');
-    if (handle) {
-      handle.addEventListener('pointerdown', e => startDrag(e, si, ti));
-    }
+    if (handle) handle.addEventListener('pointerdown', e => startDrag(e, si, ti));
   }, 0);
   return row;
 }
 
-// Fix gap: move previous task's END to match this task's START
 function fixGapShrinkPrev(si, prevTi, thisTi) {
   plan.stages[si].tasks[prevTi].end = plan.stages[si].tasks[thisTi].start;
-  renderStages();
+  renderStages(); scheduleSave();
   toast('Окончание предыдущей задачи скорректировано','✅');
 }
-
-// Fix gap: move this task's START to match previous task's END
 function fixGapShiftNext(si, thisTi) {
   plan.stages[si].tasks[thisTi].start = plan.stages[si].tasks[thisTi-1].end;
-  renderStages();
+  renderStages(); scheduleSave();
   toast('Начало задачи скорректировано','✅');
 }
 
-// ── helpers ──────────────────────────────────────────────────
 function padDT(n) { return String(n).padStart(2,'0'); }
-
 function toDatetimeLocal(d) {
   return d.getFullYear()+'-'+padDT(d.getMonth()+1)+'-'+padDT(d.getDate())
     +'T'+padDT(d.getHours())+':'+padDT(d.getMinutes());
 }
 
-// After any end-time change on task ti, push start of ti+1 = new end (always)
 function propagateNext(si, ti, endVal) {
   const tasks = plan.stages[si].tasks;
-  if (ti + 1 < tasks.length) {
-    tasks[ti+1].start = endVal;
-  }
+  if (ti + 1 < tasks.length) tasks[ti+1].start = endVal;
 }
 
 function onEndChange(si, ti, val) {
   const task = plan.stages[si].tasks[ti];
-  // Validate: end must not be before start
   if (val && task.start && val < task.start) {
     toast('Окончание не может быть раньше начала', '⚠️');
-    renderStages();
-    return;
+    renderStages(); return;
   }
   task.end = val;
-  // Always propagate start of next task to this end time
   propagateNext(si, ti, val);
-  renderStages();
+  renderStages(); scheduleSave();
 }
 
 function onStartChange(si, ti, val) {
   const task = plan.stages[si].tasks[ti];
-  // Validate: start must not be after end
   if (val && task.end && val > task.end) {
     toast('Начало не может быть позже окончания', '⚠️');
-    renderStages();
-    return;
+    renderStages(); return;
   }
   task.start = val;
-  renderStages();
+  renderStages(); scheduleSave();
 }
 
 function onDurChange(si, ti, minutes) {
@@ -848,9 +832,8 @@ function onDurChange(si, ti, minutes) {
   const endDate = new Date(new Date(task.start).getTime() + parseInt(minutes) * 60000);
   const endVal  = toDatetimeLocal(endDate);
   task.end = endVal;
-  // Always propagate: start of next task = our new end
   propagateNext(si, ti, endVal);
-  renderStages();
+  renderStages(); scheduleSave();
 }
 
 // ─── ROLLBACK ────────────────────────────────────────────
@@ -863,7 +846,7 @@ function renderRollback() {
     el.innerHTML = `
       <div class="task-cell col-name">
         <textarea class="cell-input" rows="1" placeholder="Работа"
-          oninput="autoResize(this);plan.rollback[${ri}].name=this.value">${esc(row.name||'')}</textarea>
+          oninput="autoResize(this);plan.rollback[${ri}].name=this.value;scheduleSave()">${esc(row.name||'')}</textarea>
       </div>
       <div class="task-cell col-dur" style="padding:6px 8px">
         ${buildRollbackSelect(ri,'start',row.start||'')}
@@ -873,11 +856,11 @@ function renderRollback() {
       </div>
       <div class="task-cell col-resp">
         <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||plan.responsible||'')}"
-          onchange="plan.rollback[${ri}].responsible=this.value">
+          onchange="plan.rollback[${ri}].responsible=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-comment">
         <input class="cell-input" placeholder="Комментарий / ссылка" value="${esc(row.comment||'')}"
-          onchange="plan.rollback[${ri}].comment=this.value">
+          onchange="plan.rollback[${ri}].comment=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-del">
         <button class="row-del" onclick="removeRollback(${ri})">
@@ -899,19 +882,19 @@ function renderContacts() {
     el.innerHTML = `
       <div class="task-cell col-name">
         <input class="cell-input" placeholder="ФИО / название" value="${esc(row.name||'')}"
-          onchange="plan.contacts[${ci}].name=this.value">
+          onchange="plan.contacts[${ci}].name=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-comment">
         <input class="cell-input" placeholder="Роль" value="${esc(row.role||'')}"
-          onchange="plan.contacts[${ci}].role=this.value">
+          onchange="plan.contacts[${ci}].role=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-resp">
         <input class="cell-input" placeholder="8-xxx-xxx-xxxx" value="${esc(row.phone||'')}"
-          onchange="plan.contacts[${ci}].phone=this.value">
+          onchange="plan.contacts[${ci}].phone=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-comment">
         <input class="cell-input" placeholder="Примечание" value="${esc(row.note||'')}"
-          onchange="plan.contacts[${ci}].note=this.value">
+          onchange="plan.contacts[${ci}].note=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-del">
         <button class="row-del" onclick="removeContact(${ci})">
@@ -923,11 +906,10 @@ function renderContacts() {
 }
 
 // ─── COMMUNICATIONS ──────────────────────────────────────
-// Channel → label mapping
 const CH_LABELS = {
   sms:      { tag:'📱 SMS',      tool:'Сервер отправки SMS' },
   outlook:  { tag:'📧 Outlook',  tool:'Outlook'             },
-  sberchat: { tag:'💚 СберЧат',  tool:'Группа в СберЧат'    }
+  sberchat: { tag:'💚 СберЧат',  tool:'СберЧат'             }
 };
 
 function getToolText(channels) {
@@ -947,14 +929,13 @@ function renderComms() {
     const hasSms      = !!(row.channels && row.channels.sms);
     const hasOutlook  = !!(row.channels && row.channels.outlook);
     const hasSberchat = !!(row.channels && row.channels.sberchat);
-    const toolText   = getToolText(row.channels);
     const el = document.createElement('div');
     el.className = 'task-row';
     el.innerHTML = `
       <div class="task-cell col-resp" style="align-items:flex-start">
         <textarea class="cell-input" rows="1" placeholder="Событие"
-          oninput="autoResize(this);plan.communications[${ci}].event=this.value"
-          onchange="plan.communications[${ci}].event=this.value">${esc(row.event||'')}</textarea>
+          oninput="autoResize(this);plan.communications[${ci}].event=this.value;scheduleSave()"
+          onchange="plan.communications[${ci}].event=this.value;scheduleSave()">${esc(row.event||'')}</textarea>
       </div>
       <div class="task-cell col-channels" style="flex-direction:column;align-items:flex-start;gap:4px;padding-top:8px">
         <div class="ch-tags">
@@ -964,16 +945,16 @@ function renderComms() {
         </div>
       </div>
       <div class="task-cell col-tool" style="align-items:flex-start">
-        <div class="tool-display">${esc(toolText)}</div>
+        <div class="tool-display">${esc(getToolText(row.channels))}</div>
       </div>
       <div class="task-cell col-name" style="align-items:flex-start">
         <textarea class="cell-input" rows="1" placeholder="Участники (через запятую)"
-          oninput="autoResize(this);plan.communications[${ci}].participants=this.value"
-          onchange="plan.communications[${ci}].participants=this.value">${esc(partsVal)}</textarea>
+          oninput="autoResize(this);plan.communications[${ci}].participants=this.value;scheduleSave()"
+          onchange="plan.communications[${ci}].participants=this.value;scheduleSave()">${esc(partsVal)}</textarea>
       </div>
       <div class="task-cell col-resp" style="align-items:flex-start">
         <input class="cell-input" placeholder="Ответственный" value="${esc(row.responsible||'')}"
-          onchange="plan.communications[${ci}].responsible=this.value">
+          onchange="plan.communications[${ci}].responsible=this.value;scheduleSave()">
       </div>
       <div class="task-cell col-del">
         <button class="row-del" onclick="removeComm(${ci})">
@@ -988,32 +969,28 @@ function renderComms() {
 function toggleChannel(ci, ch) {
   if (!plan.communications[ci].channels) plan.communications[ci].channels = {};
   plan.communications[ci].channels[ch] = !plan.communications[ci].channels[ch];
-  renderComms();
+  renderComms(); scheduleSave();
 }
 
 // ─── CRUD ────────────────────────────────────────────────
 function addTask(si) {
   const tasks = plan.stages[si].tasks;
   let startVal = '';
-  if (tasks.length > 0) {
-    startVal = tasks[tasks.length-1].end || '';
-  } else if (si === 1 && plan.start) {
-    startVal = plan.start;
-  }
-  // responsible is intentionally left '' so createTaskRow falls back to plan.responsible
+  if (tasks.length > 0) startVal = tasks[tasks.length-1].end || '';
+  else if (si === 1 && plan.start) startVal = plan.start;
   tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
-  renderStages();
+  renderStages(); scheduleSave();
 }
-function removeTask(si,ti) { plan.stages[si].tasks.splice(ti,1); renderStages(); }
+function removeTask(si,ti)  { plan.stages[si].tasks.splice(ti,1); renderStages(); scheduleSave(); }
 
-function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:plan.responsible||'',comment:''}); renderRollback(); }
-function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); }
+function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:plan.responsible||'',comment:''}); renderRollback(); scheduleSave(); }
+function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); scheduleSave(); }
 
-function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); }
-function removeContact(ci)  { plan.contacts.splice(ci,1); renderContacts(); }
+function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); scheduleSave(); }
+function removeContact(ci)  { plan.contacts.splice(ci,1); renderContacts(); scheduleSave(); }
 
-function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false,sberchat:false},participants:'',responsible:''}); renderComms(); }
-function removeComm(ci)     { plan.communications.splice(ci,1); renderComms(); }
+function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false,sberchat:false},participants:'',responsible:''}); renderComms(); scheduleSave(); }
+function removeComm(ci)     { plan.communications.splice(ci,1); renderComms(); scheduleSave(); }
 
 // ─── SETUP ───────────────────────────────────────────────
 function openSetupModal() {
@@ -1030,33 +1007,19 @@ function openSetupModal() {
 function applySetup() {
   const project = document.getElementById('f_project').value.trim();
   if (!project) { toast('Введите название проекта','⚠️'); return; }
-  const newResp = document.getElementById('f_responsible').value.trim();
-  const oldResp = plan ? plan.responsible : '';
   const meta = {
     project,
     ci_stand:    document.getElementById('f_ci_stand').value.trim(),
     ci_project:  document.getElementById('f_ci_project').value.trim(),
     start:       document.getElementById('f_start').value,
-    responsible: newResp,
+    responsible: document.getElementById('f_responsible').value.trim(),
     stages:      plan ? plan.stages : [],
     rollback:    plan ? plan.rollback : [],
     contacts:    plan ? plan.contacts : [],
     communications: plan ? plan.communications : []
   };
-  // Propagate new responsible to tasks that still have the old global responsible
-  if (plan && newResp && oldResp !== newResp) {
-    (meta.stages||[]).forEach(stage => {
-      (stage.tasks||[]).forEach(task => {
-        if (!task.responsible || task.responsible === oldResp) {
-          task.responsible = newResp;
-        }
-      });
-    });
-    (meta.rollback||[]).forEach(r => {
-      if (!r.responsible || r.responsible === oldResp) r.responsible = newResp;
-    });
-  }
   initPlan(meta);
+  scheduleSave();
   closeModal('setupModal');
   toast('Настройки сохранены','✅');
 }
@@ -1079,28 +1042,21 @@ function openNotifyModal() {
 function switchEvent(ev) {
   notifyEvent = ev;
   ['ev-start','ev-close','ev-rollback'].forEach(id =>
-    document.getElementById(id).classList.toggle('active', id === 'ev-'+ev)
-  );
+    document.getElementById(id).classList.toggle('active', id === 'ev-'+ev));
   updateNotifyText();
 }
 
 function switchChannel(ch) {
   notifyChannel = ch;
   ['ch-chat','ch-outlook','ch-sms'].forEach(id =>
-    document.getElementById(id).classList.toggle('active', id === 'ch-'+ch)
-  );
+    document.getElementById(id).classList.toggle('active', id === 'ch-'+ch));
   updateNotifyText();
 }
-
-// Legacy shim (word table uses this)
-function switchTab(mode) { updateNotifyText(); }
 
 function getRecipients(channelFilter) {
   const all = new Set();
   (plan.communications||[]).forEach(c => {
-    if (channelFilter) {
-      if (!c.channels || !c.channels[channelFilter]) return;
-    }
+    if (channelFilter && (!c.channels || !c.channels[channelFilter])) return;
     const parts = Array.isArray(c.participants)
       ? c.participants
       : (c.participants||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -1115,97 +1071,49 @@ function updateNotifyText() {
     : '[дата/время не указаны]';
   const rovEl  = document.getElementById('rovNumber');
   const rovNum = rovEl ? rovEl.value.trim() : '';
-  const rovLine = rovNum ? '\nРаботы производились по РоВ \u2116 ' + rovNum + '.' : '';
-
-  const p    = plan.project||'\u2014';
-  const cs   = plan.ci_stand||'\u2014';
-  const cp   = plan.ci_project||'\u2014';
-  const resp = plan.responsible||'\u041a\u043e\u043c\u0430\u043d\u0434\u0430';
+  const rovLine = rovNum ? '\nРаботы производились по РоВ № ' + rovNum + '.' : '';
+  const p    = plan.project||'—';
+  const cs   = plan.ci_stand||'—';
+  const cp   = plan.ci_project||'—';
+  const resp = plan.responsible||'Команда';
+  const nl   = '\n';
 
   const recipRow = document.getElementById('recipientsRow');
   if (notifyChannel === 'outlook' || notifyChannel === 'sms') {
     const chRec = getRecipients(notifyChannel);
-    const chLabel = notifyChannel === 'outlook' ? '\ud83d\udce7 Outlook' : '\ud83d\udcf1 SMS';
+    const chLabel = notifyChannel === 'outlook' ? '📧 Outlook' : '📱 SMS';
     recipRow.style.display = chRec.length ? 'block' : 'none';
-    recipRow.innerHTML = chRec.length ? '<b>' + chLabel + ' \u041a\u043e\u043c\u0443:</b> ' + chRec.join('; ') : '';
+    recipRow.innerHTML = chRec.length ? '<b>' + chLabel + ' Кому:</b> ' + chRec.join('; ') : '';
   } else {
     recipRow.style.display = 'none';
   }
 
-
-  // Collect unique non-empty task comments for notify
-  var commentSet = [];
-  (plan.stages||[]).forEach(function(s){ (s.tasks||[]).forEach(function(t){
-    var ct = t.comment && t.comment.trim();
-    if (ct && commentSet.indexOf(ct) === -1) commentSet.push(ct);
-  }); });
-  var commentsBlock = commentSet.length
-    ? '\n\nПримечания:\n' + commentSet.map(function(c){ return '\u2022 ' + c; }).join('\n')
-    : '';
-  var text = '';
-  var nl = '\n';
-
+  let text = '';
   if (notifyEvent === 'start') {
     if (notifyChannel === 'chat') {
-      text = '\ud83d\udd27 *\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442*' + nl + nl
-           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
-           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
-           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
-           + '\u23f0 *\u041d\u0430\u0447\u0430\u043b\u043e:* ' + startFmt + ' \u041c\u0421\u041a' + nl
-           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
-           + '\u26a0\ufe0f \u0412\u043e\u0437\u043c\u043e\u0436\u043d\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e\u0441\u0442\u044c \u0441\u0435\u0440\u0432\u0438\u0441\u0430.';
+      text = '🔧 *Начало регламентных работ*\n\n📋 *Проект:* '+p+'\n🖥 *CI стенда:* '+cs+'\n📦 *CI проекта:* '+cp+'\n⏰ *Начало:* '+startFmt+' МСК\n👤 *Ответственный:* '+resp+'\n\n⚠️ Возможна временная недоступность сервиса.';
     } else if (notifyChannel === 'outlook') {
-      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
-           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u043d\u0430\u0447\u0430\u043b\u0435 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442.' + nl + nl
-           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl
-           + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl
-           + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl
-           + '\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442: ' + startFmt + ' (\u041c\u0421\u041a)\n\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
-           + '\u0412 \u043f\u0435\u0440\u0438\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0440\u0430\u0431\u043e\u0442 \u0432\u043e\u0437\u043c\u043e\u0436\u043d\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e\u0441\u0442\u044c \u0441\u0435\u0440\u0432\u0438\u0441\u0430.' + nl
-           + '\u041f\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430\u043c \u043e\u0431\u0440\u0430\u0449\u0430\u0439\u0442\u0435\u0441\u044c \u043a \u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u043c\u0443 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044e.' + rovLine + nl + nl
-           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+      text = 'Уважаемые коллеги,'+nl+nl+'Информируем вас о начале регламентных работ.'+nl+nl+'Проект: '+p+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Начало работ: '+startFmt+' (МСК)\nОтветственный: '+resp+nl+nl+'В период проведения работ возможна временная недоступность сервиса.\nПо вопросам обращайтесь к ответственному исполнителю.'+rovLine+nl+nl+'С уважением,'+nl+resp;
     } else {
-      text = '\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442 ' + startFmt + ' \u041c\u0421\u041a. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '. \u041e\u0442\u0432: ' + resp + '.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+      text = 'Начало работ '+startFmt+' МСК. Проект: '+p+' ('+cp+'). Стенд: '+cs+'. Отв: '+resp+'.'+(rovNum?' РоВ №'+rovNum+'.':'');
     }
   } else if (notifyEvent === 'close') {
     if (notifyChannel === 'chat') {
-      text = '\u2705 *\u0420\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0435 \u0440\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b*' + nl + nl
-           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
-           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
-           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
-           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
-           + '\ud83d\udfe2 \u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e. \u0421\u0435\u0440\u0432\u0438\u0441 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.';
+      text = '✅ *Регламентные работы завершены*\n\n📋 *Проект:* '+p+'\n🖥 *CI стенда:* '+cs+'\n📦 *CI проекта:* '+cp+'\n👤 *Ответственный:* '+resp+'\n\n🟢 Работы завершены успешно. Сервис работает в штатном режиме.';
     } else if (notifyChannel === 'outlook') {
-      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
-           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442.' + nl + nl
-           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl + '\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
-           + '\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e. \u0421\u0435\u0440\u0432\u0438\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.' + rovLine + nl + nl
-           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+      text = 'Уважаемые коллеги,'+nl+nl+'Информируем вас о завершении регламентных работ.'+nl+nl+'Проект: '+p+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Ответственный: '+resp+nl+nl+'Работы завершены успешно. Сервис доступен в штатном режиме.'+rovLine+nl+nl+'С уважением,'+nl+resp;
     } else {
-      text = '\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '. \u0421\u0435\u0440\u0432\u0438\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+      text = 'Работы завершены. Проект: '+p+' ('+cp+'). Стенд: '+cs+'. Сервис доступен.'+(rovNum?' РоВ №'+rovNum+'.':'');
     }
   } else if (notifyEvent === 'rollback') {
     if (notifyChannel === 'chat') {
-      text = '\ud83d\udd34 *\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0441 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u0435\u043c \u043f\u043b\u0430\u043d\u0430 \u043e\u0442\u043a\u0430\u0442\u0430*' + nl + nl
-           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
-           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
-           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
-           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
-           + '\u26a0\ufe0f \u0412\u043e\u0437\u043d\u0438\u043a\u043b\u0438 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b. \u041f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043f\u043b\u0430\u043d \u043e\u0442\u043a\u0430\u0442\u0430.' + nl
-           + '\ud83d\udd04 \u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u043f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0443\u044e \u0432\u0435\u0440\u0441\u0438\u044e.';
+      text = '🔴 *Работы завершены с применением плана отката*\n\n📋 *Проект:* '+p+'\n🖥 *CI стенда:* '+cs+'\n📦 *CI проекта:* '+cp+'\n👤 *Ответственный:* '+resp+'\n\n⚠️ Возникли проблемы. Применён план отката.\n🔄 Сервис восстановлен на предыдущую версию.';
     } else if (notifyChannel === 'outlook') {
-      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
-           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442 \u0441 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u0435\u043c \u043f\u043b\u0430\u043d\u0430 \u043e\u0442\u043a\u0430\u0442\u0430.' + nl + nl
-           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl + '\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
-           + '\u0412 \u0445\u043e\u0434\u0435 \u0440\u0430\u0431\u043e\u0442 \u0432\u043e\u0437\u043d\u0438\u043a\u043b\u0438 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b, \u043f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043f\u043b\u0430\u043d \u043e\u0442\u043a\u0430\u0442\u0430.' + nl
-           + '\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u043f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0443\u044e \u0432\u0435\u0440\u0441\u0438\u044e \u0438 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.' + nl
-           + '\u041f\u043e\u0432\u0442\u043e\u0440\u043d\u043e\u0435 \u043f\u0440\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u043f\u043b\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u043e \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u043e.' + rovLine + nl + nl
-           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+      text = 'Уважаемые коллеги,'+nl+nl+'Информируем вас о завершении регламентных работ с применением плана отката.'+nl+nl+'Проект: '+p+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Ответственный: '+resp+nl+nl+'В ходе работ возникли проблемы, применён план отката.\nСервис восстановлен на предыдущую версию и работает в штатном режиме.\nПовторное проведение работ будет запланировано дополнительно.'+rovLine+nl+nl+'С уважением,'+nl+resp;
     } else {
-      text = '\u0420\u0430\u0431\u043e\u0442\u044b \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b. \u041f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043e\u0442\u043a\u0430\u0442. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+      text = 'Работы не выполнены. Применён откат. Проект: '+p+' ('+cp+'). Стенд: '+cs+'.'+(rovNum?' РоВ №'+rovNum+'.':'');
     }
   }
-
   document.getElementById('notifyText').textContent = text;
 }
 
@@ -1229,9 +1137,7 @@ function openWordModal() {
 }
 
 function buildWordHTML() {
-  const title = `План-график работ по ${plan.project||'[проект]'} (${plan.ci_project||'CI проекта'}) стенд ${plan.ci_stand||'CI стенда'} ПРОМ`;
-
-  // ── Main plan table ──
+  const title = `План-график работ по обновлению ${plan.project||'[проект]'} (${plan.ci_project||'CI проекта'}) на стенде ${plan.ci_stand||'CI стенда'} ПРОМ.`;
   let h = `<div class="word-page">
   <p class="word-page-title">${esc(title)}</p>
   <table class="word-table">
@@ -1239,21 +1145,13 @@ function buildWordHTML() {
       <col style="width:4%"><col style="width:28%"><col style="width:13%">
       <col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%">
     </colgroup>
-    <thead>
-      <tr>
-        <th>№</th>
-        <th>Работы</th>
-        <th>Дата и время начала (МСК)</th>
-        <th>Дата и время окончания (МСК)</th>
-        <th>Отв. Исполнитель</th>
-        <th>Влияние на услугу</th>
-        <th>Комментарий</th>
-      </tr>
-    </thead>
-    <tbody>`;
-
+    <thead><tr>
+      <th>№</th><th>Работы</th><th>Дата и время начала (МСК)</th>
+      <th>Дата и время окончания (МСК)</th><th>Отв. Исполнитель</th>
+      <th>Влияние на услугу</th><th>Комментарий</th>
+    </tr></thead><tbody>`;
   plan.stages.forEach(stage => {
-    h += `<tr class="stage-row"><td colspan="7" style="text-align:center">${esc(stage.title)}</td></tr>`;
+    h += `<tr class="stage-row"><td colspan="7">${esc(stage.title)}</td></tr>`;
     stage.tasks.forEach(task => {
       h += `<tr>
         <td style="text-align:center"></td>
@@ -1267,78 +1165,37 @@ function buildWordHTML() {
     });
   });
   h += `</tbody></table>`;
-
-  // ── Rollback table ──
-  const rbFilled = (plan.rollback||[]).some(r => r.name && r.name.trim());
-  h += `<p class="word-section-label">План отката</p>`;
-  if (!rbFilled) {
-    h += `<p style="font-size:11pt;font-style:italic;margin:4px 0 12px">План отката не предусмотрен.</p>`;
-  } else {
-    h += `<table class="word-table">
-      <colgroup>
-        <col style="width:32%"><col style="width:17%"><col style="width:17%">
-        <col style="width:18%"><col style="width:16%">
-      </colgroup>
-      <thead><tr>
-        <th>Работы</th><th>Дата и время начала</th><th>Дата и время окончания</th>
-        <th>Отв. Исполнитель</th><th>Комментарий</th>
-      </tr></thead><tbody>`;
+  if ((plan.rollback||[]).length) {
+    h += `<p class="word-section-label">План отката</p>
+    <table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup>
+    <thead><tr><th>Работы</th><th>Дата и время начала</th><th>Дата и время окончания</th><th>Отв. Исполнитель</th><th>Комментарий</th></tr></thead><tbody>`;
     plan.rollback.forEach(r => {
-      h += `<tr>
-        <td>${esc(r.name||'')}</td><td>${esc(r.start||'')}</td>
-        <td>${esc(r.end||'')}</td><td>${esc(r.responsible||'')}</td>
-        <td>${esc(r.comment||'')}</td>
-      </tr>`;
+      h += `<tr><td>${esc(r.name||'')}</td><td>${esc(r.start||'')}</td><td>${esc(r.end||'')}</td><td>${esc(r.responsible||'')}</td><td>${esc(r.comment||'')}</td></tr>`;
     });
     h += `</tbody></table>`;
   }
-
-  // ── Contacts table ──
   if ((plan.contacts||[]).length) {
     h += `<p class="word-section-label">Контактная информация</p>
-    <table class="word-table">
-      <colgroup>
-        <col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%">
-      </colgroup>
-      <thead><tr>
-        <th>ФИО, контакт</th><th>Роль во внедрении</th>
-        <th>Контактная информация</th><th>Примечание</th>
-      </tr></thead><tbody>`;
+    <table class="word-table"><colgroup><col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%"></colgroup>
+    <thead><tr><th>ФИО, контакт</th><th>Роль во внедрении</th><th>Контактная информация</th><th>Примечание</th></tr></thead><tbody>`;
     plan.contacts.forEach(c => {
-      h += `<tr><td>${esc(c.name||'')}</td><td>${esc(c.role||'')}</td>
-        <td>${esc(c.phone||'')}</td><td>${esc(c.note||'')}</td></tr>`;
+      h += `<tr><td>${esc(c.name||'')}</td><td>${esc(c.role||'')}</td><td>${esc(c.phone||'')}</td><td>${esc(c.note||'')}</td></tr>`;
     });
     h += `</tbody></table>`;
   }
-
-  // ── Communications table ──
   if ((plan.communications||[]).length) {
     h += `<p class="word-section-label">План коммуникаций в период проведения работ</p>
-    <table class="word-table">
-      <colgroup>
-        <col style="width:16%"><col style="width:18%"><col style="width:22%">
-        <col style="width:28%"><col style="width:16%">
-      </colgroup>
-      <thead><tr>
-        <th>Событие</th><th>Вид коммуникации</th><th>Средство коммуникации</th>
-        <th>Участники</th><th>Ответственный</th>
-      </tr></thead><tbody>`;
+    <table class="word-table"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:22%"><col style="width:28%"><col style="width:16%"></colgroup>
+    <thead><tr><th>Событие</th><th>Вид коммуникации</th><th>Средство коммуникации</th><th>Участники</th><th>Ответственный</th></tr></thead><tbody>`;
     plan.communications.forEach(c => {
       const parts = Array.isArray(c.participants) ? c.participants.join(', ') : (c.participants||'');
-      const vidArr = [], toolArr = [];
+      const vidArr=[], toolArr=[];
       if (c.channels && c.channels.sms)     { vidArr.push('Рассылка SMS-сообщений'); toolArr.push('Сервер отправки SMS'); }
-      if (c.channels && c.channels.outlook) { vidArr.push('Outlook');                toolArr.push('Outlook');              }
-      h += `<tr>
-        <td>${esc(c.event||'')}</td>
-        <td>${esc(vidArr.join(', ')||'—')}</td>
-        <td>${esc(toolArr.join(', ')||'—')}</td>
-        <td>${esc(parts)}</td>
-        <td>${esc(c.responsible||'')}</td>
-      </tr>`;
+      if (c.channels && c.channels.outlook) { vidArr.push('Outlook'); toolArr.push('Outlook'); }
+      h += `<tr><td>${esc(c.event||'')}</td><td>${esc(vidArr.join(', ')||'—')}</td><td>${esc(toolArr.join(', ')||'—')}</td><td>${esc(parts)}</td><td>${esc(c.responsible||'')}</td></tr>`;
     });
     h += `</tbody></table>`;
   }
-
   h += `</div>`;
   return h;
 }
@@ -1355,8 +1212,6 @@ function copyWordTable() {
 }
 
 // ─── EXPORT / IMPORT ─────────────────────────────────────
-
-
 function exportJSON() {
   if (!plan) { toast('Нет данных для экспорта','⚠️'); return; }
   const blob = new Blob([JSON.stringify(plan,null,2)],{type:'application/json'});
@@ -1374,6 +1229,7 @@ function importJSON(event) {
   r.onload = e => {
     try {
       initPlan(JSON.parse(e.target.result));
+      scheduleSave();
       closeModal('setupModal');
       toast('План загружен из JSON','✅');
     } catch { toast('Ошибка чтения JSON','❌'); }
@@ -1397,11 +1253,6 @@ function fmtTime(val) {
   catch { return val; }
 }
 function buildRollbackSelect(ri, field, val) {
-  // start field is always fixed to "Час X + 0м"
-  if (field === 'start') {
-    plan.rollback[ri].start = 'Час X + 0м';
-    return '<span style="font-size:12px;color:var(--text-muted);padding:2px 0;display:block">Час X + 0м</span>';
-  }
   const opts = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
   const options = opts.map(m => {
     const h = Math.floor(m/60), mn = m%60;
@@ -1410,44 +1261,25 @@ function buildRollbackSelect(ri, field, val) {
     return `<option value="${stored}" ${val===stored?'selected':''}>${label}</option>`;
   }).join('');
   return `<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
-    onchange="plan.rollback[${ri}].${field}=this.value">
-    <option value="">—</option>
-    ${options}
-  </select>`;
+    onchange="plan.rollback[${ri}].${field}=this.value;scheduleSave()">
+    <option value="">—</option>${options}</select>`;
 }
-
 function validateCI(input) {
   const val = input.value.trim();
-  const ok = /^CI\d{8}$/.test(val) || val === '';
-  input.classList.toggle('field-err', !ok && val !== '');
+  input.classList.toggle('field-err', !/^CI\d{8}$/.test(val) && val !== '');
 }
-
 function validateTaskName(ta) {
   const ok = ta.value.trim().length > 0;
   ta.classList.toggle('field-err', !ok);
   const msg = ta.parentElement.querySelector('.field-err-msg');
   if (msg) msg.style.display = ok ? 'none' : '';
 }
-
-function formatRollbackTime(input) {
-  // strip everything except digits and colon
-  let raw = input.value.replace(/[^0-9:]/g,'');
-  // if user typed just digits like "0030" or "30", format as HH:MM
-  if (raw && !raw.includes(':')) {
-    if (raw.length <= 2) raw = raw.padStart(2,'0') + ':00';
-    else raw = raw.slice(0,-2).padStart(2,'0') + ':' + raw.slice(-2);
-  }
-  if (raw) {
-    input.value = 'Час X + ' + raw;
-  }
-}
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
 }
 
-// ─── THEME ───────────────────────────────────────────────────
+// ─── THEME ───────────────────────────────────────────────
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
@@ -1459,17 +1291,14 @@ function toggleTheme() {
   }
   localStorage.setItem('theme', isDark ? 'light' : 'dark');
 }
-// Restore saved theme
 (function(){
   const t = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', t);
   const icon = document.getElementById('themeIcon');
-  if (icon && t === 'dark') {
-    icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
-  }
+  if (icon && t === 'dark') icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
 })();
 
-// ─── POINTER DRAG ────────────────────────────────────────────
+// ─── POINTER DRAG ────────────────────────────────────────
 let _drag = null;
 
 function startDrag(e, si, ti) {
@@ -1485,18 +1314,12 @@ function startDrag(e, si, ti) {
 function onDragMove(e) {
   if (!_drag) return;
   e.preventDefault();
-  // Find which row we're over
   const el = document.elementFromPoint(e.clientX, e.clientY);
   const targetRow = el && el.closest('.task-row');
-  // Clear all indicators
-  document.querySelectorAll('.drop-above,.drop-below').forEach(r => {
-    r.classList.remove('drop-above','drop-below');
-  });
+  document.querySelectorAll('.drop-above,.drop-below').forEach(r => r.classList.remove('drop-above','drop-below'));
   if (!targetRow || targetRow === _drag.srcRow) return;
-  // Determine above/below by midpoint
   const rect = targetRow.getBoundingClientRect();
-  const mid  = rect.top + rect.height / 2;
-  targetRow.classList.add(e.clientY < mid ? 'drop-above' : 'drop-below');
+  targetRow.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drop-above' : 'drop-below');
 }
 
 function onDragEnd(e) {
@@ -1506,33 +1329,24 @@ function onDragEnd(e) {
   _drag = null;
   srcRow.classList.remove('dragging');
   document.querySelectorAll('.drop-above,.drop-below').forEach(r => r.classList.remove('drop-above','drop-below'));
-
-  // Find drop target
   const el = document.elementFromPoint(e.clientX, e.clientY);
   const targetRow = el && el.closest('.task-row[data-ti]');
   if (!targetRow) return;
   const toSi = parseInt(targetRow.dataset.si);
   const toTi = parseInt(targetRow.dataset.ti);
   if (toSi !== si || toTi === fromTi) return;
-
-  // Take a deep-copy snapshot of ALL tasks BEFORE any DOM mutation
   const tasks = plan.stages[si].tasks;
   const snapshot = tasks.map(t => Object.assign({}, t));
-
-  // Determine insert index in original array
   const rect = targetRow.getBoundingClientRect();
   const insertAfter = e.clientY >= rect.top + rect.height / 2;
   let insertAt = insertAfter ? toTi + 1 : toTi;
-
-  // Remove from original position, adjust target if needed
   const moved = snapshot.splice(fromTi, 1)[0];
   if (insertAt > fromTi) insertAt--;
   snapshot.splice(insertAt, 0, moved);
-
-  // Write back — replace array contents without reassigning reference
   tasks.length = 0;
   snapshot.forEach(t => tasks.push(t));
   renderStages();
+  scheduleSave();
 }
 
 function toast(msg, icon='ℹ️') {
@@ -1544,38 +1358,26 @@ function toast(msg, icon='ℹ️') {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ─── BODY JSON DRAG-DROP ─────────────────────────────────
-document.addEventListener('dragover', function(e) {
-  if (e.dataTransfer && e.dataTransfer.types && e.dataTransfer.types.includes('Files')) {
-    e.preventDefault();
-    document.body.classList.add('json-drag-over');
-  }
-});
-document.addEventListener('dragleave', function(e) {
-  if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
-    document.body.classList.remove('json-drag-over');
-  }
-});
-document.addEventListener('drop', function(e) {
-  document.body.classList.remove('json-drag-over');
-  if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-  const file = e.dataTransfer.files[0];
-  if (!file.name.endsWith('.json')) { toast('Ожидается JSON-файл','⚠️'); return; }
-  e.preventDefault();
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      initPlan(JSON.parse(ev.target.result));
-      closeModal('setupModal');
-      toast('План загружен из JSON','✅');
-    } catch { toast('Ошибка чтения JSON','❌'); }
-  };
-  reader.readAsText(file);
-});
-
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
 });
+
+// ─── AUTO-RESTORE ON PAGE LOAD ───────────────────────────
+(function restoreFromCache() {
+  const cached = loadFromCache();
+  if (cached) {
+    initPlan(cached);
+    // Показываем индикатор сразу — но как "Сохранено" (данные уже в кеше)
+    const el = document.getElementById('saveIndicator');
+    if (el) {
+      el.style.display = 'inline-flex';
+      el.className = 'save-indicator saved';
+      document.getElementById('saveText').textContent = 'Восстановлено из кеша';
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+  }
+})();
 </script>
 </body>
 </html>
