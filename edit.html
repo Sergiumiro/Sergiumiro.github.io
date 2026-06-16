@@ -829,36 +829,7 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 });
 
 // ── PRELOAD FROM EMBEDDED JSON ──
-const PRELOADED_PLAN = {
-  "project": "",
-  "ci_stand": "",
-  "ci_project": "",
-  "start": "",
-  "responsible": "",
-  "stages": [
-    {
-      "title": "Этап 1. Подготовительные работы",
-      "tasks": [
-        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
-      ]
-    },
-    {
-      "title": "Этап 2. Основные работы",
-      "tasks": [
-        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
-      ]
-    },
-    {
-      "title": "Этап 3. Заключительные мероприятия и мониторинг",
-      "tasks": [
-        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
-      ]
-    }
-  ]
-};
-
-// auto-load the template
-initPlan(PRELOADED_PLAN);
+// show empty state on load — user creates plan or imports JSON
 </script>
 </body>
 </html>
