@@ -21,7 +21,8 @@
   --font-mono:'JetBrains Mono','Fira Code',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font);background:var(--bg) url('./back.png') no-repeat left bottom;background-attachment:fixed;background-size:200px 200px;min-height:150vh;font-size:14px;line-height:1.5;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
 
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
 .header-left{display:flex;align-items:center;gap:12px;}
@@ -68,6 +69,7 @@ body{font-family:var(--font);background:var(--bg) url('./back.png') no-repeat le
 .section-title-static{flex:1;font-size:14px;font-weight:600;color:var(--text);}
 
 .col-name{flex:2;min-width:0;}
+.col-dur{width:110px;flex-shrink:0;}
 .col-dt{width:155px;flex-shrink:0;}
 .col-resp{width:145px;flex-shrink:0;}
 .col-comment{flex:1.5;min-width:0;}
@@ -454,6 +456,7 @@ function renderStages() {
       <div class="tasks-header">
         <div class="th-cell col-name">Работы</div>
         <div class="th-cell col-dt">Начало (МСК)</div>
+        <div class="th-cell col-dur">Продолжит.</div>
         <div class="th-cell col-dt">Окончание (МСК)</div>
         <div class="th-cell col-resp">Исполнитель</div>
         <div class="th-cell col-comment">Комментарий</div>
@@ -490,6 +493,14 @@ function createTaskRow(si, ti, task, allTasks) {
     }
   }
 
+  // Build duration options: 5,10,15,...,60,75,90,105,120,150,180,210,240 min
+  const durOptions = [5,10,15,20,25,30,35,40,45,50,55,60,75,90,105,120,150,180,210,240];
+  const durSelect = durOptions.map(m => {
+    const h = Math.floor(m/60), min = m%60;
+    const label = h > 0 ? (min > 0 ? h+'ч '+min+'м' : h+'ч') : m+'м';
+    return `<option value="${m}">${label}</option>`;
+  }).join('');
+
   row.innerHTML = `
     <div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">
       <textarea class="cell-input" rows="1" placeholder="Название работы"
@@ -498,6 +509,13 @@ function createTaskRow(si, ti, task, allTasks) {
     <div class="task-cell col-dt">
       <input class="cell-input" type="datetime-local" value="${task.start||''}"
         onchange="onStartChange(${si},${ti},this.value)" style="font-size:12px">
+    </div>
+    <div class="task-cell col-dur" style="padding:6px 8px">
+      <select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
+        onchange="onDurChange(${si},${ti},this.value)">
+        <option value="">—</option>
+        ${durSelect}
+      </select>
     </div>
     <div class="task-cell col-dt" style="flex-direction:column;align-items:flex-start">
       <input class="cell-input" type="datetime-local" value="${task.end||''}"
@@ -534,6 +552,23 @@ function onEndChange(si, ti, val) {
 
 function onStartChange(si, ti, val) {
   plan.stages[si].tasks[ti].start = val;
+  renderStages();
+}
+
+function onDurChange(si, ti, minutes) {
+  if (!minutes) return;
+  const start = plan.stages[si].tasks[ti].start;
+  if (!start) { toast('Сначала укажите время начала','⚠️'); return; }
+  const endDate = new Date(new Date(start).getTime() + parseInt(minutes) * 60000);
+  // format as datetime-local value
+  const pad = n => String(n).padStart(2,'0');
+  const endVal = endDate.getFullYear()+'-'+pad(endDate.getMonth()+1)+'-'+pad(endDate.getDate())+'T'+pad(endDate.getHours())+':'+pad(endDate.getMinutes());
+  plan.stages[si].tasks[ti].end = endVal;
+  // propagate to next task start if empty
+  const tasks = plan.stages[si].tasks;
+  if (ti + 1 < tasks.length && !tasks[ti+1].start) {
+    tasks[ti+1].start = endVal;
+  }
   renderStages();
 }
 
@@ -653,8 +688,14 @@ function renderComms() {
 // ─── CRUD ────────────────────────────────────────────────
 function addTask(si) {
   const tasks = plan.stages[si].tasks;
-  const prevEnd = tasks.length > 0 ? (tasks[tasks.length-1].end || '') : '';
-  tasks.push({name:'', start:prevEnd, end:'', responsible:'', comment:''});
+  let startVal = '';
+  if (tasks.length > 0) {
+    startVal = tasks[tasks.length-1].end || '';
+  } else if (si === 1 && plan.start) {
+    // Этап 2 (Основные работы): первая задача берёт общее время начала
+    startVal = plan.start;
+  }
+  tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
   renderStages();
 }
 function removeTask(si,ti) { plan.stages[si].tasks.splice(ti,1); renderStages(); }
