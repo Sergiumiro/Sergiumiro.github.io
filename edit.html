@@ -101,6 +101,8 @@ textarea.cell-input{overflow:hidden;min-height:22px;resize:none;}
 .ch-tag.sms.active{background:#f59e0b;border-color:#d97706;color:#fff;}
 .ch-tag.outlook{background:#dbeafe;border-color:#60a5fa;color:#1e40af;}
 .ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
+.ch-tag.sberchat{background:#e8f5e9;border-color:#66bb6a;color:#1b5e20;}
+.ch-tag.sberchat.active{background:#2e7d32;border-color:#1b5e20;color:#fff;}
 .col-dt{width:188px;flex-shrink:0;}
 .col-resp{width:145px;flex-shrink:0;}
 .col-comment{flex:1.5;min-width:0;}
@@ -180,8 +182,16 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
 .import-area p{font-size:13px;color:var(--text-muted);margin-top:6px;}
 
 .notify-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;flex-shrink:0;}
-.notify-tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font);}
+.notify-tab{padding:8px 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font);}
 .notify-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+/* notify 2-panel */
+.notify-body{display:flex;min-height:180px;}
+.notify-channels{width:130px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:2px;padding:8px 6px;}
+.notify-ch-btn{background:none;border:none;border-radius:var(--radius-sm);padding:8px 10px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:background .12s,color .12s;}
+.notify-ch-btn:hover{background:var(--surface2);color:var(--text);}
+.notify-ch-btn.active{background:var(--accent-light);color:var(--accent);font-weight:600;}
+.notify-content{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 16px 14px;}
+.notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:120px;max-height:300px;overflow-y:auto;flex:1;}
 .notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:100px;max-height:340px;overflow-y:auto;margin-top:14px;}
 
 /* WORD preview */
@@ -405,27 +415,31 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-body" style="gap:0;padding:0">
-      <div class="rov-row">
-        <span class="rov-label">№ РоВ:</span>
-        <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
-      </div>
-      <div style="padding:10px 24px 0">
+    <div class="modal-body" style="gap:0;padding:0;flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <!-- РоВ + event tabs -->
+      <div style="padding:12px 20px 0;border-bottom:1px solid var(--border)">
+        <div class="rov-row" style="padding:0 0 10px;margin:0">
+          <span class="rov-label">№ РоВ:</span>
+          <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
+        </div>
         <div class="notify-tabs">
-          <button class="notify-tab active" onclick="switchTab('email')"          id="tab-email">📧 Открытие</button>
-          <button class="notify-tab"        onclick="switchTab('chat')"           id="tab-chat">💬 Открытие чат</button>
-          <button class="notify-tab"        onclick="switchTab('email-close')"    id="tab-email-close">📧 Закрытие</button>
-          <button class="notify-tab"        onclick="switchTab('chat-close')"     id="tab-chat-close">💬 Закрытие чат</button>
-          <button class="notify-tab"        onclick="switchTab('email-rollback')" id="tab-email-rollback" style="color:var(--red)">📧 Откат</button>
+          <button class="notify-tab active" onclick="switchEvent('start')" id="ev-start">🔧 Начало работ</button>
+          <button class="notify-tab"        onclick="switchEvent('close')" id="ev-close">✅ Завершение работ</button>
+          <button class="notify-tab"        onclick="switchEvent('rollback')" id="ev-rollback" style="color:var(--red)">↩ Неуспешные работы</button>
         </div>
       </div>
-      <!-- email recipients row — only visible on email tab -->
-      <div id="recipientsRow" style="padding:10px 24px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">Кому:</span>
-        <span id="recipientsList" style="font-size:13px;color:var(--text)"></span>
-      </div>
-      <div style="padding:12px 24px 20px">
-        <div class="notify-text" id="notifyText"></div>
+      <!-- 2-panel: channel sidebar + text -->
+      <div class="notify-body">
+        <div class="notify-channels">
+          <div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:4px 4px 8px">Канал</div>
+          <button class="notify-ch-btn active" onclick="switchChannel('chat')" id="ch-chat">💬 Чат</button>
+          <button class="notify-ch-btn"        onclick="switchChannel('outlook')" id="ch-outlook">📧 Outlook</button>
+          <button class="notify-ch-btn"        onclick="switchChannel('sms')" id="ch-sms">📱 SMS</button>
+        </div>
+        <div class="notify-content">
+          <div id="recipientsRow" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;display:none"></div>
+          <div class="notify-text" id="notifyText"></div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -471,7 +485,8 @@ const STAGE_TITLES = [
 
 // ─── STATE ───────────────────────────────────────────────
 let plan = null;
-let notifyMode = 'email';
+let notifyEvent = 'start'; // start | close | rollback
+let notifyChannel = 'chat'; // chat | outlook | sms
 
 // ─── COMMENT SNIPPETS ────────────────────────────────────
 const COMMENT_SNIPPETS = [
@@ -887,15 +902,17 @@ function renderContacts() {
 // ─── COMMUNICATIONS ──────────────────────────────────────
 // Channel → label mapping
 const CH_LABELS = {
-  sms:     { tag:'📱 SMS',     tool:'Сервер отправки SMS' },
-  outlook: { tag:'📧 Outlook', tool:'Outlook'             }
+  sms:      { tag:'📱 SMS',      tool:'Сервер отправки SMS' },
+  outlook:  { tag:'📧 Outlook',  tool:'Outlook'             },
+  sberchat: { tag:'💚 СберЧат',  tool:'СберЧат'             }
 };
 
 function getToolText(channels) {
   if (!channels) return '—';
   const tools = [];
-  if (channels.sms)     tools.push(CH_LABELS.sms.tool);
-  if (channels.outlook) tools.push(CH_LABELS.outlook.tool);
+  if (channels.sms)      tools.push(CH_LABELS.sms.tool);
+  if (channels.outlook)  tools.push(CH_LABELS.outlook.tool);
+  if (channels.sberchat) tools.push(CH_LABELS.sberchat.tool);
   return tools.length ? tools.join(', ') : '—';
 }
 
@@ -904,8 +921,9 @@ function renderComms() {
   c.innerHTML = '';
   (plan.communications||[]).forEach((row, ci) => {
     const partsVal   = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
-    const hasSms     = !!(row.channels && row.channels.sms);
-    const hasOutlook = !!(row.channels && row.channels.outlook);
+    const hasSms      = !!(row.channels && row.channels.sms);
+    const hasOutlook  = !!(row.channels && row.channels.outlook);
+    const hasSberchat = !!(row.channels && row.channels.sberchat);
     const toolText   = getToolText(row.channels);
     const el = document.createElement('div');
     el.className = 'task-row';
@@ -919,6 +937,7 @@ function renderComms() {
         <div class="ch-tags">
           <span class="ch-tag sms ${hasSms?'active':''}" onclick="toggleChannel(${ci},'sms')">📱 SMS</span>
           <span class="ch-tag outlook ${hasOutlook?'active':''}" onclick="toggleChannel(${ci},'outlook')">📧 Outlook</span>
+          <span class="ch-tag sberchat ${hasSberchat?'active':''}" onclick="toggleChannel(${ci},'sberchat')">💚 СберЧат</span>
         </div>
       </div>
       <div class="task-cell col-tool" style="align-items:flex-start">
@@ -970,7 +989,7 @@ function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); }
 function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); }
 function removeContact(ci)  { plan.contacts.splice(ci,1); renderContacts(); }
 
-function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false},participants:'',responsible:''}); renderComms(); }
+function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false,sberchat:false},participants:'',responsible:''}); renderComms(); }
 function removeComm(ci)     { plan.communications.splice(ci,1); renderComms(); }
 
 // ─── SETUP ───────────────────────────────────────────────
@@ -1009,33 +1028,36 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── NOTIFY ──────────────────────────────────────────────
 function openNotifyModal() {
   if (!plan) { toast('Сначала создайте план','⚠️'); return; }
-  notifyMode = 'email';
-  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('active');
-  });
-  document.getElementById('tab-email').classList.add('active');
+  notifyEvent   = 'start';
+  notifyChannel = 'chat';
+  ['ev-start','ev-close','ev-rollback'].forEach(id => document.getElementById(id).classList.remove('active'));
+  ['ch-chat','ch-outlook','ch-sms'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('ev-start').classList.add('active');
+  document.getElementById('ch-chat').classList.add('active');
   updateNotifyText();
   document.getElementById('notifyModal').classList.add('open');
 }
 
-function switchTab(mode) {
-  notifyMode = mode;
-  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('active', id === 'tab-'+mode.replace('email','email').replace('chat','chat') || id === 'tab-'+mode);
-  });
-  // simpler approach: just match by id
-  document.getElementById('tab-email').classList.toggle('active', mode==='email');
-  document.getElementById('tab-chat').classList.toggle('active', mode==='chat');
-  document.getElementById('tab-email-close').classList.toggle('active', mode==='email-close');
-  document.getElementById('tab-chat-close').classList.toggle('active', mode==='chat-close');
-  document.getElementById('tab-email-rollback').classList.toggle('active', mode==='email-rollback');
+function switchEvent(ev) {
+  notifyEvent = ev;
+  ['ev-start','ev-close','ev-rollback'].forEach(id =>
+    document.getElementById(id).classList.toggle('active', id === 'ev-'+ev)
+  );
   updateNotifyText();
 }
 
+function switchChannel(ch) {
+  notifyChannel = ch;
+  ['ch-chat','ch-outlook','ch-sms'].forEach(id =>
+    document.getElementById(id).classList.toggle('active', id === 'ch-'+ch)
+  );
+  updateNotifyText();
+}
+
+// Legacy shim (word table uses this)
+function switchTab(mode) { updateNotifyText(); }
+
 function getRecipients(channelFilter) {
-  // Collect unique participants; optionally filter by channel (sms/outlook/null=all)
   const all = new Set();
   (plan.communications||[]).forEach(c => {
     if (channelFilter) {
@@ -1053,117 +1075,100 @@ function updateNotifyText() {
   const startFmt = plan.start
     ? new Date(plan.start).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
     : '[дата/время не указаны]';
-  const rovEl = document.getElementById('rovNumber');
+  const rovEl  = document.getElementById('rovNumber');
   const rovNum = rovEl ? rovEl.value.trim() : '';
-  const rovLine = rovNum ? `\nРаботы производились по РоВ № ${rovNum}.` : '';
+  const rovLine = rovNum ? '\nРаботы производились по РоВ \u2116 ' + rovNum + '.' : '';
+
+  const p    = plan.project||'\u2014';
+  const cs   = plan.ci_stand||'\u2014';
+  const cp   = plan.ci_project||'\u2014';
+  const resp = plan.responsible||'\u041a\u043e\u043c\u0430\u043d\u0434\u0430';
 
   const recipRow = document.getElementById('recipientsRow');
-  const recipList = document.getElementById('recipientsList');
-  const isEmail = notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback';
-  const isClose = notifyMode === 'email-close' || notifyMode === 'chat-close';
-
-  const smsRec     = getRecipients('sms');
-  const outlookRec = getRecipients('outlook');
-  const hasSms     = smsRec.length > 0;
-  const hasOutlook = outlookRec.length > 0;
-
-  recipRow.style.display = isEmail ? 'flex' : 'none';
-  if (isEmail) {
-    let recipHtml = '';
-    if (hasSms)     recipHtml += '<span style="margin-right:12px"><b>📱 SMS:</b> ' + smsRec.join('; ') + '</span>';
-    if (hasOutlook) recipHtml += '<span><b>📧 Outlook:</b> ' + outlookRec.join('; ') + '</span>';
-    if (!hasSms && !hasOutlook) recipHtml = '<span style="color:var(--text-light)">—</span>';
-    recipList.innerHTML = recipHtml;
+  if (notifyChannel === 'outlook' || notifyChannel === 'sms') {
+    const chRec = getRecipients(notifyChannel);
+    const chLabel = notifyChannel === 'outlook' ? '\ud83d\udce7 Outlook' : '\ud83d\udcf1 SMS';
+    recipRow.style.display = chRec.length ? 'block' : 'none';
+    recipRow.innerHTML = chRec.length ? '<b>' + chLabel + ' \u041a\u043e\u043c\u0443:</b> ' + chRec.join('; ') : '';
+  } else {
+    recipRow.style.display = 'none';
   }
 
-  if (notifyMode === 'email') {
-    document.getElementById('notifyText').textContent =
-`Уважаемые коллеги,
+  var text = '';
+  var nl = '\n';
 
-Информируем вас о начале регламентных работ.
-
-Проект: ${plan.project||'—'}
-CI стенда: ${plan.ci_stand||'—'}
-CI проекта: ${plan.ci_project||'—'}
-Начало работ: ${startFmt} (МСК)
-Ответственный: ${plan.responsible||'—'}
-
-В период проведения работ возможна временная недоступность сервиса.
-По вопросам обращайтесь к ответственному исполнителю.${rovLine}
-
-С уважением,
-${plan.responsible||'Команда'}`;
-
-  } else if (notifyMode === 'chat') {
-    document.getElementById('notifyText').textContent =
-`🔧 *Начало регламентных работ*
-
-📋 *Проект:* ${plan.project||'—'}
-🖥 *CI стенда:* \`${plan.ci_stand||'—'}\`
-📦 *CI проекта:* \`${plan.ci_project||'—'}\`
-⏰ *Начало:* ${startFmt} МСК
-👤 *Ответственный:* ${plan.responsible||'—'}
-
-⚠️ Возможна временная недоступность сервиса.`;
-
-  } else if (notifyMode === 'email-close') {
-    document.getElementById('notifyText').textContent =
-`Уважаемые коллеги,
-
-Информируем вас о завершении регламентных работ.
-
-Проект: ${plan.project||'—'}
-CI стенда: ${plan.ci_stand||'—'}
-CI проекта: ${plan.ci_project||'—'}
-Ответственный: ${plan.responsible||'—'}
-
-Работы завершены успешно. Сервис доступен в штатном режиме.${rovLine}
-
-С уважением,
-${plan.responsible||'Команда'}`;
-
-  } else if (notifyMode === 'chat-close') {
-    document.getElementById('notifyText').textContent =
-`✅ *Регламентные работы завершены*
-
-📋 *Проект:* ${plan.project||'—'}
-🖥 *CI стенда:* \`${plan.ci_stand||'—'}\`
-📦 *CI проекта:* \`${plan.ci_project||'—'}\`
-👤 *Ответственный:* ${plan.responsible||'—'}
-
-🟢 Работы завершены успешно. Сервис работает в штатном режиме.`;
-
-  } else if (notifyMode === 'email-rollback') {
-    document.getElementById('notifyText').textContent =
-`Уважаемые коллеги,
-
-Информируем вас о завершении регламентных работ с применением плана отката.
-
-Проект: ${plan.project||'—'}
-CI стенда: ${plan.ci_stand||'—'}
-CI проекта: ${plan.ci_project||'—'}
-Ответственный: ${plan.responsible||'—'}
-
-В ходе проведения работ возникли проблемы, в связи с чем был применён план отката.
-Сервис восстановлен на предыдущую версию и работает в штатном режиме.
-
-Повторное проведение работ будет запланировано дополнительно.${rovLine}
-
-С уважением,
-${plan.responsible||'Команда'}`;
+  if (notifyEvent === 'start') {
+    if (notifyChannel === 'chat') {
+      text = '\ud83d\udd27 *\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442*' + nl + nl
+           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
+           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
+           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
+           + '\u23f0 *\u041d\u0430\u0447\u0430\u043b\u043e:* ' + startFmt + ' \u041c\u0421\u041a' + nl
+           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
+           + '\u26a0\ufe0f \u0412\u043e\u0437\u043c\u043e\u0436\u043d\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e\u0441\u0442\u044c \u0441\u0435\u0440\u0432\u0438\u0441\u0430.';
+    } else if (notifyChannel === 'outlook') {
+      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
+           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u043d\u0430\u0447\u0430\u043b\u0435 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442.' + nl + nl
+           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl
+           + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl
+           + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl
+           + '\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442: ' + startFmt + ' (\u041c\u0421\u041a)\n\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
+           + '\u0412 \u043f\u0435\u0440\u0438\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0440\u0430\u0431\u043e\u0442 \u0432\u043e\u0437\u043c\u043e\u0436\u043d\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e\u0441\u0442\u044c \u0441\u0435\u0440\u0432\u0438\u0441\u0430.' + nl
+           + '\u041f\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430\u043c \u043e\u0431\u0440\u0430\u0449\u0430\u0439\u0442\u0435\u0441\u044c \u043a \u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u043c\u0443 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044e.' + rovLine + nl + nl
+           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+    } else {
+      text = '\u041d\u0430\u0447\u0430\u043b\u043e \u0440\u0430\u0431\u043e\u0442 ' + startFmt + ' \u041c\u0421\u041a. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '. \u041e\u0442\u0432: ' + resp + '.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+    }
+  } else if (notifyEvent === 'close') {
+    if (notifyChannel === 'chat') {
+      text = '\u2705 *\u0420\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0435 \u0440\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b*' + nl + nl
+           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
+           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
+           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
+           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
+           + '\ud83d\udfe2 \u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e. \u0421\u0435\u0440\u0432\u0438\u0441 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.';
+    } else if (notifyChannel === 'outlook') {
+      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
+           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442.' + nl + nl
+           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl + '\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
+           + '\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e. \u0421\u0435\u0440\u0432\u0438\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.' + rovLine + nl + nl
+           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+    } else {
+      text = '\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '. \u0421\u0435\u0440\u0432\u0438\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+    }
+  } else if (notifyEvent === 'rollback') {
+    if (notifyChannel === 'chat') {
+      text = '\ud83d\udd34 *\u0420\u0430\u0431\u043e\u0442\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b \u0441 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u0435\u043c \u043f\u043b\u0430\u043d\u0430 \u043e\u0442\u043a\u0430\u0442\u0430*' + nl + nl
+           + '\ud83d\udccb *\u041f\u0440\u043e\u0435\u043a\u0442:* ' + p + nl
+           + '\ud83d\udda5 *CI \u0441\u0442\u0435\u043d\u0434\u0430:* ' + cs + nl
+           + '\ud83d\udce6 *CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430:* ' + cp + nl
+           + '\ud83d\udc64 *\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439:* ' + resp + nl + nl
+           + '\u26a0\ufe0f \u0412\u043e\u0437\u043d\u0438\u043a\u043b\u0438 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b. \u041f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043f\u043b\u0430\u043d \u043e\u0442\u043a\u0430\u0442\u0430.' + nl
+           + '\ud83d\udd04 \u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u043f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0443\u044e \u0432\u0435\u0440\u0441\u0438\u044e.';
+    } else if (notifyChannel === 'outlook') {
+      text = '\u0423\u0432\u0430\u0436\u0430\u0435\u043c\u044b\u0435 \u043a\u043e\u043b\u043b\u0435\u0433\u0438,' + nl + nl
+           + '\u0418\u043d\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0441 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u0440\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442\u043d\u044b\u0445 \u0440\u0430\u0431\u043e\u0442 \u0441 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u0435\u043c \u043f\u043b\u0430\u043d\u0430 \u043e\u0442\u043a\u0430\u0442\u0430.' + nl + nl
+           + '\u041f\u0440\u043e\u0435\u043a\u0442: ' + p + nl + 'CI \u0441\u0442\u0435\u043d\u0434\u0430: ' + cs + nl + 'CI \u043f\u0440\u043e\u0435\u043a\u0442\u0430: ' + cp + nl + '\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439: ' + resp + nl + nl
+           + '\u0412 \u0445\u043e\u0434\u0435 \u0440\u0430\u0431\u043e\u0442 \u0432\u043e\u0437\u043d\u0438\u043a\u043b\u0438 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b, \u043f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043f\u043b\u0430\u043d \u043e\u0442\u043a\u0430\u0442\u0430.' + nl
+           + '\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u043d\u0430 \u043f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0443\u044e \u0432\u0435\u0440\u0441\u0438\u044e \u0438 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u0448\u0442\u0430\u0442\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435.' + nl
+           + '\u041f\u043e\u0432\u0442\u043e\u0440\u043d\u043e\u0435 \u043f\u0440\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u043f\u043b\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u043e \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u043e.' + rovLine + nl + nl
+           + '\u0421 \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u0435\u043c,' + nl + resp;
+    } else {
+      text = '\u0420\u0430\u0431\u043e\u0442\u044b \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b. \u041f\u0440\u0438\u043c\u0435\u043d\u0451\u043d \u043e\u0442\u043a\u0430\u0442. \u041f\u0440\u043e\u0435\u043a\u0442: ' + p + ' (' + cp + '). \u0421\u0442\u0435\u043d\u0434: ' + cs + '.' + (rovNum ? ' \u0420\u043e\u0412 \u2116' + rovNum + '.' : '');
+    }
   }
+
+  document.getElementById('notifyText').textContent = text;
 }
 
 function copyNotify() {
-  // For email also prepend recipients line
   let text = document.getElementById('notifyText').textContent;
-  if (notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback') {
-    const smsRec     = getRecipients('sms');
-    const outlookRec = getRecipients('outlook');
-    let recLine = '';
-    if (smsRec.length)     recLine += 'SMS: ' + smsRec.join('; ') + '\n';
-    if (outlookRec.length) recLine += 'Outlook: ' + outlookRec.join('; ') + '\n';
-    if (recLine) text = recLine + '\n' + text;
+  if (notifyChannel === 'outlook' || notifyChannel === 'sms') {
+    const rec = getRecipients(notifyChannel);
+    if (rec.length) {
+      const label = notifyChannel === 'outlook' ? 'Outlook' : 'SMS';
+      text = label + ' Кому: ' + rec.join('; ') + '\n\n' + text;
+    }
   }
   navigator.clipboard.writeText(text).then(()=>toast('Скопировано в буфер','📋'));
 }
