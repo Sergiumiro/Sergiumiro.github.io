@@ -21,7 +21,7 @@
   --font-mono:'JetBrains Mono','Fira Code',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+body{font-family:var(--font);background:var(--bg) url('./back.png') no-repeat left bottom;background-attachment:fixed;color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
 
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
 .header-left{display:flex;align-items:center;gap:12px;}
@@ -333,8 +333,11 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
     <div class="modal-body" style="gap:0;padding:0">
       <div style="padding:16px 24px 0">
         <div class="notify-tabs">
-          <button class="notify-tab active" onclick="switchTab('email')" id="tab-email">📧 Email</button>
-          <button class="notify-tab" onclick="switchTab('chat')" id="tab-chat">💬 Чат</button>
+          <button class="notify-tab active" onclick="switchTab('email')"          id="tab-email">📧 Открытие</button>
+          <button class="notify-tab"        onclick="switchTab('chat')"           id="tab-chat">💬 Открытие чат</button>
+          <button class="notify-tab"        onclick="switchTab('email-close')"    id="tab-email-close">📧 Закрытие</button>
+          <button class="notify-tab"        onclick="switchTab('chat-close')"     id="tab-chat-close">💬 Закрытие чат</button>
+          <button class="notify-tab"        onclick="switchTab('email-rollback')" id="tab-email-rollback" style="color:var(--red)">📧 Откат</button>
         </div>
       </div>
       <!-- email recipients row — only visible on email tab -->
@@ -547,12 +550,14 @@ function renderRollback() {
           oninput="autoResize(this);plan.rollback[${ri}].name=this.value">${esc(row.name||'')}</textarea>
       </div>
       <div class="task-cell col-dt">
-        <input class="cell-input" placeholder="Час X + 00:30" value="${esc(row.start||'')}"
-          onchange="plan.rollback[${ri}].start=this.value">
+        <input class="cell-input" placeholder="00:30" value="${esc(row.start||'')}"
+          oninput="formatRollbackTime(this)"
+          onchange="plan.rollback[${ri}].start=this.value;formatRollbackTime(this)">
       </div>
       <div class="task-cell col-dt">
-        <input class="cell-input" placeholder="Час X + 01:00" value="${esc(row.end||'')}"
-          onchange="plan.rollback[${ri}].end=this.value">
+        <input class="cell-input" placeholder="01:00" value="${esc(row.end||'')}"
+          oninput="formatRollbackTime(this)"
+          onchange="plan.rollback[${ri}].end=this.value;formatRollbackTime(this)">
       </div>
       <div class="task-cell col-resp">
         <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||'')}"
@@ -646,7 +651,12 @@ function renderComms() {
 }
 
 // ─── CRUD ────────────────────────────────────────────────
-function addTask(si)       { plan.stages[si].tasks.push({name:'',start:'',end:'',responsible:'',comment:''}); renderStages(); }
+function addTask(si) {
+  const tasks = plan.stages[si].tasks;
+  const prevEnd = tasks.length > 0 ? (tasks[tasks.length-1].end || '') : '';
+  tasks.push({name:'', start:prevEnd, end:'', responsible:'', comment:''});
+  renderStages();
+}
 function removeTask(si,ti) { plan.stages[si].tasks.splice(ti,1); renderStages(); }
 
 function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:'',comment:''}); renderRollback(); }
@@ -695,16 +705,27 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function openNotifyModal() {
   if (!plan) { toast('Сначала создайте план','⚠️'); return; }
   notifyMode = 'email';
+  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
   document.getElementById('tab-email').classList.add('active');
-  document.getElementById('tab-chat').classList.remove('active');
   updateNotifyText();
   document.getElementById('notifyModal').classList.add('open');
 }
 
 function switchTab(mode) {
   notifyMode = mode;
+  ['tab-email','tab-chat','tab-email-close','tab-chat-close','tab-email-rollback'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', id === 'tab-'+mode.replace('email','email').replace('chat','chat') || id === 'tab-'+mode);
+  });
+  // simpler approach: just match by id
   document.getElementById('tab-email').classList.toggle('active', mode==='email');
   document.getElementById('tab-chat').classList.toggle('active', mode==='chat');
+  document.getElementById('tab-email-close').classList.toggle('active', mode==='email-close');
+  document.getElementById('tab-chat-close').classList.toggle('active', mode==='chat-close');
+  document.getElementById('tab-email-rollback').classList.toggle('active', mode==='email-rollback');
   updateNotifyText();
 }
 
@@ -728,11 +749,13 @@ function updateNotifyText() {
   const recipRow = document.getElementById('recipientsRow');
   const recipList = document.getElementById('recipientsList');
   const recipients = getRecipients();
+  const isEmail = notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback';
+  const isClose = notifyMode === 'email-close' || notifyMode === 'chat-close';
+
+  recipRow.style.display = isEmail ? 'flex' : 'none';
+  if (isEmail) recipList.textContent = recipients.length ? recipients.join('; ') : '—';
 
   if (notifyMode === 'email') {
-    recipRow.style.display = 'flex';
-    recipList.textContent  = recipients.length ? recipients.join('; ') : '—';
-
     document.getElementById('notifyText').textContent =
 `Уважаемые коллеги,
 
@@ -749,8 +772,8 @@ CI проекта: ${plan.ci_project||'—'}
 
 С уважением,
 ${plan.responsible||'Команда'}`;
-  } else {
-    recipRow.style.display = 'none';
+
+  } else if (notifyMode === 'chat') {
     document.getElementById('notifyText').textContent =
 `🔧 *Начало регламентных работ*
 
@@ -761,13 +784,59 @@ ${plan.responsible||'Команда'}`;
 👤 *Ответственный:* ${plan.responsible||'—'}
 
 ⚠️ Возможна временная недоступность сервиса.`;
+
+  } else if (notifyMode === 'email-close') {
+    document.getElementById('notifyText').textContent =
+`Уважаемые коллеги,
+
+Информируем вас о завершении регламентных работ.
+
+Проект: ${plan.project||'—'}
+CI стенда: ${plan.ci_stand||'—'}
+CI проекта: ${plan.ci_project||'—'}
+Ответственный: ${plan.responsible||'—'}
+
+Работы завершены успешно. Сервис доступен в штатном режиме.
+
+С уважением,
+${plan.responsible||'Команда'}`;
+
+  } else if (notifyMode === 'chat-close') {
+    document.getElementById('notifyText').textContent =
+`✅ *Регламентные работы завершены*
+
+📋 *Проект:* ${plan.project||'—'}
+🖥 *CI стенда:* \`${plan.ci_stand||'—'}\`
+📦 *CI проекта:* \`${plan.ci_project||'—'}\`
+👤 *Ответственный:* ${plan.responsible||'—'}
+
+🟢 Работы завершены успешно. Сервис работает в штатном режиме.`;
+
+  } else if (notifyMode === 'email-rollback') {
+    document.getElementById('notifyText').textContent =
+`Уважаемые коллеги,
+
+Информируем вас о завершении регламентных работ с применением плана отката.
+
+Проект: ${plan.project||'—'}
+CI стенда: ${plan.ci_stand||'—'}
+CI проекта: ${plan.ci_project||'—'}
+Ответственный: ${plan.responsible||'—'}
+
+В ходе проведения работ возникли проблемы, в связи с чем был применён план отката.
+Сервис восстановлен на предыдущую версию и работает в штатном режиме.
+
+Повторное проведение работ будет запланировано дополнительно.
+
+С уважением,
+${plan.responsible||'Команда'}`;
   }
 }
 
 function copyNotify() {
   // For email also prepend recipients line
   let text = document.getElementById('notifyText').textContent;
-  if (notifyMode === 'email') {
+  if (notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback') {
     const rec = document.getElementById('recipientsList').textContent;
     text = `Кому: ${rec}\n\n${text}`;
   }
@@ -939,6 +1008,19 @@ function fmtTime(val) {
   try { return new Date(val).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
   catch { return val; }
 }
+function formatRollbackTime(input) {
+  // strip everything except digits and colon
+  let raw = input.value.replace(/[^0-9:]/g,'');
+  // if user typed just digits like "0030" or "30", format as HH:MM
+  if (raw && !raw.includes(':')) {
+    if (raw.length <= 2) raw = raw.padStart(2,'0') + ':00';
+    else raw = raw.slice(0,-2).padStart(2,'0') + ':' + raw.slice(-2);
+  }
+  if (raw) {
+    input.value = 'Час X + ' + raw;
+  }
+}
+
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
