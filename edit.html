@@ -70,6 +70,18 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 
 .col-name{flex:2;min-width:0;}
 .col-dur{width:110px;flex-shrink:0;}
+.col-channels{width:160px;flex-shrink:0;}
+/* ensure all cell text wraps */
+.task-cell{overflow:visible;}
+.cell-input{white-space:normal;overflow-wrap:break-word;}
+input.cell-input{min-width:0;}
+/* channel tags */
+.ch-tags{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;}
+.ch-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;border:1.5px solid transparent;transition:all .15s;}
+.ch-tag.sms{background:#fef3c7;border-color:#fbbf24;color:#92400e;}
+.ch-tag.sms.active{background:#f59e0b;border-color:#d97706;color:#fff;}
+.ch-tag.outlook{background:#dbeafe;border-color:#60a5fa;color:#1e40af;}
+.ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
 .col-dt{width:155px;flex-shrink:0;}
 .col-resp{width:145px;flex-shrink:0;}
 .col-comment{flex:1.5;min-width:0;}
@@ -256,8 +268,7 @@ textarea.cell-input{overflow:hidden;min-height:22px;}
         </div>
         <div class="tasks-header">
           <div class="th-cell col-resp">Событие</div>
-          <div class="th-cell col-comment">Вид коммуникации</div>
-          <div class="th-cell col-comment">Средство</div>
+          <div class="th-cell col-channels">Каналы рассылки</div>
           <div class="th-cell col-name">Участники</div>
           <div class="th-cell col-resp">Ответственный</div>
           <div class="th-cell col-del"></div>
@@ -523,7 +534,8 @@ function createTaskRow(si, ti, task, allTasks) {
       ${gapHtml}
     </div>
     <div class="task-cell col-resp">
-      <input class="cell-input" placeholder="Исполнитель" value="${esc(task.responsible||'')}"
+      <input class="cell-input" placeholder="Исполнитель"
+        value="${esc(task.responsible !== undefined && task.responsible !== '' ? task.responsible : (plan.responsible||''))}"
         onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">
     </div>
     <div class="task-cell col-comment">
@@ -651,6 +663,8 @@ function renderComms() {
   c.innerHTML = '';
   (plan.communications||[]).forEach((row, ci) => {
     const partsVal = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
+    const hasSms     = !!(row.channels && row.channels.sms);
+    const hasOutlook = !!(row.channels && row.channels.outlook);
     const el = document.createElement('div');
     el.className = 'task-row';
     el.innerHTML = `
@@ -658,13 +672,11 @@ function renderComms() {
         <input class="cell-input" placeholder="Событие" value="${esc(row.event||'')}"
           onchange="plan.communications[${ci}].event=this.value">
       </div>
-      <div class="task-cell col-comment">
-        <input class="cell-input" placeholder="Вид коммуникации" value="${esc(row.type||'')}"
-          onchange="plan.communications[${ci}].type=this.value">
-      </div>
-      <div class="task-cell col-comment">
-        <input class="cell-input" placeholder="Средство" value="${esc(row.tool||'')}"
-          onchange="plan.communications[${ci}].tool=this.value">
+      <div class="task-cell col-channels" style="flex-direction:column;gap:4px;align-items:flex-start;justify-content:center">
+        <div class="ch-tags">
+          <span class="ch-tag sms ${hasSms?'active':''}" onclick="toggleChannel(${ci},'sms')">📱 SMS</span>
+          <span class="ch-tag outlook ${hasOutlook?'active':''}" onclick="toggleChannel(${ci},'outlook')">📧 Outlook</span>
+        </div>
       </div>
       <div class="task-cell col-name">
         <textarea class="cell-input" rows="1" placeholder="Участники (через запятую)"
@@ -683,6 +695,12 @@ function renderComms() {
     setTimeout(() => { const ta=el.querySelector('textarea'); if(ta) autoResize(ta); }, 0);
     c.appendChild(el);
   });
+}
+
+function toggleChannel(ci, ch) {
+  if (!plan.communications[ci].channels) plan.communications[ci].channels = {};
+  plan.communications[ci].channels[ch] = !plan.communications[ci].channels[ch];
+  renderComms();
 }
 
 // ─── CRUD ────────────────────────────────────────────────
@@ -706,7 +724,7 @@ function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); }
 function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); }
 function removeContact(ci)  { plan.contacts.splice(ci,1); renderContacts(); }
 
-function addComm()          { plan.communications.push({event:'',type:'',tool:'',participants:'',responsible:''}); renderComms(); }
+function addComm()          { plan.communications.push({event:'',channels:{sms:false,outlook:false},participants:'',responsible:''}); renderComms(); }
 function removeComm(ci)     { plan.communications.splice(ci,1); renderComms(); }
 
 // ─── SETUP ───────────────────────────────────────────────
@@ -770,10 +788,13 @@ function switchTab(mode) {
   updateNotifyText();
 }
 
-function getRecipients() {
-  // Collect unique participants from all comms rows
+function getRecipients(channelFilter) {
+  // Collect unique participants; optionally filter by channel (sms/outlook/null=all)
   const all = new Set();
   (plan.communications||[]).forEach(c => {
+    if (channelFilter) {
+      if (!c.channels || !c.channels[channelFilter]) return;
+    }
     const parts = Array.isArray(c.participants)
       ? c.participants
       : (c.participants||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -789,12 +810,22 @@ function updateNotifyText() {
 
   const recipRow = document.getElementById('recipientsRow');
   const recipList = document.getElementById('recipientsList');
-  const recipients = getRecipients();
   const isEmail = notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback';
   const isClose = notifyMode === 'email-close' || notifyMode === 'chat-close';
 
+  const smsRec     = getRecipients('sms');
+  const outlookRec = getRecipients('outlook');
+  const hasSms     = smsRec.length > 0;
+  const hasOutlook = outlookRec.length > 0;
+
   recipRow.style.display = isEmail ? 'flex' : 'none';
-  if (isEmail) recipList.textContent = recipients.length ? recipients.join('; ') : '—';
+  if (isEmail) {
+    let recipHtml = '';
+    if (hasSms)     recipHtml += '<span style="margin-right:12px"><b>📱 SMS:</b> ' + smsRec.join('; ') + '</span>';
+    if (hasOutlook) recipHtml += '<span><b>📧 Outlook:</b> ' + outlookRec.join('; ') + '</span>';
+    if (!hasSms && !hasOutlook) recipHtml = '<span style="color:var(--text-light)">—</span>';
+    recipList.innerHTML = recipHtml;
+  }
 
   if (notifyMode === 'email') {
     document.getElementById('notifyText').textContent =
@@ -878,8 +909,12 @@ function copyNotify() {
   // For email also prepend recipients line
   let text = document.getElementById('notifyText').textContent;
   if (notifyMode === 'email' || notifyMode === 'email-close' || notifyMode === 'email-rollback') {
-    const rec = document.getElementById('recipientsList').textContent;
-    text = `Кому: ${rec}\n\n${text}`;
+    const smsRec     = getRecipients('sms');
+    const outlookRec = getRecipients('outlook');
+    let recLine = '';
+    if (smsRec.length)     recLine += 'SMS: ' + smsRec.join('; ') + '\n';
+    if (outlookRec.length) recLine += 'Outlook: ' + outlookRec.join('; ') + '\n';
+    if (recLine) text = recLine + '\n' + text;
   }
   navigator.clipboard.writeText(text).then(()=>toast('Скопировано в буфер','📋'));
 }
@@ -976,18 +1011,21 @@ function buildWordHTML() {
     h += `<p class="word-section-label">План коммуникаций в период проведения работ</p>
     <table class="word-table">
       <colgroup>
-        <col style="width:16%"><col style="width:20%"><col style="width:20%">
-        <col style="width:28%"><col style="width:16%">
+        <col style="width:18%"><col style="width:22%">
+        <col style="width:40%"><col style="width:20%">
       </colgroup>
       <thead><tr>
-        <th>Событие</th><th>Вид коммуникации</th><th>Средство коммуникации</th>
+        <th>Событие</th><th>Каналы рассылки</th>
         <th>Участники</th><th>Ответственный</th>
       </tr></thead><tbody>`;
     plan.communications.forEach(c => {
       const parts = Array.isArray(c.participants) ? c.participants.join(', ') : (c.participants||'');
+      const chs = [];
+      if (c.channels && c.channels.sms) chs.push('SMS-рассылка');
+      if (c.channels && c.channels.outlook) chs.push('Outlook');
       h += `<tr>
-        <td>${esc(c.event||'')}</td><td>${esc(c.type||'')}</td>
-        <td>${esc(c.tool||'')}</td><td>${esc(parts)}</td>
+        <td>${esc(c.event||'')}</td><td>${esc(chs.join(', '))}</td>
+        <td>${esc(parts)}</td>
         <td>${esc(c.responsible||'')}</td>
       </tr>`;
     });
