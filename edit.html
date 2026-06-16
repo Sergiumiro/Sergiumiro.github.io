@@ -487,11 +487,12 @@ function openCommentPopup(ta, si, ti) {
   activePopup = popup;
   activePopupMeta = {si, ti};
 
-  // Build content
-  popup.innerHTML = `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны комментариев</div>` +
-    COMMENT_SNIPPETS.map((s, idx) =>
-      `<div class="comment-snippet" onmousedown="insertComment(${si},${ti},${idx})">${esc(s)}</div>`
-    ).join('');
+  // Build content (no template literal nesting to avoid parse issues)
+  let html = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны комментариев</div>';
+  COMMENT_SNIPPETS.forEach(function(s, idx) {
+    html += '<div class="comment-snippet" onmousedown="insertComment(' + si + ',' + ti + ',' + idx + ')">' + esc(s) + '</div>';
+  });
+  popup.innerHTML = html;
 
   // Position: below the textarea, aligned to left edge, visible on screen
   const rect = ta.getBoundingClientRect();
@@ -1408,7 +1409,7 @@ async function generateDocxInBrowser(plan) {
       C('',RCW[0],{align:AlignmentType.CENTER}),C(r.name||'',RCW[1]),
       C(r.start||'—',RCW[2],{align:AlignmentType.CENTER}),C(r.end||'—',RCW[3],{align:AlignmentType.CENTER}),
       C(r.responsible||'',RCW[4]),C(r.comment||'',RCW[5])
-    ]})});});
+    ]}));});
     rbTable=new Table({width:{size:RTW,type:WidthType.DXA},columnWidths:RCW,rows});
   }
 
@@ -1422,7 +1423,7 @@ async function generateDocxInBrowser(plan) {
     ]})];
     plan.contacts.forEach(c=>{rows.push(new TableRow({cantSplit:true,children:[
       C(c.name||'',CCW[0]),C(c.role||'',CCW[1]),C(c.phone||'',CCW[2]),C(c.note||'',CCW[3])
-    ]})});});
+    ]}));});
     ctTable=new Table({width:{size:CTW,type:WidthType.DXA},columnWidths:CCW,rows});
   }
 
