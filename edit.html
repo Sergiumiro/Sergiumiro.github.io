@@ -69,12 +69,13 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .section-title-static{flex:1;font-size:14px;font-weight:600;color:var(--text);}
 
 .col-name{flex:2;min-width:0;}
-.col-dur{width:110px;flex-shrink:0;}
+.col-dur{width:130px;flex-shrink:0;}
 .col-channels{width:160px;flex-shrink:0;}
-/* ensure all cell text wraps */
-.task-cell{overflow:visible;}
+/* all cells grow with content */
+.task-cell{overflow:visible;min-height:42px;}
 .cell-input{white-space:normal;overflow-wrap:break-word;}
-input.cell-input{min-width:0;}
+input.cell-input{min-width:0;width:100%;}
+textarea.cell-input{overflow:hidden;min-height:22px;resize:none;}
 /* channel tags */
 .ch-tags{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;}
 .ch-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;border:1.5px solid transparent;transition:all .15s;}
@@ -82,14 +83,14 @@ input.cell-input{min-width:0;}
 .ch-tag.sms.active{background:#f59e0b;border-color:#d97706;color:#fff;}
 .ch-tag.outlook{background:#dbeafe;border-color:#60a5fa;color:#1e40af;}
 .ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
-.col-dt{width:155px;flex-shrink:0;}
+.col-dt{width:188px;flex-shrink:0;}
 .col-resp{width:145px;flex-shrink:0;}
 .col-comment{flex:1.5;min-width:0;}
 .col-del{width:36px;flex-shrink:0;}
 
-.task-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch;}
+.task-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch;min-height:42px;}
 .task-row:last-child{border-bottom:none;}
-.task-cell{padding:8px 12px;border-right:1px solid var(--border);display:flex;align-items:flex-start;}
+.task-cell{padding:8px 10px;border-right:1px solid var(--border);display:flex;align-items:flex-start;flex-wrap:wrap;}
 .task-cell:last-child{border-right:none;justify-content:center;align-items:center;}
 
 .tasks-header{display:flex;background:#f9fafb;border-bottom:1px solid var(--border);}
@@ -101,7 +102,10 @@ input.cell-input{min-width:0;}
 .cell-input:focus{background:var(--accent-light);border-radius:4px;padding:2px 5px;margin:-2px -5px;}
 textarea.cell-input{overflow:hidden;min-height:22px;}
 
-.gap-warn{font-size:11px;color:var(--orange);display:flex;align-items:center;gap:3px;margin-top:3px;}
+.gap-warn{font-size:10px;color:var(--orange);display:flex;align-items:flex-start;gap:3px;margin-top:4px;width:100%;flex-wrap:wrap;}
+.gap-actions{display:flex;flex-direction:column;gap:3px;margin-top:4px;width:100%;}
+.gap-btn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap;text-align:left;line-height:1.4;}
+.gap-btn:hover{background:var(--orange);color:#fff;}
 
 .add-row{padding:9px 14px;border-top:1px solid var(--border);background:#f9fafb;}
 
@@ -493,54 +497,71 @@ function createTaskRow(si, ti, task, allTasks) {
   const row = document.createElement('div');
   row.className = 'task-row';
 
+  // Gap detection
+  let hasGap = false;
   let gapHtml = '';
   if (ti > 0) {
     const prev = allTasks[ti-1];
     if (prev.end && task.start && prev.end !== task.start) {
-      gapHtml = `<div class="gap-warn">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Разрыв: ${fmtTime(prev.end)} → ${fmtTime(task.start)}
-      </div>`;
+      hasGap = true;
+      const prevEndMs = new Date(prev.end).getTime();
+      const thisStartMs = new Date(task.start).getTime();
+      const diffMin = Math.round((thisStartMs - prevEndMs) / 60000);
+      const diffLabel = diffMin > 0 ? `+${diffMin}м` : `${diffMin}м`;
+      gapHtml = `
+        <div class="gap-warn">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Разрыв ${diffLabel}: ${fmtTime(prev.end)}→${fmtTime(task.start)}
+        </div>
+        <div class="gap-actions">
+          <button class="gap-btn" onclick="fixGapShrinkPrev(${si},${ti-1},${ti})">↑ Сдвинуть конец пред.</button>
+          <button class="gap-btn" onclick="fixGapShiftNext(${si},${ti})">↓ Сдвинуть начало след.</button>
+        </div>`;
     }
   }
 
-  // Build duration options: 5,10,15,...,60,75,90,105,120,150,180,210,240 min
+  // Duration options
   const durOptions = [5,10,15,20,25,30,35,40,45,50,55,60,75,90,105,120,150,180,210,240];
   const durSelect = durOptions.map(m => {
-    const h = Math.floor(m/60), min = m%60;
-    const label = h > 0 ? (min > 0 ? h+'ч '+min+'м' : h+'ч') : m+'м';
+    const h = Math.floor(m/60), mn = m%60;
+    const label = h > 0 ? (mn > 0 ? h+'ч '+mn+'м' : h+'ч') : m+'м';
     return `<option value="${m}">${label}</option>`;
   }).join('');
+
+  // Responsible: use task value if explicitly set, otherwise plan.responsible
+  const respVal = (task.responsible !== undefined && task.responsible !== null && task.responsible !== '')
+    ? task.responsible : (plan.responsible||'');
 
   row.innerHTML = `
     <div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">
       <textarea class="cell-input" rows="1" placeholder="Название работы"
         oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].name=this.value">${esc(task.name||'')}</textarea>
     </div>
-    <div class="task-cell col-dt">
+    <div class="task-cell col-dt" style="align-items:center">
       <input class="cell-input" type="datetime-local" value="${task.start||''}"
-        onchange="onStartChange(${si},${ti},this.value)" style="font-size:12px">
+        onchange="onStartChange(${si},${ti},this.value)" style="font-size:11px;width:100%">
     </div>
-    <div class="task-cell col-dur" style="padding:6px 8px">
+    <div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">
       <select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 4px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"
         onchange="onDurChange(${si},${ti},this.value)">
         <option value="">—</option>
         ${durSelect}
       </select>
-    </div>
-    <div class="task-cell col-dt" style="flex-direction:column;align-items:flex-start">
-      <input class="cell-input" type="datetime-local" value="${task.end||''}"
-        onchange="onEndChange(${si},${ti},this.value)" style="font-size:12px">
       ${gapHtml}
     </div>
-    <div class="task-cell col-resp">
-      <input class="cell-input" placeholder="Исполнитель"
-        value="${esc(task.responsible !== undefined && task.responsible !== '' ? task.responsible : (plan.responsible||''))}"
-        onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">
+    <div class="task-cell col-dt" style="align-items:center">
+      <input class="cell-input" type="datetime-local" value="${task.end||''}"
+        onchange="onEndChange(${si},${ti},this.value)" style="font-size:11px;width:100%">
     </div>
-    <div class="task-cell col-comment">
-      <input class="cell-input" placeholder="Комментарий" value="${esc(task.comment||'')}"
-        onchange="plan.stages[${si}].tasks[${ti}].comment=this.value">
+    <div class="task-cell col-resp" style="align-items:flex-start">
+      <textarea class="cell-input" rows="1" placeholder="Исполнитель"
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].responsible=this.value"
+        onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value">${esc(respVal)}</textarea>
+    </div>
+    <div class="task-cell col-comment" style="align-items:flex-start">
+      <textarea class="cell-input" rows="1" placeholder="Комментарий"
+        oninput="autoResize(this);plan.stages[${si}].tasks[${ti}].comment=this.value"
+        onchange="plan.stages[${si}].tasks[${ti}].comment=this.value">${esc(task.comment||'')}</textarea>
     </div>
     <div class="task-cell col-del">
       <button class="row-del" onclick="removeTask(${si},${ti})" title="Удалить">
@@ -548,8 +569,24 @@ function createTaskRow(si, ti, task, allTasks) {
       </button>
     </div>`;
 
-  setTimeout(() => { const ta = row.querySelector('textarea'); if (ta) autoResize(ta); }, 0);
+  setTimeout(() => {
+    row.querySelectorAll('textarea').forEach(ta => autoResize(ta));
+  }, 0);
   return row;
+}
+
+// Fix gap: move previous task's END to match this task's START
+function fixGapShrinkPrev(si, prevTi, thisTi) {
+  plan.stages[si].tasks[prevTi].end = plan.stages[si].tasks[thisTi].start;
+  renderStages();
+  toast('Окончание предыдущей задачи скорректировано','✅');
+}
+
+// Fix gap: move this task's START to match previous task's END
+function fixGapShiftNext(si, thisTi) {
+  plan.stages[si].tasks[thisTi].start = plan.stages[si].tasks[thisTi-1].end;
+  renderStages();
+  toast('Начало задачи скорректировано','✅');
 }
 
 function onEndChange(si, ti, val) {
@@ -607,7 +644,7 @@ function renderRollback() {
           onchange="plan.rollback[${ri}].end=this.value;formatRollbackTime(this)">
       </div>
       <div class="task-cell col-resp">
-        <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||'')}"
+        <input class="cell-input" placeholder="Исполнитель" value="${esc(row.responsible||plan.responsible||'')}"
           onchange="plan.rollback[${ri}].responsible=this.value">
       </div>
       <div class="task-cell col-comment">
@@ -710,15 +747,15 @@ function addTask(si) {
   if (tasks.length > 0) {
     startVal = tasks[tasks.length-1].end || '';
   } else if (si === 1 && plan.start) {
-    // Этап 2 (Основные работы): первая задача берёт общее время начала
     startVal = plan.start;
   }
+  // responsible is intentionally left '' so createTaskRow falls back to plan.responsible
   tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
   renderStages();
 }
 function removeTask(si,ti) { plan.stages[si].tasks.splice(ti,1); renderStages(); }
 
-function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:'',comment:''}); renderRollback(); }
+function addRollbackTask()  { plan.rollback.push({name:'',start:'',end:'',responsible:plan.responsible||'',comment:''}); renderRollback(); }
 function removeRollback(ri) { plan.rollback.splice(ri,1); renderRollback(); }
 
 function addContact()       { plan.contacts.push({name:'',role:'',phone:'',note:''}); renderContacts(); }
