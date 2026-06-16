@@ -3,814 +3,862 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>План работ</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Редактор плана работ</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0f1117;
-  --surface: #181c24;
-  --surface2: #1e2330;
-  --border: #252a38;
-  --border2: #2e3347;
-  --accent: #6c63ff;
-  --accent2: #8b85ff;
-  --text: #e2e4ec;
-  --muted: #6b7280;
-  --danger: #ef4444;
-  --green: #22c55e;
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'Inter', sans-serif;
-}
-body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f7f8fa;
+    --border: #e2e6ea;
+    --border2: #d0d5dd;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --text-light: #9ca3af;
+    --accent: #1a56db;
+    --accent-hover: #1e429f;
+    --accent-light: #ebf0ff;
+    --green: #057a55;
+    --green-bg: #def7ec;
+    --orange: #b45309;
+    --orange-bg: #fef3c7;
+    --red: #c81e1e;
+    --red-bg: #fde8e8;
+    --purple: #6d28d9;
+    --purple-bg: #ede9fe;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+    --shadow: 0 4px 16px rgba(0,0,0,.10);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.14);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
 
-/* ── HEADER ── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-  gap: 16px;
-}
-.logo {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-}
-.logo span { color: var(--accent); }
-.header-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.meta-chip {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 3px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-.meta-chip b { color: var(--accent2); }
-.header-actions { display: flex; gap: 8px; }
-.btn-copy {
-  padding: 7px 16px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--sans);
-  transition: background .2s;
-  white-space: nowrap;
-}
-.btn-copy:hover { background: var(--accent2); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── MAIN SCROLL AREA ── */
-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px 32px;
-}
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 
-/* ── SECTION BLOCK ── */
-.section-wrap {
-  margin-bottom: 12px;
-}
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 8px 8px 0 0;
-  cursor: pointer;
-  user-select: none;
-}
-.section-header:hover { background: var(--surface2); }
-.section-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  flex: 1;
-}
-.section-count {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
-  background: var(--bg);
-  padding: 2px 7px;
-  border-radius: 10px;
-}
-.section-chevron {
-  font-size: 11px;
-  color: var(--muted);
-  transition: transform .2s;
-}
-.section-wrap.collapsed .section-chevron { transform: rotate(-90deg); }
-.section-body {
-  border: 1px solid var(--border2);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
-}
-.section-wrap.collapsed .section-body { display: none; }
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .header-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .project-badge {
+    font-size: 12px; color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    max-width: 280px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
 
-/* ── TABLE ── */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-thead th {
-  background: var(--bg);
-  padding: 7px 10px;
-  text-align: left;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background .12s;
-}
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: rgba(108,99,255,.04); }
-td {
-  padding: 8px 10px;
-  vertical-align: middle;
-  color: var(--text);
-}
-td.num {
-  width: 36px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  text-align: center;
-}
-td.task { min-width: 140px; font-weight: 500; }
-td.datetime { white-space: nowrap; font-family: var(--mono); font-size: 11px; color: #9ca3af; width: 130px; }
-td.resp { min-width: 100px; color: #a5b4fc; }
-td.impact { width: 80px; }
-td.comment { color: var(--muted); }
-td.actions { width: 36px; text-align: center; padding: 4px; }
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: none; cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 500;
+    border-radius: var(--radius-sm); padding: 7px 14px;
+    transition: background .15s, box-shadow .15s, transform .1s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
+  .btn-secondary:hover { background: var(--surface2); }
+  .btn-ghost { background: transparent; color: var(--text-muted); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red-bg); }
+  .btn-danger:hover { background: var(--red-bg); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: #046c4e; }
+  .btn-orange { background: var(--orange); color: #fff; }
+  .btn-orange:hover { background: #92400e; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-icon { padding: 7px; }
+  .btn svg { flex-shrink: 0; }
 
-/* special cols for rollback/contacts/comms */
-td.role { color: #a5b4fc; }
-td.contact { font-family: var(--mono); font-size: 11px; }
-td.event { font-weight: 500; }
-td.comm-type { color: var(--muted); }
+  /* ── MAIN LAYOUT ── */
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
-/* inline edit */
-td[contenteditable="true"] {
-  outline: none;
-  background: rgba(108,99,255,.08);
-  border-radius: 3px;
-  cursor: text;
-}
-td[contenteditable="true"]:focus {
-  background: rgba(108,99,255,.14);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
+  /* ── META INFO BAR ── */
+  .meta-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; gap: 32px; flex-wrap: wrap; align-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  .meta-value { font-size: 13px; color: var(--text); font-weight: 500; }
+  .meta-value.mono { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
 
-/* row drag */
-tr.dragging { opacity: .4; }
-tr.drag-over td { border-top: 2px solid var(--accent); }
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    background: var(--surface);
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    text-align: center;
+    padding: 64px 24px;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .empty-sub { color: var(--text-muted); margin-bottom: 24px; }
+  .empty-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-/* row actions */
-.row-del {
-  width: 22px; height: 22px;
-  border: none;
-  background: transparent;
-  color: var(--border2);
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .12s, color .12s;
-}
-.row-del:hover { background: rgba(239,68,68,.12); color: var(--danger); }
+  /* ── STAGES ── */
+  .stages { display: flex; flex-direction: column; gap: 16px; }
 
-/* add row button */
-.btn-add-row {
-  width: 100%;
-  padding: 7px;
-  background: transparent;
-  border: none;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 12px;
-  cursor: pointer;
-  font-family: var(--sans);
-  transition: background .15s, color .15s;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.btn-add-row:hover { background: rgba(108,99,255,.07); color: var(--accent2); }
+  .stage-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .stage-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .stage-number {
+    width: 26px; height: 26px;
+    background: var(--accent); color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .stage-title-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    font-family: var(--font);
+    font-size: 14px; font-weight: 600;
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+  }
+  .stage-title-input:focus {
+    background: var(--surface);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+  }
+  .stage-actions { display: flex; gap: 4px; margin-left: auto; }
 
-/* ── MODAL ── */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.7);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 14px;
-  padding: 28px 32px;
-  width: 480px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 24px 64px rgba(0,0,0,.5);
-}
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.2;
-}
-.modal-sub {
-  font-size: 13px;
-  color: var(--muted);
-  margin-top: -8px;
-}
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  font-family: var(--mono);
-}
-.field input, .field select {
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  padding: 9px 12px;
-  outline: none;
-  transition: border-color .2s;
-}
-.field input:focus, .field select:focus { border-color: var(--accent); }
-.field select option { background: var(--surface2); }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-.btn-primary {
-  padding: 9px 22px;
-  background: var(--accent);
-  border: none;
-  color: #fff;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--sans);
-  transition: background .2s;
-}
-.btn-primary:hover { background: var(--accent2); }
-.btn-secondary {
-  padding: 9px 18px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  border-radius: 7px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: var(--sans);
-}
+  /* ── TASKS ── */
+  .tasks { padding: 0; }
+  .task-row {
+    display: grid;
+    grid-template-columns: 1fr 160px 160px 140px 1fr 36px;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-cell {
+    padding: 10px 14px;
+    border-right: 1px solid var(--border);
+    min-height: 42px;
+    display: flex; align-items: center;
+  }
+  .task-cell:last-child { border-right: none; }
+  .task-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    resize: none;
+  }
+  .task-input::placeholder { color: var(--text-light); }
+  .task-input:focus {
+    background: var(--accent-light);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+  }
+  .tasks-header {
+    display: grid;
+    grid-template-columns: 1fr 160px 160px 140px 1fr 36px;
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+  }
+  .tasks-header-cell {
+    padding: 7px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-right: 1px solid var(--border);
+  }
+  .tasks-header-cell:last-child { border-right: none; }
 
-/* ── TOAST ── */
-#toast {
-  position: fixed;
-  bottom: 20px; right: 20px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 12px;
-  font-family: var(--mono);
-  color: var(--text);
-  opacity: 0;
-  transition: opacity .25s;
-  pointer-events: none;
-  z-index: 200;
-}
-#toast.show { opacity: 1; }
+  .add-task-row {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: #f9fafb;
+  }
 
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  /* ── DELETE BUTTON IN TASK ── */
+  .task-delete {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-light); padding: 4px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color .15s, background .15s;
+  }
+  .task-delete:hover { color: var(--red); background: var(--red-bg); }
+
+  /* ── ADD STAGE ── */
+  .add-stage-btn {
+    border: 2px dashed var(--border2);
+    background: transparent;
+    border-radius: var(--radius);
+    width: 100%; padding: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: var(--text-muted); cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 500;
+    transition: border-color .15s, color .15s, background .15s;
+    margin-top: 8px;
+  }
+  .add-stage-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 520px;
+    transform: translateY(16px) scale(.98);
+    transition: transform .2s;
+  }
+  .modal-overlay.open .modal { transform: none; }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer {
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+
+  /* ── FORM ── */
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .form-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-family: var(--font);
+    font-size: 13px; color: var(--text);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    width: 100%;
+  }
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+  }
+  .form-divider {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text-light); font-size: 12px;
+    margin: 4px 0;
+  }
+  .form-divider::before, .form-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .import-area {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .import-area:hover { border-color: var(--accent); background: var(--accent-light); }
+  .import-area input { display: none; }
+  .import-area p { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+  /* ── NOTIFY MODAL ── */
+  .notify-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .notify-tab {
+    padding: 10px 16px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: none; border-left: none; border-right: none; border-top: none;
+    font-family: var(--font);
+  }
+  .notify-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .notify-text {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* ── TOASTS ── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 999;
+  }
+  .toast {
+    background: #1a1d23; color: #fff;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    font-size: 13px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 8px;
+    animation: slideIn .2s ease;
+    max-width: 320px;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── DRAG ── */
+  .stage-card.drag-over { border: 2px solid var(--accent); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  textarea.task-input { min-height: 20px; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">work<span>plan</span></div>
-  <div class="header-meta" id="header-meta">
-    <span class="meta-chip">Заполните данные проекта</span>
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="logo">П</div>
+    <span class="header-title">План работ</span>
+    <span class="project-badge" id="headerBadge">Нет проекта</span>
   </div>
   <div class="header-actions">
-    <button class="btn-copy" onclick="copyAsText()">📋 Копировать</button>
+    <button class="btn btn-ghost" onclick="openNotifyModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63 19.79 19.79 0 01.92 5.18 2 2 0 012.92 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Рассылка
+    </button>
+    <button class="btn btn-secondary" onclick="exportJSON()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Экспорт JSON
+    </button>
+    <button class="btn btn-primary" onclick="openSetupModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Настройки
+    </button>
   </div>
 </header>
 
-<main id="main-content">
-  <!-- sections rendered by JS -->
+<!-- MAIN -->
+<main class="main">
+  <div id="appContent">
+    <!-- empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Нет плана работ</div>
+      <div class="empty-sub">Создайте новый план или загрузите существующий из JSON</div>
+      <div class="empty-actions">
+        <button class="btn btn-primary" onclick="openSetupModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Создать план
+        </button>
+        <label class="btn btn-secondary" style="cursor:pointer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Импорт JSON
+          <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <!-- plan view -->
+    <div id="planView" style="display:none">
+      <div class="meta-bar" id="metaBar"></div>
+      <div class="stages" id="stagesContainer"></div>
+      <button class="add-stage-btn" onclick="addStage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Добавить этап
+      </button>
+    </div>
+  </div>
 </main>
 
 <!-- SETUP MODAL -->
-<div class="modal-overlay open" id="setup-modal">
+<div class="modal-overlay" id="setupModal">
   <div class="modal">
-    <div class="modal-title">Новый план работ</div>
-    <div class="modal-sub">Укажите данные проекта перед началом</div>
-    <div class="field">
-      <label>Название проекта</label>
-      <input type="text" id="s-name" placeholder="Например: Обновление AI-агента Андромеда">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ Настройки плана</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('setupModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
-    <div class="row2">
-      <div class="field">
-        <label>CI стенда</label>
-        <input type="text" id="s-ci-stand" placeholder="CI10508911">
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Название проекта</label>
+        <input class="form-input" id="f_project" placeholder="Например: Обновление сервиса X">
       </div>
-      <div class="field">
-        <label>CI системы</label>
-        <input type="text" id="s-ci-sys" placeholder="CI11927569 ПРОМ.">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">CI стенда</label>
+          <input class="form-input" id="f_ci_stand" placeholder="CI0000000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CI проекта</label>
+          <input class="form-input" id="f_ci_project" placeholder="CI0000000">
+        </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Начало работ (дата и время МСК)</label>
+        <input class="form-input" id="f_start" type="datetime-local">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <input class="form-input" id="f_responsible" placeholder="Иванов И.И.">
+      </div>
+
+      <div class="form-divider">или загрузить из JSON</div>
+
+      <label class="import-area">
+        <input type="file" accept=".json" onchange="importJSON(event)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-light)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Нажмите для выбора JSON-файла</p>
+      </label>
     </div>
-    <div class="row2">
-      <div class="field">
-        <label>Дата начала работ</label>
-        <input type="date" id="s-date">
-      </div>
-      <div class="field">
-        <label>Время начала (МСК)</label>
-        <input type="time" id="s-time" value="08:00">
-      </div>
-    </div>
-    <div class="field">
-      <label>Ответственный исполнитель</label>
-      <input type="text" id="s-resp" placeholder="Фамилия И.О.">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-primary" onclick="applySetup()">Создать план →</button>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('setupModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="applySetup()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Применить
+      </button>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- NOTIFY MODAL -->
+<div class="modal-overlay" id="notifyModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">📨 Текст рассылки</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('notifyModal')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="notify-tabs">
+        <button class="notify-tab active" onclick="switchTab('email')" id="tab-email">📧 Email</button>
+        <button class="notify-tab" onclick="switchTab('chat')" id="tab-chat">💬 Чат</button>
+      </div>
+      <div class="notify-text" id="notifyText"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('notifyModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyNotify()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ─────────────────────────────────────────────
-// DATA
-// ─────────────────────────────────────────────
-const STORAGE_KEY = 'workplan_v2';
+// ── STATE ──
+let plan = null;
+let notifyMode = 'email';
 
-// Section definitions — fixed structure
-const SECTION_DEFS = [
-  {
-    id: 'prep',
-    label: 'Этап 1. Подготовительные работы',
-    color: '#6c63ff',
-    cols: ['Работы','Дата и время начала (МСК)','Дата и время окончания (МСК)','Отв. Исполнитель','Влияние на услугу','Комментарий'],
-    keys: ['task','start','end','resp','impact','comment'],
-    newRow: () => ({task:'',start:'',end:'',resp:'',impact:'',comment:''})
-  },
-  {
-    id: 'main',
-    label: 'Этап 2. Основные работы',
-    color: '#3b82f6',
-    cols: ['Работы','Дата и время начала (МСК)','Дата и время окончания (МСК)','Отв. Исполнитель','Влияние на услугу','Комментарий'],
-    keys: ['task','start','end','resp','impact','comment'],
-    newRow: () => ({task:'',start:'',end:'',resp:'',impact:'',comment:''})
-  },
-  {
-    id: 'final',
-    label: 'Этап 3. Заключительные мероприятия',
-    color: '#10b981',
-    cols: ['Работы','Дата и время начала (МСК)','Дата и время окончания (МСК)','Отв. Исполнитель','Влияние на услугу','Комментарий'],
-    keys: ['task','start','end','resp','impact','comment'],
-    newRow: () => ({task:'',start:'',end:'',resp:'',impact:'',comment:''})
-  },
-  {
-    id: 'rollback',
-    label: 'План отката',
-    color: '#ef4444',
-    cols: ['Работы','Дата и время начала','Дата и время окончания','Отв. Исполнитель','Комментарий'],
-    keys: ['task','start','end','resp','comment'],
-    newRow: () => ({task:'',start:'Час X + 00:30',end:'Час X + 01:00',resp:'',comment:''})
-  },
-  {
-    id: 'contacts',
-    label: 'Контактная информация',
-    color: '#f59e0b',
-    cols: ['ФИО, контакт','Роль во внедрении','Контактная информация','Примечание'],
-    keys: ['name','role','contact','note'],
-    newRow: () => ({name:'',role:'',contact:'',note:''})
-  },
-  {
-    id: 'comms',
-    label: 'План коммуникации',
-    color: '#ec4899',
-    cols: ['Событие','Вид коммуникации','Средство коммуникации','Участники','Ответственный'],
-    keys: ['event','type','tool','members','resp'],
-    newRow: () => ({event:'',type:'',tool:'',members:'',resp:''})
-  },
-];
-
-let state = {
-  project: '',
-  ciStand: '',
-  ciSys: '',
-  startDate: '',
-  startTime: '',
-  responsible: '',
-  sections: {}
-};
-
-// default rows per section
-const DEFAULT_ROWS = {
-  prep: [
-    {task:'Подготовка конфигурации', start:'', end:'', resp:'', impact:'', comment:''}
-  ],
-  main: [
-    {task:'СМС рассылка о начале работ', start:'', end:'', resp:'', impact:'', comment:''},
-    {task:'Включение окна обслуживания в АС Reflex', start:'', end:'', resp:'', impact:'', comment:''},
-    {task:'Выполнение основных работ', start:'', end:'', resp:'', impact:'Возможна временная недоступность до 5 минут', comment:''},
-    {task:'Проверка работоспособности', start:'', end:'', resp:'', impact:'', comment:''},
-  ],
-  final: [
-    {task:'Принятие решения об успешности проведённых работ. Откат при необходимости', start:'', end:'', resp:'', impact:'', comment:''},
-    {task:'Выключение окна обслуживания в АС Reflex', start:'', end:'', resp:'', impact:'', comment:''},
-    {task:'СМС рассылка о завершении работ', start:'', end:'', resp:'', impact:'', comment:''},
-  ],
-  rollback: [
-    {task:'Откат на предыдущую версию', start:'Час X + 00:30', end:'Час X + 01:00', resp:'', comment:''},
-    {task:'Проверка работоспособности', start:'Час X + 00:30', end:'Час X + 00:30', resp:'', comment:''},
-  ],
-  contacts: [
-    {name:'Телефонная конференция «11113»', role:'-', contact:'Внутренний: 855710707 № конференции: 11113', note:'Обеспечение телефонной связи между участниками'},
-    {name:'', role:'', contact:'', note:''},
-  ],
-  comms: [
-    {event:'Начало работ', type:'Рассылка SMS-сообщений, Outlook', tool:'Сервер отправки СМС, Outlook', members:'', resp:''},
-    {event:'Успешное завершение работ', type:'Рассылка SMS-сообщений, Outlook', tool:'Сервер отправки СМС, Outlook', members:'', resp:''},
-  ]
-};
-
-// ─────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────
-(function init() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      state = parsed;
-      document.getElementById('setup-modal').classList.remove('open');
-      render();
-    } catch(e) {}
-  }
-  // set today in date field
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('s-date').value = today;
-})();
-
-// ─────────────────────────────────────────────
-// SETUP
-// ─────────────────────────────────────────────
-function applySetup() {
-  const name = document.getElementById('s-name').value.trim();
-  const ciStand = document.getElementById('s-ci-stand').value.trim();
-  const ciSys = document.getElementById('s-ci-sys').value.trim();
-  const startDate = document.getElementById('s-date').value;
-  const startTime = document.getElementById('s-time').value;
-  const resp = document.getElementById('s-resp').value.trim();
-  if (!name) { document.getElementById('s-name').focus(); return; }
-
-  state.project = name;
-  state.ciStand = ciStand;
-  state.ciSys = ciSys;
-  state.startDate = startDate;
-  state.startTime = startTime;
-  state.responsible = resp;
-  // init sections with defaults
-  SECTION_DEFS.forEach(s => {
-    if (!state.sections[s.id]) {
-      state.sections[s.id] = { collapsed: false, rows: JSON.parse(JSON.stringify(DEFAULT_ROWS[s.id] || [])) };
-      // prefill resp
-      if (resp) {
-        state.sections[s.id].rows.forEach(r => { if (!r.resp && r.resp !== undefined) r.resp = resp; });
-      }
-    }
-  });
-  save();
-  document.getElementById('setup-modal').classList.remove('open');
+// ── INIT ──
+function initPlan(meta) {
+  plan = {
+    project: meta.project || '',
+    ci_stand: meta.ci_stand || '',
+    ci_project: meta.ci_project || '',
+    start: meta.start || '',
+    responsible: meta.responsible || '',
+    stages: meta.stages || []
+  };
   render();
 }
 
-// ─────────────────────────────────────────────
-// RENDER
-// ─────────────────────────────────────────────
+// ── RENDER ──
 function render() {
-  renderHeader();
-  renderSections();
+  if (!plan) return;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('planView').style.display = 'block';
+
+  // meta bar
+  const startFmt = plan.start ? new Date(plan.start).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  document.getElementById('metaBar').innerHTML = `
+    <div class="meta-item"><div class="meta-label">Проект</div><div class="meta-value">${esc(plan.project||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">CI стенда</div><div class="meta-value mono">${esc(plan.ci_stand||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">CI проекта</div><div class="meta-value mono">${esc(plan.ci_project||'—')}</div></div>
+    <div class="meta-item"><div class="meta-label">Начало работ</div><div class="meta-value">${startFmt}</div></div>
+    <div class="meta-item"><div class="meta-label">Ответственный</div><div class="meta-value">${esc(plan.responsible||'—')}</div></div>
+  `;
+  document.getElementById('headerBadge').textContent = plan.project || 'Нет проекта';
+
+  renderStages();
 }
 
-function renderHeader() {
-  const chips = [];
-  if (state.project) chips.push(`<span class="meta-chip"><b>${esc(state.project)}</b></span>`);
-  if (state.ciStand) chips.push(`<span class="meta-chip">CI стенда: <b>${esc(state.ciStand)}</b></span>`);
-  if (state.ciSys) chips.push(`<span class="meta-chip">CI: <b>${esc(state.ciSys)}</b></span>`);
-  if (state.startDate) chips.push(`<span class="meta-chip">Начало: <b>${fmtDate(state.startDate)} ${state.startTime||''}</b></span>`);
-  if (state.responsible) chips.push(`<span class="meta-chip">Отв.: <b>${esc(state.responsible)}</b></span>`);
-  document.getElementById('header-meta').innerHTML = chips.join('') ||
-    '<span class="meta-chip">нет данных</span>';
-}
+function renderStages() {
+  const c = document.getElementById('stagesContainer');
+  c.innerHTML = '';
+  (plan.stages || []).forEach((stage, si) => {
+    const card = document.createElement('div');
+    card.className = 'stage-card';
+    card.dataset.si = si;
 
-function renderSections() {
-  const main = document.getElementById('main-content');
-  main.innerHTML = '';
-
-  SECTION_DEFS.forEach(def => {
-    const sec = state.sections[def.id];
-    if (!sec) return;
-
-    const wrap = document.createElement('div');
-    wrap.className = 'section-wrap' + (sec.collapsed ? ' collapsed' : '');
-    wrap.id = 'sec-' + def.id;
-
-    // header
-    wrap.innerHTML = `
-      <div class="section-header" onclick="toggleSection('${def.id}')">
-        <div class="section-dot" style="background:${def.color}"></div>
-        <div class="section-title" style="color:${def.color}">${esc(def.label)}</div>
-        <div class="section-count">${sec.rows.length} строк</div>
-        <div class="section-chevron">▼</div>
+    card.innerHTML = `
+      <div class="stage-header">
+        <div class="stage-number">${si+1}</div>
+        <input class="stage-title-input" value="${esc(stage.title)}" placeholder="Название этапа"
+          onchange="plan.stages[${si}].title=this.value">
+        <div class="stage-actions">
+          <button class="btn btn-ghost btn-sm btn-icon" title="Вверх" onclick="moveStage(${si},-1)" ${si===0?'disabled':''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-icon" title="Вниз" onclick="moveStage(${si},1)" ${si===plan.stages.length-1?'disabled':''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button class="btn btn-danger btn-sm btn-icon" title="Удалить этап" onclick="removeStage(${si})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="section-body" id="body-${def.id}"></div>
+      <div class="tasks-header">
+        <div class="tasks-header-cell">Работы</div>
+        <div class="tasks-header-cell">Начало (МСК)</div>
+        <div class="tasks-header-cell">Окончание (МСК)</div>
+        <div class="tasks-header-cell">Исполнитель</div>
+        <div class="tasks-header-cell">Комментарий</div>
+        <div class="tasks-header-cell"></div>
+      </div>
+      <div class="tasks" id="tasks-${si}"></div>
+      <div class="add-task-row">
+        <button class="btn btn-ghost btn-sm" onclick="addTask(${si})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить задачу
+        </button>
+      </div>
     `;
-    main.appendChild(wrap);
+    c.appendChild(card);
 
-    const body = wrap.querySelector('.section-body');
-
-    // table
-    const tbl = document.createElement('table');
-    tbl.innerHTML = `<thead><tr>
-      <th style="width:32px">#</th>
-      ${def.cols.map(c => `<th>${esc(c)}</th>`).join('')}
-      <th style="width:36px"></th>
-    </tr></thead><tbody id="tbody-${def.id}"></tbody>`;
-    body.appendChild(tbl);
-
-    // rows
-    const tbody = tbl.querySelector('tbody');
-    sec.rows.forEach((row, ri) => renderRow(def, tbody, row, ri));
-    bindRowDrag(def.id, tbody);
-
-    // add button
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn-add-row';
-    addBtn.innerHTML = `<span style="font-size:15px;line-height:1">+</span> Добавить задачу`;
-    addBtn.onclick = () => addRow(def.id);
-    body.appendChild(addBtn);
-  });
-}
-
-function renderRow(def, tbody, row, ri) {
-  const tr = document.createElement('tr');
-  tr.dataset.ri = ri;
-  tr.draggable = true;
-
-  let cells = `<td class="num">${ri + 1}</td>`;
-  def.keys.forEach(k => {
-    const cls = getCellClass(k);
-    cells += `<td class="${cls}" contenteditable="true" data-key="${k}" data-ri="${ri}" data-sid="${def.id}">${esc(row[k] || '')}</td>`;
-  });
-  cells += `<td class="actions"><button class="row-del" onclick="delRow('${def.id}',${ri})">✕</button></td>`;
-  tr.innerHTML = cells;
-
-  // save on blur
-  tr.querySelectorAll('[contenteditable]').forEach(td => {
-    td.addEventListener('blur', () => {
-      const sid = td.dataset.sid;
-      const ri2 = parseInt(td.dataset.ri);
-      const k = td.dataset.key;
-      state.sections[sid].rows[ri2][k] = td.innerText.trim();
-      save();
-    });
-    td.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); td.blur(); }
-    });
-  });
-
-  tbody.appendChild(tr);
-}
-
-function getCellClass(k) {
-  const map = {task:'task', start:'datetime', end:'datetime', resp:'resp', impact:'impact',
-    comment:'comment', name:'task', role:'role', contact:'contact', note:'comment',
-    event:'event', type:'comm-type', tool:'comm-type', members:'comment'};
-  return map[k] || '';
-}
-
-// ─────────────────────────────────────────────
-// SECTION TOGGLE
-// ─────────────────────────────────────────────
-function toggleSection(id) {
-  state.sections[id].collapsed = !state.sections[id].collapsed;
-  save();
-  const wrap = document.getElementById('sec-' + id);
-  wrap.classList.toggle('collapsed', state.sections[id].collapsed);
-}
-
-// ─────────────────────────────────────────────
-// ROWS
-// ─────────────────────────────────────────────
-function addRow(sid) {
-  const def = SECTION_DEFS.find(d => d.id === sid);
-  const row = def.newRow();
-  if (state.responsible) row.resp = state.responsible;
-  state.sections[sid].rows.push(row);
-  save();
-  // re-render section body only
-  refreshSection(sid);
-}
-
-function delRow(sid, ri) {
-  state.sections[sid].rows.splice(ri, 1);
-  save();
-  refreshSection(sid);
-}
-
-function refreshSection(sid) {
-  const def = SECTION_DEFS.find(d => d.id === sid);
-  const sec = state.sections[sid];
-  // update count
-  const wrap = document.getElementById('sec-' + sid);
-  wrap.querySelector('.section-count').textContent = sec.rows.length + ' строк';
-  // re-render tbody
-  const tbody = document.getElementById('tbody-' + sid);
-  tbody.innerHTML = '';
-  sec.rows.forEach((row, ri) => renderRow(def, tbody, row, ri));
-  bindRowDrag(sid, tbody);
-}
-
-// ─────────────────────────────────────────────
-// DRAG ROWS
-// ─────────────────────────────────────────────
-function bindRowDrag(sid, tbody) {
-  let dragSrc = null;
-  tbody.querySelectorAll('tr').forEach(tr => {
-    tr.addEventListener('dragstart', e => {
-      dragSrc = parseInt(tr.dataset.ri);
-      setTimeout(() => tr.classList.add('dragging'), 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    tr.addEventListener('dragend', () => {
-      tr.classList.remove('dragging');
-      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-    });
-    tr.addEventListener('dragover', e => {
-      e.preventDefault();
-      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-      tr.classList.add('drag-over');
-    });
-    tr.addEventListener('drop', e => {
-      e.preventDefault();
-      tr.classList.remove('drag-over');
-      const toIdx = parseInt(tr.dataset.ri);
-      if (dragSrc === null || dragSrc === toIdx) return;
-      const rows = state.sections[sid].rows;
-      const [moved] = rows.splice(dragSrc, 1);
-      rows.splice(toIdx, 0, moved);
-      save();
-      refreshSection(sid);
-      dragSrc = null;
+    const tasksEl = card.querySelector(`#tasks-${si}`);
+    (stage.tasks || []).forEach((task, ti) => {
+      tasksEl.appendChild(createTaskRow(si, ti, task));
     });
   });
 }
 
-// ─────────────────────────────────────────────
-// COPY AS TEXT (for Word paste)
-// ─────────────────────────────────────────────
-function copyAsText() {
-  let out = [];
+function createTaskRow(si, ti, task) {
+  const row = document.createElement('div');
+  row.className = 'task-row';
+  row.innerHTML = `
+    <div class="task-cell"><textarea class="task-input" rows="1" placeholder="Название работы"
+      onchange="plan.stages[${si}].tasks[${ti}].name=this.value"
+      oninput="autoResize(this)">${esc(task.name||'')}</textarea></div>
+    <div class="task-cell"><input class="task-input" type="datetime-local" value="${task.start||''}"
+      onchange="plan.stages[${si}].tasks[${ti}].start=this.value" style="font-size:12px"></div>
+    <div class="task-cell"><input class="task-input" type="datetime-local" value="${task.end||''}"
+      onchange="plan.stages[${si}].tasks[${ti}].end=this.value" style="font-size:12px"></div>
+    <div class="task-cell"><input class="task-input" placeholder="Исполнитель" value="${esc(task.responsible||'')}"
+      onchange="plan.stages[${si}].tasks[${ti}].responsible=this.value"></div>
+    <div class="task-cell"><input class="task-input" placeholder="Комментарий" value="${esc(task.comment||'')}"
+      onchange="plan.stages[${si}].tasks[${ti}].comment=this.value"></div>
+    <div class="task-cell" style="justify-content:center;padding:6px">
+      <button class="task-delete" onclick="removeTask(${si},${ti})" title="Удалить">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `;
+  return row;
+}
 
-  // title
-  out.push(`ПЛАН-ГРАФИК РАБОТ`);
-  if (state.project) out.push(`по ${state.project}`);
-  if (state.ciStand) out.push(`(${state.ciStand})`);
-  if (state.ciSys) out.push(`Стенд: ${state.ciSys}`);
-  out.push('');
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
 
-  SECTION_DEFS.forEach(def => {
-    const sec = state.sections[def.id];
-    if (!sec || sec.rows.length === 0) return;
+// ── ACTIONS ──
+function addStage() {
+  if (!plan) return;
+  plan.stages.push({ title: 'Новый этап', tasks: [] });
+  renderStages();
+  toast('Этап добавлен');
+}
 
-    out.push(def.label.toUpperCase());
-    out.push('');
+function removeStage(si) {
+  if (!confirm('Удалить этап?')) return;
+  plan.stages.splice(si, 1);
+  renderStages();
+}
 
-    // header row
-    const hdr = ['№', ...def.cols].join('\t');
-    out.push(hdr);
+function moveStage(si, dir) {
+  const arr = plan.stages;
+  const t = si + dir;
+  if (t < 0 || t >= arr.length) return;
+  [arr[si], arr[t]] = [arr[t], arr[si]];
+  renderStages();
+}
 
-    sec.rows.forEach((row, i) => {
-      const cells = [String(i+1), ...def.keys.map(k => row[k] || '')];
-      out.push(cells.join('\t'));
+function addTask(si) {
+  plan.stages[si].tasks.push({ name: '', start: '', end: '', responsible: '', comment: '' });
+  renderStages();
+}
+
+function removeTask(si, ti) {
+  plan.stages[si].tasks.splice(ti, 1);
+  renderStages();
+}
+
+// ── MODALS ──
+function openSetupModal() {
+  if (plan) {
+    document.getElementById('f_project').value = plan.project || '';
+    document.getElementById('f_ci_stand').value = plan.ci_stand || '';
+    document.getElementById('f_ci_project').value = plan.ci_project || '';
+    document.getElementById('f_start').value = plan.start || '';
+    document.getElementById('f_responsible').value = plan.responsible || '';
+  }
+  document.getElementById('setupModal').classList.add('open');
+}
+
+function applySetup() {
+  const project = document.getElementById('f_project').value.trim();
+  if (!project) { toast('Введите название проекта', '⚠️'); return; }
+  if (!plan) {
+    initPlan({
+      project,
+      ci_stand: document.getElementById('f_ci_stand').value.trim(),
+      ci_project: document.getElementById('f_ci_project').value.trim(),
+      start: document.getElementById('f_start').value,
+      responsible: document.getElementById('f_responsible').value.trim(),
+      stages: []
     });
-    out.push('');
-  });
-
-  const text = out.join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    toast('Скопировано — вставьте в Word (Ctrl+V)');
-  }).catch(() => {
-    // fallback
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    toast('Скопировано — вставьте в Word (Ctrl+V)');
-  });
+  } else {
+    plan.project = project;
+    plan.ci_stand = document.getElementById('f_ci_stand').value.trim();
+    plan.ci_project = document.getElementById('f_ci_project').value.trim();
+    plan.start = document.getElementById('f_start').value;
+    plan.responsible = document.getElementById('f_responsible').value.trim();
+    render();
+  }
+  closeModal('setupModal');
+  toast('Настройки сохранены', '✅');
 }
 
-// ─────────────────────────────────────────────
-// UTILS
-// ─────────────────────────────────────────────
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
 
-function fmtDate(d) {
-  if (!d) return '';
-  const [y,m,day] = d.split('-');
-  return `${day}.${m}.${y}`;
+// ── NOTIFY ──
+function openNotifyModal() {
+  if (!plan) { toast('Сначала создайте план', '⚠️'); return; }
+  notifyMode = 'email';
+  document.getElementById('tab-email').classList.add('active');
+  document.getElementById('tab-chat').classList.remove('active');
+  updateNotifyText();
+  document.getElementById('notifyModal').classList.add('open');
 }
 
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function switchTab(mode) {
+  notifyMode = mode;
+  document.getElementById('tab-email').classList.toggle('active', mode==='email');
+  document.getElementById('tab-chat').classList.toggle('active', mode==='chat');
+  updateNotifyText();
 }
 
-let _toastT;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(_toastT);
-  _toastT = setTimeout(() => el.classList.remove('show'), 2500);
+function updateNotifyText() {
+  const startFmt = plan.start
+    ? new Date(plan.start).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '[дата/время не указаны]';
+
+  let text;
+  if (notifyMode === 'email') {
+    text = `Уважаемые коллеги,
+
+Информируем вас о начале регламентных работ.
+
+Проект: ${plan.project || '—'}
+CI стенда: ${plan.ci_stand || '—'}
+CI проекта: ${plan.ci_project || '—'}
+Начало работ: ${startFmt} (МСК)
+Ответственный: ${plan.responsible || '—'}
+
+В период проведения работ возможна временная недоступность сервиса.
+По вопросам обращайтесь к ответственному исполнителю.
+
+С уважением,
+${plan.responsible || 'Команда'}`;
+  } else {
+    text = `🔧 *Начало регламентных работ*
+
+📋 *Проект:* ${plan.project || '—'}
+🖥 *CI стенда:* \`${plan.ci_stand || '—'}\`
+📦 *CI проекта:* \`${plan.ci_project || '—'}\`
+⏰ *Начало:* ${startFmt} МСК
+👤 *Ответственный:* ${plan.responsible || '—'}
+
+⚠️ Возможна временная недоступность сервиса.`;
+  }
+  document.getElementById('notifyText').textContent = text;
 }
+
+function copyNotify() {
+  const text = document.getElementById('notifyText').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Скопировано в буфер', '📋'));
+}
+
+// ── EXPORT / IMPORT ──
+function exportJSON() {
+  if (!plan) { toast('Нет данных для экспорта', '⚠️'); return; }
+  const json = JSON.stringify(plan, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const slug = (plan.project || 'plan').replace(/[^а-яёa-z0-9]/gi,'_').toLowerCase();
+  a.download = `work_plan_${slug}.json`;
+  a.click();
+  toast('JSON экспортирован', '✅');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      initPlan(data);
+      closeModal('setupModal');
+      toast('План загружен из JSON', '✅');
+    } catch { toast('Ошибка чтения JSON', '❌'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── UTILS ──
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, icon='ℹ️') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${icon}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ── PRELOAD FROM EMBEDDED JSON ──
+const PRELOADED_PLAN = {
+  "project": "",
+  "ci_stand": "",
+  "ci_project": "",
+  "start": "",
+  "responsible": "",
+  "stages": [
+    {
+      "title": "Этап 1. Подготовительные работы",
+      "tasks": [
+        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
+      ]
+    },
+    {
+      "title": "Этап 2. Основные работы",
+      "tasks": [
+        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
+      ]
+    },
+    {
+      "title": "Этап 3. Заключительные мероприятия и мониторинг",
+      "tasks": [
+        { "name": "", "start": "", "end": "", "responsible": "", "comment": "" }
+      ]
+    }
+  ]
+};
+
+// auto-load the template
+initPlan(PRELOADED_PLAN);
 </script>
 </body>
 </html>
-
