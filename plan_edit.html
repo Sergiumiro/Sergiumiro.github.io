@@ -56,7 +56,7 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .plan-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
 .plan-tab-close{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
 .plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
-.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:18px;line-height:1;border:none;background:none;transition:color .15s;height:100%;flex-shrink:0;vertical-align:middle;}
+.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:18px;line-height:1;border:none;background:none;transition:color .15s;align-self:stretch;flex-shrink:0;}
 .plan-tab-add:hover{color:var(--accent);background:var(--surface2);}
 
 /* ── UNDO indicator ── */
@@ -822,7 +822,6 @@ function switchPlan(id) {
   activePlanId = id;
   renderAll();
   updateUndoUI();
-  startNowTicker();
 }
 
 function deletePlan(id, silent) {
@@ -887,6 +886,7 @@ function renderAll(skipUndo) {
   renderComms();
   updateCacheBadge();
   if (!skipUndo) updateUndoUI();
+  tickCurrentTask();
 }
 
 function metaItem(label, value, mono) {
@@ -1055,9 +1055,9 @@ function tickCurrentTask() {
 }
 
 function startNowTicker() {
-  tickCurrentTask();
   clearInterval(_nowTimer);
-  _nowTimer = setInterval(tickCurrentTask, 30000); // update every 30s
+  tickCurrentTask(); // immediate first tick
+  _nowTimer = setInterval(tickCurrentTask, 10000); // update every 10s
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1669,12 +1669,14 @@ function onEndChange(si, ti, val) {
   var task = p.stages[si].tasks[ti];
   if (val && task.start && val < task.start) { toast('Окончание не может быть раньше начала','⚠️'); renderStages(); return; }
   mutate(function() { task.end = val; propagateNext(si, ti, val); renderStages(); });
+  tickCurrentTask();
 }
 function onStartChange(si, ti, val) {
   var p = plan(); if (!p) return;
   var task = p.stages[si].tasks[ti];
   if (val && task.end && val > task.end) { toast('Начало не может быть позже окончания','⚠️'); renderStages(); return; }
   mutate(function() { task.start = val; renderStages(); });
+  tickCurrentTask();
 }
 function onDurChange(si, ti, minutes) {
   if (!minutes) return;
@@ -1684,6 +1686,7 @@ function onDurChange(si, ti, minutes) {
   var endDate = new Date(new Date(task.start).getTime() + parseInt(minutes)*60000);
   var endVal  = toDatetimeLocal(endDate);
   mutate(function() { task.end = endVal; propagateNext(si, ti, endVal); renderStages(); });
+  tickCurrentTask();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1739,7 +1742,6 @@ function applySetup() {
   localStorage.setItem('user_tz', tzVal);
   renderAll();
   saveToStorage();
-  startNowTicker();
   closeModal('setupModal');
   toast('Настройки сохранены','✅');
 }
@@ -1847,7 +1849,7 @@ function buildWordHTML() {
   var p=plan();
   var title='План-график работ по обновлению '+(p.project||'[проект]')+' ('+(p.ci_project||'CI проекта')+') на стенде '+(p.ci_stand||'CI стенда')+' ПРОМ.';
   var h='<div class="word-page"><p class="word-page-title">'+esc(title)+'</p><table class="word-table"><colgroup><col style="width:4%"><col style="width:28%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%"></colgroup><thead><tr><th>№</th><th>Работы</th><th>Начало (МСК)</th><th>Окончание (МСК)</th><th>Исполнитель</th><th>Влияние</th><th>Комментарий</th></tr></thead><tbody>';
-  p.stages.forEach(function(stage){ h+='<tr class="stage-row"><td colspan="7">'+esc(stage.title)+'</td></tr>'; stage.tasks.forEach(function(t){ h+='<tr><td></td><td>'+esc(t.name||'')+'</td><td>'+fmtDT(t.start)+'</td><td>'+fmtDT(t.end)+'</td><td>'+esc(t.responsible||'')+'</td><td></td><td>'+esc(t.comment||'')+'</td></tr>'; }); });
+  p.stages.forEach(function(stage){ h+='<tr class="stage-row"><td colspan="7">'+esc(stage.title)+'</td></tr>'; stage.tasks.forEach(function(t){ h+='<tr><td></td><td>'+esc(t.name||'')+'</td><td>'+fmtDT(t.start)+'</td><td>'+fmtDT(t.end)+'</td><td>'+esc(resolveResp(t.responsible))+'</td><td></td><td>'+esc(t.comment||'')+'</td></tr>'; }); });
   h+='</tbody></table>';
   h+='<p class="word-section-label">План отката</p>';
   if ((p.rollback||[]).length) {
