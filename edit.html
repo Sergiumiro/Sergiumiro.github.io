@@ -48,14 +48,16 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .cache-badge{font-size:11px;color:var(--green);background:var(--green-bg);border:1px solid var(--green);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;}
 
 /* ── PLAN TABS ── */
-.plan-tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:stretch;padding:0 20px;gap:2px;overflow-x:auto;min-height:38px;}
-.plan-tab{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none;border-top:none;border-left:none;border-right:none;background:none;font-family:var(--font);transition:color .15s;}
-.plan-tab:hover{color:var(--text);}
+.plan-tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;min-height:38px;scrollbar-width:none;}
+.plan-tabs-bar::-webkit-scrollbar{display:none;}
+#planTabs{display:flex;align-items:stretch;flex-direction:row;gap:0;}
+.plan-tab{display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none;border-top:none;border-left:none;border-right:none;background:none;font-family:var(--font);transition:color .15s;height:100%;}
+.plan-tab:hover{color:var(--text);background:var(--surface2);}
 .plan-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-.plan-tab-close{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
+.plan-tab-close{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
 .plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
-.plan-tab-add{display:flex;align-items:center;justify-content:center;padding:0 10px;color:var(--text-light);cursor:pointer;font-size:18px;border:none;background:none;transition:color .15s;}
-.plan-tab-add:hover{color:var(--accent);}
+.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:20px;border:none;background:none;transition:color .15s;height:100%;flex-shrink:0;}
+.plan-tab-add:hover{color:var(--accent);background:var(--surface2);}
 
 /* ── UNDO indicator ── */
 .undo-indicator{font-size:11px;color:var(--text-light);padding:0 6px;display:flex;align-items:center;gap:4px;flex-shrink:0;}
@@ -141,6 +143,14 @@ textarea.cell-input{min-height:20px;}
 .ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
 .ch-tag.sberchat{background:#e8f5e9;border-color:#66bb6a;color:#1b5e20;}
 .ch-tag.sberchat.active{background:#2e7d32;border-color:#1b5e20;color:#fff;}
+
+/* ── INSERT ROW DIVIDER ── */
+.insert-divider{position:relative;height:6px;margin:0;z-index:2;display:flex;align-items:center;cursor:pointer;}
+.insert-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--accent);opacity:0;transition:opacity .15s;transform:translateY(-50%);}
+.insert-divider:hover::before{opacity:1;}
+.insert-divider .ins-btn{position:absolute;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;line-height:1;box-shadow:var(--shadow);border:2px solid var(--surface);z-index:3;font-weight:700;}
+.insert-divider:hover .ins-btn{display:flex;}
+.insert-divider:hover{height:20px;}
 
 .gap-warn{font-size:10px;color:var(--orange);display:flex;align-items:flex-start;gap:3px;margin-top:3px;width:100%;flex-wrap:wrap;}
 .gap-actions{display:flex;flex-direction:column;gap:2px;margin-top:2px;width:100%;}
@@ -808,35 +818,52 @@ function renderStages() {
   });
 }
 
-// Smart patch: update only changed cells, add/remove rows
+// Smart patch: update only changed cells, add/remove rows, with insert dividers
 function patchTaskRows(containerId, tasks, si) {
   var c = document.getElementById(containerId);
   if (!c) return;
+
+  // Full rebuild when task count changed (simplest correct approach for dividers)
   var existingRows = Array.from(c.querySelectorAll(':scope > .task-row'));
+  var existingDivs = Array.from(c.querySelectorAll(':scope > .insert-divider'));
+  var countChanged = existingRows.length !== tasks.length;
 
-  tasks.forEach(function(task, ti) {
-    var row = existingRows[ti];
-    if (!row) {
-      row = buildTaskRow(si, ti, task, tasks);
+  if (countChanged) {
+    // Rebuild entirely — only happens on add/remove/drag, not on typing
+    c.innerHTML = '';
+    tasks.forEach(function(task, ti) {
+      // Divider before each row (insert at position ti)
+      c.appendChild(makeInsertDivider(si, ti));
+      var row = buildTaskRow(si, ti, task, tasks);
       c.appendChild(row);
-    } else {
-      updateTaskRow(row, si, ti, task, tasks);
-    }
-  });
-
-  // Remove extra rows
-  for (var i = tasks.length; i < existingRows.length; i++) {
-    c.removeChild(existingRows[i]);
+    });
+    // Trailing divider after last row (insert at end)
+    if (tasks.length > 0) c.appendChild(makeInsertDivider(si, tasks.length));
+  } else {
+    // Patch existing rows in-place (preserves focus)
+    existingRows.forEach(function(row, ti) {
+      updateTaskRow(row, si, ti, tasks[ti], tasks);
+      row.dataset.si = si;
+      row.dataset.ti = ti;
+      row.classList.toggle('even', ti % 2 === 0);
+      row.classList.toggle('odd',  ti % 2 !== 0);
+    });
+    // Update divider onclick indices
+    existingDivs.forEach(function(div, idx) {
+      var insertAt = parseInt(div.dataset.insertAt);
+      div.onclick = function() { insertTaskAt(si, insertAt); };
+    });
   }
+}
 
-  // Reattach drag handles (indices may have shifted)
-  Array.from(c.querySelectorAll(':scope > .task-row')).forEach(function(row, ti) {
-    row.dataset.si = si;
-    row.dataset.ti = ti;
-    // stripe
-    row.classList.toggle('even', ti % 2 === 0);
-    row.classList.toggle('odd',  ti % 2 !== 0);
-  });
+function makeInsertDivider(si, insertAt) {
+  var div = document.createElement('div');
+  div.className = 'insert-divider';
+  div.dataset.insertAt = insertAt;
+  div.title = 'Вставить задачу здесь';
+  div.innerHTML = '<div class="ins-btn">+</div>';
+  div.onclick = function() { insertTaskAt(si, insertAt); };
+  return div;
 }
 
 // Full build of a task row (used when row doesn't exist yet)
@@ -1142,6 +1169,21 @@ function addTask(si) {
     tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
     renderStages();
   });
+}
+function insertTaskAt(si, insertAt) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var tasks = p.stages[si].tasks;
+    // inherit start from previous task's end if available
+    var startVal = (insertAt > 0 && tasks[insertAt-1]) ? (tasks[insertAt-1].end||'') : '';
+    tasks.splice(insertAt, 0, {name:'', start:startVal, end:'', responsible:'', comment:''});
+    renderStages();
+  });
+  // focus the name field of the newly inserted row
+  setTimeout(function() {
+    var row = document.querySelector('[data-si="'+si+'"][data-ti="'+insertAt+'"]');
+    if (row) { var ta = row.querySelector('[data-key="name"]'); if (ta) ta.focus(); }
+  }, 50);
 }
 function removeTask(si, ti) {
   mutate(function() {
