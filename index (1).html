@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Редактор плана работ</title>
+<style>
+:root {
+  --bg:#f0f2f5; --surface:#fff; --surface2:#f7f8fa;
+  --border:#e2e6ea; --border2:#d0d5dd;
+  --text:#1a1d23; --text-muted:#6b7280; --text-light:#9ca3af;
+  --accent:#1a56db; --accent-hover:#1e429f; --accent-light:#ebf0ff;
+  --green:#057a55; --green-bg:#def7ec;
+  --red:#c81e1e; --red-bg:#fde8e8;
+  --orange:#b45309; --orange-bg:#fef3c7;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow:0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+  --radius:10px; --radius-sm:6px;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --row-even:#ffffff; --row-odd:#f5f7ff;
+}
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d2e; --surface2:#22263a;
+  --border:#2d3148; --border2:#3a3f5c;
+  --text:#e8eaf0; --text-muted:#8b91b0; --text-light:#5a6080;
+  --accent:#4f7eff; --accent-hover:#3a6bff; --accent-light:#1a2550;
+  --green:#10b981; --green-bg:#0d3327;
+  --red:#f87171; --red-bg:#3b1515;
+  --orange:#fb923c; --orange-bg:#3b2010;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow:0 4px 16px rgba(0,0,0,.5);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.6);
+  --row-even:#1a1d2e; --row-odd:#1e2238;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;background:url('./back.png') no-repeat center center;background-size:contain;mix-blend-mode:multiply;pointer-events:none;z-index:0;}
+[data-theme="dark"] body::after{background-image:url('./back2.png');mix-blend-mode:screen;}
+
+/* ── HEADER ── */
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);gap:12px;}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0;}
+.logo{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;}
+.header-title{font-size:15px;font-weight:600;flex-shrink:0;}
+.header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.cache-badge{font-size:11px;color:var(--green);background:var(--green-bg);border:1px solid var(--green);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;}
+
+/* ── PLAN TABS ── */
+.plan-tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;min-height:38px;scrollbar-width:none;}
+.plan-tabs-bar::-webkit-scrollbar{display:none;}
+#planTabs{display:flex;align-items:stretch;flex-direction:row;gap:0;}
+.plan-tab{display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none;border-top:none;border-left:none;border-right:none;background:none;font-family:var(--font);transition:color .15s;height:100%;}
+.plan-tab:hover{color:var(--text);background:var(--surface2);}
+.plan-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.plan-tab-close{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
+.plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
+.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:20px;border:none;background:none;transition:color .15s;height:100%;flex-shrink:0;}
+.plan-tab-add:hover{color:var(--accent);background:var(--surface2);}
+
+/* ── UNDO indicator ── */
+.undo-indicator{font-size:11px;color:var(--text-light);padding:0 6px;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.undo-btn{background:none;border:none;cursor:pointer;color:var(--text-light);padding:5px;border-radius:var(--radius-sm);display:flex;align-items:center;transition:background .12s,color .12s;}
+.undo-btn:hover:not(:disabled){background:var(--surface2);color:var(--text);}
+.undo-btn:disabled{opacity:.35;cursor:default;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;border-radius:var(--radius-sm);padding:7px 14px;transition:background .15s,transform .1s;white-space:nowrap;text-decoration:none;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-hover);}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border2);}
+.btn-secondary:hover{background:var(--surface2);}
+.btn-ghost{background:transparent;color:var(--text-muted);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red-bg);}
+.btn-danger:hover{background:var(--red-bg);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-icon{padding:7px;}
+.btn svg{flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{max-width:1200px;margin:0 auto;padding:20px;}
+
+.meta-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;gap:28px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow-sm);}
+.meta-item{display:flex;flex-direction:column;gap:2px;}
+.meta-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.meta-value{font-size:13px;color:var(--text);font-weight:500;}
+.meta-value.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent);}
+
+/* ── EMPTY ── */
+.empty-state{background:var(--surface);border:2px dashed var(--border2);border-radius:var(--radius);text-align:center;padding:64px 24px;}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+.empty-title{font-size:18px;font-weight:600;margin-bottom:8px;}
+.empty-sub{color:var(--text-muted);margin-bottom:24px;}
+.empty-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+/* ── SECTION CARDS ── */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:14px;}
+.section-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.section-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#fff;}
+.icon-stage{background:var(--accent);}
+.icon-rollback{background:var(--orange);}
+.icon-contacts{background:var(--green);}
+.icon-comms{background:#6d28d9;}
+.section-title-static{flex:1;font-size:14px;font-weight:600;color:var(--text);}
+
+/* ── TABLE ── */
+.col-name{flex:2;min-width:0;}
+.col-dur{width:128px;flex-shrink:0;}
+.col-channels{width:148px;flex-shrink:0;}
+.col-tool{width:175px;flex-shrink:0;}
+.tool-display{font-size:11px;color:var(--text-muted);line-height:1.4;}
+.col-dt{width:182px;flex-shrink:0;}
+.col-resp{width:140px;flex-shrink:0;}
+.col-comment{flex:1.5;min-width:0;}
+.col-del{width:34px;flex-shrink:0;}
+.col-drag{width:26px;flex-shrink:0;padding:0!important;}
+
+.task-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch;min-height:40px;}
+.task-row.even{background:var(--row-even);}
+.task-row.odd{background:var(--row-odd);}
+.task-row:hover{background:var(--accent-light);}
+.task-row:last-child{border-bottom:none;}
+.task-cell{padding:7px 9px;border-right:1px solid var(--border);display:flex;align-items:flex-start;flex-wrap:wrap;}
+.task-cell:last-child{border-right:none;justify-content:center;align-items:center;}
+
+.tasks-header{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);}
+.th-cell{padding:5px 10px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;border-right:1px solid var(--border);}
+.th-cell:last-child{border-right:none;}
+
+.cell-input{width:100%;background:transparent;border:none;font-family:var(--font);font-size:13px;color:var(--text);outline:none;resize:none;line-height:1.45;overflow:hidden;min-height:20px;}
+.cell-input::placeholder{color:var(--text-light);}
+.cell-input:focus{background:var(--accent-light);border-radius:4px;padding:2px 5px;margin:-2px -5px;width:calc(100% + 10px);}
+textarea.cell-input{min-height:20px;}
+
+.ch-tags{display:flex;flex-wrap:wrap;gap:3px;padding:1px 0;}
+.ch-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;border:1.5px solid transparent;transition:all .15s;}
+.ch-tag.sms{background:#fef3c7;border-color:#fbbf24;color:#92400e;}
+.ch-tag.sms.active{background:#f59e0b;border-color:#d97706;color:#fff;}
+.ch-tag.outlook{background:#dbeafe;border-color:#60a5fa;color:#1e40af;}
+.ch-tag.outlook.active{background:#2563eb;border-color:#1d4ed8;color:#fff;}
+.ch-tag.sberchat{background:#e8f5e9;border-color:#66bb6a;color:#1b5e20;}
+.ch-tag.sberchat.active{background:#2e7d32;border-color:#1b5e20;color:#fff;}
+
+/* ── INSERT ROW DIVIDER ── */
+.insert-divider{position:relative;height:8px;margin:0;z-index:2;display:flex;align-items:center;cursor:pointer;flex-shrink:0;}
+.insert-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--accent);opacity:0;transition:opacity .12s;transform:translateY(-50%);pointer-events:none;}
+.insert-divider:hover::before{opacity:1;}
+.insert-divider .ins-btn{position:absolute;left:50%;transform:translateX(-50%) scale(.6);width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;box-shadow:var(--shadow);border:2px solid var(--surface);z-index:3;font-weight:400;opacity:0;transition:opacity .12s,transform .12s;pointer-events:none;}
+.insert-divider:hover .ins-btn{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto;}
+
+.gap-warn{font-size:10px;color:var(--orange);display:flex;align-items:flex-start;gap:3px;margin-top:3px;width:100%;flex-wrap:wrap;}
+.gap-actions{display:flex;flex-direction:column;gap:2px;margin-top:2px;width:100%;}
+.gap-btn{background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:4px;font-size:10px;padding:1px 5px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap;line-height:1.4;}
+.gap-btn:hover{background:var(--orange);color:#fff;}
+
+.drag-handle{cursor:grab;color:var(--text-light);padding:0 5px;display:flex;align-items:center;flex-shrink:0;user-select:none;touch-action:none;}
+.drag-handle:active{cursor:grabbing;}
+.drag-handle svg{pointer-events:none;}
+.task-row.dragging{opacity:.45;outline:2px solid var(--accent);outline-offset:-1px;}
+.task-row.drop-above{border-top:3px solid var(--accent);}
+.task-row.drop-below{border-bottom:3px solid var(--accent);}
+
+.comment-popup{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px;min-width:240px;max-width:320px;display:none;flex-direction:column;gap:5px;}
+.comment-popup.open{display:flex;}
+.comment-snippet{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 9px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;}
+.comment-snippet:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.comment-wrap{width:100%;}
+
+.field-err{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(200,30,30,.15)!important;}
+.field-err-msg{font-size:10px;color:var(--red);margin-top:2px;}
+.form-hint{font-size:11px;color:var(--text-light);margin-top:3px;}
+.rov-row{display:flex;align-items:center;gap:8px;padding:8px 20px 0;}
+.rov-label{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;}
+.rov-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:5px 9px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;width:100px;}
+.rov-input:focus{border-color:var(--accent);}
+.add-row{padding:8px 12px;border-top:1px solid var(--border);background:var(--surface2);}
+.row-del{background:transparent;border:none;cursor:pointer;color:var(--text-light);padding:3px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;}
+.row-del:hover{color:var(--red);background:var(--red-bg);}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;transform:translateY(16px) scale(.98);transition:transform .2s;max-height:90vh;display:flex;flex-direction:column;}
+.modal-overlay.open .modal{transform:none;}
+.modal-header{padding:16px 22px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:16px;font-weight:700;}
+.modal-body{padding:18px 22px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.modal-footer{padding:12px 22px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+.form-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 11px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,219,.12);}
+.form-divider{display:flex;align-items:center;gap:10px;color:var(--text-light);font-size:12px;margin:4px 0;}
+.form-divider::before,.form-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.import-area{border:2px dashed var(--border2);border-radius:var(--radius);padding:18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+.import-area:hover{border-color:var(--accent);background:var(--accent-light);}
+.import-area input{display:none;}
+.import-area p{font-size:13px;color:var(--text-muted);margin-top:5px;}
+
+/* ── PLANS LIST in modal ── */
+.plans-list{display:flex;flex-direction:column;gap:6px;}
+.plan-list-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s,background .15s;}
+.plan-list-item:hover{border-color:var(--accent);background:var(--accent-light);}
+.plan-list-item.active{border-color:var(--accent);background:var(--accent-light);}
+.plan-list-name{flex:1;font-size:13px;font-weight:500;}
+.plan-list-ci{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);}
+.plan-list-del{background:none;border:none;cursor:pointer;color:var(--text-light);padding:3px;border-radius:4px;display:flex;align-items:center;}
+.plan-list-del:hover{color:var(--red);background:var(--red-bg);}
+
+/* ── NOTIFY ── */
+.notify-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.notify-tab{padding:8px 13px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font);}
+.notify-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.notify-body{display:flex;min-height:180px;}
+.notify-channels{width:126px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:2px;padding:7px 5px;}
+.notify-ch-btn{background:none;border:none;border-radius:var(--radius-sm);padding:7px 9px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;text-align:left;display:flex;align-items:center;gap:5px;transition:background .12s,color .12s;}
+.notify-ch-btn:hover{background:var(--surface2);color:var(--text);}
+.notify-ch-btn.active{background:var(--accent-light);color:var(--accent);font-weight:600;}
+.notify-content{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 14px 12px;}
+.notify-text{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;min-height:100px;max-height:320px;overflow-y:auto;margin-top:12px;}
+
+/* ── WORD ── */
+.modal-wide{max-width:900px;}
+.word-preview{overflow:auto;max-height:62vh;}
+.word-page{width:100%;font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;background:#fff;}
+.word-page-title{font-size:12pt;font-weight:bold;text-align:center;margin-bottom:12px;line-height:1.4;}
+.word-table{border-collapse:collapse;width:100%;table-layout:fixed;}
+.word-table th,.word-table td{border:1px solid #000;padding:4px 5px;vertical-align:top;word-break:break-word;font-size:10pt;}
+.word-table th{background:#dae8fc;font-weight:bold;text-align:center;}
+.word-table .stage-row td{background:#e2efda;font-weight:bold;font-size:10pt;}
+.word-section-label{font-weight:bold;font-size:11pt;margin:12px 0 5px;}
+
+/* ── CURRENT TASK BANNER ── */
+.current-task-banner{display:none;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;max-width:340px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex-shrink:1;min-width:0;}
+.current-task-banner.visible{display:flex;}
+.current-task-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── TASK TEMPLATES MODAL ── */
+.tpl-groups{display:flex;flex-direction:column;gap:14px;}
+.tpl-group-label{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.tpl-items{display:flex;flex-direction:column;gap:4px;}
+.tpl-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer;transition:border-color .12s,background .12s;}
+.tpl-item:hover{border-color:var(--accent);background:var(--accent-light);}
+.tpl-item-name{flex:1;font-size:13px;}
+.tpl-item-dur{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);flex-shrink:0;}
+.tpl-item-add{font-size:18px;color:var(--accent);flex-shrink:0;font-weight:300;}
+.tpl-stage-select{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 10px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;width:100%;}
+.tpl-stage-select:focus{border-color:var(--accent);}
+
+/* ── CLONE button on tab ── */
+.plan-tab-clone{width:15px;height:15px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;opacity:0;}
+.plan-tab:hover .plan-tab-clone{opacity:1;}
+.plan-tab-clone:hover{background:var(--accent-light);color:var(--accent);}
+.toast-container{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:999;}
+.toast{background:#1a1d23;color:#fff;border-radius:var(--radius-sm);padding:9px 14px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:7px;animation:slideIn .2s ease;max-width:300px;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <div class="logo">П</div>
+    <span class="header-title">План работ</span>
+    <span class="cache-badge" id="cacheBadge" style="display:none"></span>
+    <div class="current-task-banner" id="currentTaskBanner">
+      <span class="current-task-dot"></span>
+      <span id="currentTaskText"></span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <!-- Undo / Redo -->
+    <button class="undo-btn" id="undoBtn" onclick="undo()" title="Отменить (Ctrl+Z)" disabled>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13C5.3 7.4 11 4 17 5.3a10 10 0 016 9"/></svg>
+    </button>
+    <button class="undo-btn" id="redoBtn" onclick="redo()" title="Повторить (Ctrl+Y)" disabled>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M21 13C18.7 7.4 13 4 7 5.3a10 10 0 00-6 9"/></svg>
+    </button>
+    <div style="width:1px;height:22px;background:var(--border);margin:0 2px;"></div>
+    <button class="btn btn-ghost btn-sm" onclick="openTemplatesModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Шаблоны
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openWordModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Word
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openNotifyModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63 19.79 19.79 0 01.92 5.18 2 2 0 012.92 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Рассылка
+    </button>
+    <button class="btn btn-secondary btn-sm" onclick="exportJSON()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      JSON
+    </button>
+    <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Тема">
+      <svg id="themeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="openSetupModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Настройки
+    </button>
+  </div>
+</header>
+
+<!-- Plan tabs -->
+<div class="plan-tabs-bar" id="planTabsBar" style="display:none">
+  <div id="planTabs"></div>
+  <button class="plan-tab-add" onclick="createNewPlan()" title="Новый план">＋</button>
+</div>
+
+<main class="main">
+  <div id="appContent">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Нет плана работ</div>
+      <div class="empty-sub">Создайте новый план или загрузите из JSON</div>
+      <div class="empty-actions">
+        <button class="btn btn-primary" onclick="openSetupModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Создать план
+        </button>
+        <label class="btn btn-secondary" style="cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Импорт JSON
+          <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+        </label>
+        <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Тема">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="planView" style="display:none">
+      <div class="meta-bar" id="metaBar"></div>
+      <div id="stagesContainer"></div>
+
+      <div class="section-card" style="margin-top:6px">
+        <div class="section-header">
+          <div class="section-icon icon-rollback">&#x21A9;</div>
+          <span class="section-title-static">План отката</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">Работы</div>
+          <div class="th-cell col-dur">Начало (Час X +)</div>
+          <div class="th-cell col-dur">Длительность</div>
+          <div class="th-cell col-dur">Окончание (Час X +)</div>
+          <div class="th-cell col-resp">Исполнитель</div>
+          <div class="th-cell col-comment">Комментарий</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="rollbackTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addRollbackTask()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить шаг отката
+          </button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-contacts">&#x1F464;</div>
+          <span class="section-title-static">Контактная информация</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">ФИО / контакт</div>
+          <div class="th-cell col-comment">Роль</div>
+          <div class="th-cell col-resp">Телефон / контакт</div>
+          <div class="th-cell col-comment">Примечание</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="contactsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addContact()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить контакт
+          </button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-comms">&#x1F4AC;</div>
+          <span class="section-title-static">План коммуникаций</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-resp">Событие</div>
+          <div class="th-cell col-channels">Вид коммуникации</div>
+          <div class="th-cell col-tool">Средство</div>
+          <div class="th-cell col-name">Участники</div>
+          <div class="th-cell col-resp">Ответственный</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="commsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addComm()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить событие
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#x2699;&#xFE0F; Настройки плана</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('setupModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Название проекта</label>
+        <input class="form-input" id="f_project" placeholder="Например: Обновление сервиса X">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label class="form-label">CI стенда</label>
+          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <div class="form-hint">CI + 8 цифр</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">CI проекта</label>
+          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <div class="form-hint">CI + 8 цифр</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Начало работ (МСК)</label>
+        <input class="form-input" id="f_start" type="datetime-local">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <input class="form-input" id="f_responsible" placeholder="Иванов И.И.">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Часовой пояс</label>
+        <select class="form-input" id="f_timezone">
+          <option value="auto">Автоматически (системный)</option>
+          <option value="180">МСК — UTC+3</option>
+          <option value="240">МСК+1 — UTC+4</option>
+          <option value="300">МСК+2 — UTC+5</option>
+          <option value="360">МСК+3 — UTC+6</option>
+          <option value="420">МСК+4 — UTC+7</option>
+          <option value="480">МСК+5 — UTC+8</option>
+          <option value="0">UTC+0</option>
+          <option value="60">UTC+1</option>
+          <option value="120">UTC+2</option>
+        </select>
+        <div class="form-hint">Используется для определения текущей задачи</div>
+      </div>
+      <div class="form-divider">или загрузить из JSON</div>
+      <label class="import-area">
+        <input type="file" accept=".json" onchange="importJSON(event)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-light)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Нажмите для выбора JSON-файла</p>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="confirmDeletePlan()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Удалить
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="cloneCurrentPlan()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Дублировать
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('setupModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="applySetup()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Применить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFY MODAL -->
+<div class="modal-overlay" id="notifyModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4E8; Рассылка</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('notifyModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:0;padding:0;flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:10px 18px 0;border-bottom:1px solid var(--border)">
+        <div class="rov-row" style="padding:0 0 8px;margin:0">
+          <span class="rov-label">№ РоВ:</span>
+          <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
+        </div>
+        <div class="notify-tabs">
+          <button class="notify-tab active" onclick="switchEvent('start')" id="ev-start">&#x1F527; Начало</button>
+          <button class="notify-tab" onclick="switchEvent('close')" id="ev-close">&#x2705; Завершение</button>
+          <button class="notify-tab" onclick="switchEvent('rollback')" id="ev-rollback" style="color:var(--red)">&#x21A9; Откат</button>
+        </div>
+      </div>
+      <div class="notify-body">
+        <div class="notify-channels">
+          <div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:4px 4px 6px">Канал</div>
+          <button class="notify-ch-btn active" onclick="switchChannel('chat')" id="ch-chat">&#x1F4AC; Чат</button>
+          <button class="notify-ch-btn" onclick="switchChannel('outlook')" id="ch-outlook">&#x1F4E7; Outlook</button>
+          <button class="notify-ch-btn" onclick="switchChannel('sms')" id="ch-sms">&#x1F4F1; SMS</button>
+        </div>
+        <div class="notify-content">
+          <div id="recipientsRow" style="font-size:12px;color:var(--text-muted);display:none"></div>
+          <div class="notify-text" id="notifyText"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('notifyModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyNotify()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WORD TABLE MODAL -->
+<div class="modal-overlay" id="wordModal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4CA; Таблица для Word</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('wordModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px">
+      <div class="word-preview" id="wordPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('wordModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyWordTable()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать в Word
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templatesModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4CB; Шаблоны задач</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('templatesModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:12px">
+      <div class="form-group">
+        <label class="form-label">Добавить в этап</label>
+        <select class="tpl-stage-select" id="tplStageSelect">
+          <option value="0">Этап 1 — Подготовительные работы</option>
+          <option value="1">Этап 2 — Основные работы</option>
+          <option value="2">Этап 3 — Заключительные мероприятия</option>
+        </select>
+      </div>
+      <div class="tpl-groups" id="tplGroups"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('templatesModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════
+var STAGE_TITLES = [
+  'Этап 1. Подготовительные работы',
+  'Этап 2. Основные работы',
+  'Этап 3. Заключительные мероприятия и мониторинг работоспособности'
+];
+var COMMENT_SNIPPETS = [
+  'Возможна временная недоступность до 5 минут',
+  'Возможна временная недоступность до 15 минут',
+  'Возможна временная недоступность до 30 минут',
+  'Сервис будет недоступен на время проведения работ',
+  'Без влияния на доступность сервиса',
+  'Возможно замедление работы сервиса',
+  'Требуется подтверждение успешности от команды',
+  'Параллельно ведётся мониторинг'
+];
+var STORAGE_KEY = 'work_plans_v2';
+var UNDO_LIMIT  = 50;
+
+// Built-in task templates
+var TASK_TEMPLATES = [
+  { group: 'Подготовка', items: [
+    { name: 'Резервное копирование данных',         dur: 30 },
+    { name: 'Проверка свободного места на диске',   dur: 5  },
+    { name: 'Уведомление команды о начале работ',   dur: 5  },
+    { name: 'Снятие конфигурации (бэкап конфига)',  dur: 10 },
+    { name: 'Проверка доступности зависимых систем',dur: 10 }
+  ]},
+  { group: 'Деплой', items: [
+    { name: 'Остановка сервиса',                    dur: 5  },
+    { name: 'Применение обновления',                dur: 20 },
+    { name: 'Запуск сервиса',                       dur: 5  },
+    { name: 'Применение миграции БД',               dur: 15 },
+    { name: 'Перезапуск зависимых сервисов',        dur: 10 }
+  ]},
+  { group: 'Проверка', items: [
+    { name: 'Проверка логов на ошибки',             dur: 10 },
+    { name: 'Функциональная проверка сервиса',      dur: 15 },
+    { name: 'Нагрузочный тест',                     dur: 20 },
+    { name: 'Проверка интеграций',                  dur: 10 },
+    { name: 'Мониторинг метрик (15 мин)',            dur: 15 }
+  ]},
+  { group: 'Завершение', items: [
+    { name: 'Уведомление об успешном завершении',   dur: 5  },
+    { name: 'Закрытие РоВ',                         dur: 5  },
+    { name: 'Обновление документации',              dur: 10 },
+    { name: 'Архивирование логов',                  dur: 10 }
+  ]}
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+var plans        = [];
+var activePlanId = null;
+var notifyEvent   = 'start';
+var notifyChannel = 'chat';
+var _saveTimer    = null;
+var _tzOffset     = 0;    // user timezone offset in minutes (vs UTC), loaded from settings
+var _nowTimer     = null; // interval for current-task ticker
+
+// Per-plan undo stacks: { [planId]: { stack:[], pos:int } }
+var _undoRegistry = {};
+
+function plan() { return plans.find(function(p){ return p.id === activePlanId; }) || null; }
+
+// ═══════════════════════════════════════════════════════
+// UNDO / REDO
+// ═══════════════════════════════════════════════════════
+function getUndoState(id) {
+  if (!_undoRegistry[id]) _undoRegistry[id] = { stack: [], pos: -1 };
+  return _undoRegistry[id];
+}
+
+function pushUndo() {
+  var p = plan(); if (!p) return;
+  var us = getUndoState(p.id);
+  // drop redo branch
+  us.stack = us.stack.slice(0, us.pos + 1);
+  us.stack.push(JSON.stringify(p));
+  if (us.stack.length > UNDO_LIMIT) us.stack.shift();
+  us.pos = us.stack.length - 1;
+  updateUndoUI();
+}
+
+function undo() {
+  var p = plan(); if (!p) return;
+  var us = getUndoState(p.id);
+  if (us.pos <= 0) return;
+  us.pos--;
+  restoreSnapshot(us.stack[us.pos]);
+  toast('Отменено', '↩');
+}
+
+function redo() {
+  var p = plan(); if (!p) return;
+  var us = getUndoState(p.id);
+  if (us.pos >= us.stack.length - 1) return;
+  us.pos++;
+  restoreSnapshot(us.stack[us.pos]);
+  toast('Повторено', '↪');
+}
+
+function restoreSnapshot(json) {
+  var snap = JSON.parse(json);
+  var idx  = plans.findIndex(function(p){ return p.id === activePlanId; });
+  if (idx < 0) return;
+  plans[idx] = snap;
+  // keep undo stack, don't push new snapshot
+  renderAll(true);
+  saveToStorage();
+  updateUndoUI();
+}
+
+function updateUndoUI() {
+  var p  = plan();
+  var us = p ? getUndoState(p.id) : { stack:[], pos:-1 };
+  document.getElementById('undoBtn').disabled = (us.pos <= 0);
+  document.getElementById('redoBtn').disabled = (us.pos >= us.stack.length - 1);
+}
+
+// ═══════════════════════════════════════════════════════
+// STORAGE (multi-plan)
+// ═══════════════════════════════════════════════════════
+function saveToStorage() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ plans: plans, active: activePlanId }));
+      localStorage.setItem(STORAGE_KEY + '_ts', Date.now());
+      updateCacheBadge();
+    } catch(e) {}
+  }, 500);
+}
+
+function loadFromStorage() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.plans) || data.plans.length === 0) return false;
+    plans = data.plans.map(normalizePlan);
+    activePlanId = data.active || plans[0].id;
+    if (!plans.find(function(p){ return p.id === activePlanId; })) activePlanId = plans[0].id;
+    return true;
+  } catch(e) { return false; }
+}
+
+function updateCacheBadge() {
+  var ts = localStorage.getItem(STORAGE_KEY + '_ts');
+  var el = document.getElementById('cacheBadge');
+  if (!el) return;
+  if (ts) {
+    el.textContent = '💾 ' + new Date(+ts).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    el.style.display = '';
+  } else { el.style.display = 'none'; }
+}
+
+// ═══════════════════════════════════════════════════════
+// PLAN MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function normalizePlan(meta) {
+  var incoming = meta.stages || [];
+  var stages = STAGE_TITLES.map(function(title, i) {
+    return { title: title, tasks: (incoming[i] && incoming[i].tasks) ? incoming[i].tasks : [] };
+  });
+  return {
+    id:             meta.id || ('plan_' + Date.now() + '_' + Math.random().toString(36).slice(2,6)),
+    project:        meta.project        || '',
+    ci_stand:       meta.ci_stand       || '',
+    ci_project:     meta.ci_project     || '',
+    start:          meta.start          || '',
+    responsible:    meta.responsible    || '',
+    stages:         stages,
+    rollback:       meta.rollback       || [],
+    contacts:       meta.contacts       || [],
+    communications: meta.communications || []
+  };
+}
+
+function createNewPlan() {
+  var p = normalizePlan({ project: 'Новый план' });
+  p._isNew = true; // mark as not-yet-configured
+  plans.push(p);
+  activePlanId = p.id;
+  pushUndo();
+  renderAll();
+  saveToStorage();
+  openSetupModal();
+}
+
+function switchPlan(id) {
+  activePlanId = id;
+  renderAll();
+  updateUndoUI();
+  startNowTicker();
+}
+
+function deletePlan(id, silent) {
+  if (plans.length <= 1 && !silent) {
+    toast('Нельзя удалить единственный план', '⚠️'); return;
+  }
+  plans = plans.filter(function(p){ return p.id !== id; });
+  delete _undoRegistry[id];
+  if (activePlanId === id) activePlanId = plans.length ? plans[0].id : null;
+  renderAll();
+  saveToStorage();
+}
+
+function confirmDeletePlan() {
+  if (!plan()) return;
+  if (plans.length === 1) { toast('Нельзя удалить единственный план', '⚠️'); return; }
+  if (confirm('Удалить план «' + (plan().project||'Без названия') + '»?')) {
+    deletePlan(activePlanId);
+    closeModal('setupModal');
+    toast('План удалён', '🗑');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// MUTATION HELPER — wraps any change: push undo, save
+// ═══════════════════════════════════════════════════════
+function mutate(fn, skipUndo) {
+  fn();
+  if (!skipUndo) pushUndo();
+  saveToStorage();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════
+function renderAll(skipUndo) {
+  renderTabs();
+  var p = plan();
+  if (!p) {
+    document.getElementById('emptyState').style.display = '';
+    document.getElementById('planView').style.display   = 'none';
+    document.getElementById('planTabsBar').style.display = 'none';
+    updateCacheBadge();
+    updateUndoUI();
+    return;
+  }
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('planView').style.display   = 'block';
+  document.getElementById('planTabsBar').style.display = '';
+
+  // Meta bar
+  document.getElementById('metaBar').innerHTML =
+    metaItem('Проект', esc(p.project||'—'), false) +
+    metaItem('CI стенда', esc(p.ci_stand||'—'), true) +
+    metaItem('CI проекта', esc(p.ci_project||'—'), true) +
+    metaItem('Начало работ', fmtDT(p.start), false) +
+    metaItem('Ответственный', esc(p.responsible||'—'), false);
+
+  renderStages();
+  renderRollback();
+  renderContacts();
+  renderComms();
+  updateCacheBadge();
+  if (!skipUndo) updateUndoUI();
+}
+
+function metaItem(label, value, mono) {
+  return '<div class="meta-item"><div class="meta-label">' + label + '</div>' +
+         '<div class="meta-value' + (mono?' mono':'') + '">' + value + '</div></div>';
+}
+
+// ─── TABS ─────────────────────────────────────────────
+function renderTabs() {
+  var bar = document.getElementById('planTabs');
+  bar.innerHTML = '';
+  plans.forEach(function(p) {
+    var tab = document.createElement('button');
+    tab.className = 'plan-tab' + (p.id === activePlanId ? ' active' : '');
+    tab.innerHTML =
+      '<span>' + esc(p.project || 'Без названия') + '</span>' +
+      '<span class="plan-tab-clone" onclick="event.stopPropagation();clonePlan(\'' + p.id + '\')" title="Дублировать план">⧉</span>' +
+      '<span class="plan-tab-close" onclick="event.stopPropagation();deletePlanFromTab(\'' + p.id + '\')" title="Удалить план">&#x2715;</span>';
+    tab.onclick = function() { switchPlan(p.id); };
+    bar.appendChild(tab);
+  });
+}
+
+function deletePlanFromTab(id) {
+  if (plans.length === 1) { toast('Нельзя удалить единственный план','⚠️'); return; }
+  var name = (plans.find(function(p){return p.id===id;})||{}).project || 'Без названия';
+  if (confirm('Удалить план «' + name + '»?')) {
+    deletePlan(id);
+    toast('План удалён','🗑');
+  }
+}
+
+// ─── CLONE PLAN ───────────────────────────────────────
+function clonePlan(id) {
+  var src = plans.find(function(p){ return p.id === id; });
+  if (!src) return;
+  var copy = JSON.parse(JSON.stringify(src));
+  copy.id = 'plan_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  copy.project = src.project + ' (копия)';
+  delete copy._isNew;
+  plans.push(copy);
+  activePlanId = copy.id;
+  pushUndo();
+  renderAll();
+  saveToStorage();
+  toast('План продублирован','⧉');
+}
+
+function cloneCurrentPlan() {
+  if (!plan()) return;
+  clonePlan(activePlanId);
+  closeModal('setupModal');
+}
+
+// ─── TASK TEMPLATES ───────────────────────────────────
+function openTemplatesModal() {
+  if (!plan()) { toast('Сначала создайте план','⚠️'); return; }
+  renderTemplateGroups();
+  document.getElementById('templatesModal').classList.add('open');
+}
+
+function renderTemplateGroups() {
+  var container = document.getElementById('tplGroups');
+  container.innerHTML = '';
+  TASK_TEMPLATES.forEach(function(group) {
+    var g = document.createElement('div');
+    g.innerHTML = '<div class="tpl-group-label">' + esc(group.group) + '</div><div class="tpl-items" id="tplg-' + esc(group.group) + '"></div>';
+    container.appendChild(g);
+    var itemsEl = g.querySelector('.tpl-items');
+    group.items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.className = 'tpl-item';
+      var h = Math.floor(item.dur/60), m = item.dur%60;
+      var durLabel = h > 0 ? (m > 0 ? h+'ч '+m+'м' : h+'ч') : m+'м';
+      row.innerHTML =
+        '<span class="tpl-item-name">' + esc(item.name) + '</span>' +
+        '<span class="tpl-item-dur">' + durLabel + '</span>' +
+        '<span class="tpl-item-add">+</span>';
+      row.onclick = function() { addTemplateTask(item); };
+      itemsEl.appendChild(row);
+    });
+  });
+}
+
+function addTemplateTask(item) {
+  var si = parseInt(document.getElementById('tplStageSelect').value) || 0;
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var tasks = p.stages[si].tasks;
+    // Auto-fill start from last task's end
+    var startVal = tasks.length ? (tasks[tasks.length-1].end || '') : '';
+    var endVal = '';
+    if (startVal) {
+      var endDate = new Date(new Date(startVal).getTime() + item.dur * 60000);
+      endVal = toDatetimeLocal(endDate);
+    }
+    tasks.push({ name: item.name, start: startVal, end: endVal, responsible: '', comment: '' });
+    renderStages();
+  });
+  toast('«' + item.name + '» добавлена', '✅');
+}
+
+// ─── CURRENT TASK TICKER ──────────────────────────────
+function getNowMs() {
+  var tzVal = localStorage.getItem('user_tz') || 'auto';
+  if (tzVal === 'auto') {
+    return Date.now();
+  }
+  // Shift: compute UTC, then add user's offset minutes
+  var utcMs = Date.now() + new Date().getTimezoneOffset() * 60000;
+  return utcMs + parseInt(tzVal) * 60000;
+}
+
+function tickCurrentTask() {
+  var banner  = document.getElementById('currentTaskBanner');
+  var textEl  = document.getElementById('currentTaskText');
+  var p = plan();
+  if (!p || !p.start) { banner.classList.remove('visible'); return; }
+
+  var nowMs = getNowMs();
+  var found = null;
+
+  for (var si = 0; si < p.stages.length; si++) {
+    var tasks = p.stages[si].tasks;
+    for (var ti = 0; ti < tasks.length; ti++) {
+      var t = tasks[ti];
+      if (!t.start || !t.end) continue;
+      var startMs = new Date(t.start).getTime();
+      var endMs   = new Date(t.end).getTime();
+      if (nowMs >= startMs && nowMs < endMs) {
+        found = { task: t, si: si, ti: ti, endMs: endMs };
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  if (found) {
+    var minsLeft = Math.ceil((found.endMs - nowMs) / 60000);
+    var label = found.task.name || 'Без названия';
+    if (label.length > 40) label = label.slice(0, 38) + '…';
+    textEl.textContent = 'Сейчас: ' + label + ' · осталось ' + minsLeft + ' мин';
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+function startNowTicker() {
+  tickCurrentTask();
+  clearInterval(_nowTimer);
+  _nowTimer = setInterval(tickCurrentTask, 30000); // update every 30s
+}
+
+// ═══════════════════════════════════════════════════════
+// SMART RENDER — stages (no full DOM wipe, preserves focus)
+// ═══════════════════════════════════════════════════════
+function renderStages() {
+  var p = plan(); if (!p) return;
+  var container = document.getElementById('stagesContainer');
+
+  // Build expected set of card ids
+  var needed = p.stages.map(function(_,si){ return 'stage-card-'+si; });
+
+  // Remove extra cards
+  Array.from(container.children).forEach(function(child) {
+    if (needed.indexOf(child.id) < 0) container.removeChild(child);
+  });
+
+  p.stages.forEach(function(stage, si) {
+    var cardId = 'stage-card-' + si;
+    var card = document.getElementById(cardId);
+
+    if (!card) {
+      // Create card shell once
+      card = document.createElement('div');
+      card.className = 'section-card';
+      card.id = cardId;
+      card.innerHTML =
+        '<div class="section-header">' +
+          '<div class="section-icon icon-stage">' + (si+1) + '</div>' +
+          '<span class="section-title-static">' + esc(stage.title) + '</span>' +
+        '</div>' +
+        '<div class="tasks-header">' +
+          '<div class="th-cell col-drag"></div>' +
+          '<div class="th-cell col-name">Работы</div>' +
+          '<div class="th-cell col-dt">Начало (МСК)</div>' +
+          '<div class="th-cell col-dur">Продолжит.</div>' +
+          '<div class="th-cell col-dt">Окончание (МСК)</div>' +
+          '<div class="th-cell col-resp">Исполнитель</div>' +
+          '<div class="th-cell col-comment">Комментарий</div>' +
+          '<div class="th-cell col-del"></div>' +
+        '</div>' +
+        '<div id="stage-rows-' + si + '"></div>' +
+        '<div class="add-row">' +
+          '<button class="btn btn-ghost btn-sm" onclick="addTask(' + si + ')">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+            'Добавить задачу</button></div>';
+      container.appendChild(card);
+    }
+
+    patchTaskRows('stage-rows-' + si, stage.tasks, si);
+  });
+}
+
+// Smart patch: update only changed cells, add/remove rows, with insert dividers
+function patchTaskRows(containerId, tasks, si) {
+  var c = document.getElementById(containerId);
+  if (!c) return;
+
+  // Full rebuild when task count changed (simplest correct approach for dividers)
+  var existingRows = Array.from(c.querySelectorAll(':scope > .task-row'));
+  var existingDivs = Array.from(c.querySelectorAll(':scope > .insert-divider'));
+  var countChanged = existingRows.length !== tasks.length;
+
+  if (countChanged) {
+    // Rebuild entirely — only happens on add/remove/drag, not on typing
+    c.innerHTML = '';
+    tasks.forEach(function(task, ti) {
+      // Divider before each row (insert at position ti)
+      c.appendChild(makeInsertDivider(si, ti));
+      var row = buildTaskRow(si, ti, task, tasks);
+      c.appendChild(row);
+    });
+    // Trailing divider after last row (insert at end)
+    if (tasks.length > 0) c.appendChild(makeInsertDivider(si, tasks.length));
+  } else {
+    // Patch existing rows in-place (preserves focus)
+    existingRows.forEach(function(row, ti) {
+      updateTaskRow(row, si, ti, tasks[ti], tasks);
+      row.dataset.si = si;
+      row.dataset.ti = ti;
+      row.classList.toggle('even', ti % 2 === 0);
+      row.classList.toggle('odd',  ti % 2 !== 0);
+    });
+    // Update divider onclick indices
+    existingDivs.forEach(function(div, idx) {
+      var insertAt = parseInt(div.dataset.insertAt);
+      div.onclick = function() { insertTaskAt(si, insertAt); };
+    });
+  }
+}
+
+function makeInsertDivider(si, insertAt) {
+  var div = document.createElement('div');
+  div.className = 'insert-divider';
+  div.dataset.insertAt = insertAt;
+  div.title = 'Вставить задачу здесь';
+  div.innerHTML = '<div class="ins-btn">+</div>';
+  div.onclick = function() { insertTaskAt(si, insertAt); };
+  return div;
+}
+
+// Full build of a task row (used when row doesn't exist yet)
+function buildTaskRow(si, ti, task, allTasks) {
+  var row = document.createElement('div');
+  row.className = 'task-row ' + (ti % 2 === 0 ? 'even' : 'odd');
+  row.dataset.si = si; row.dataset.ti = ti;
+  row.innerHTML = taskRowHTML(si, ti, task, allTasks);
+  setTimeout(function() {
+    row.querySelectorAll('textarea.cell-input').forEach(function(ta) { autoResize(ta); });
+    var h = row.querySelector('.drag-handle');
+    if (h) h.addEventListener('pointerdown', function(e) { startDrag(e, si, ti); });
+  }, 0);
+  return row;
+}
+
+// Patch only the parts that differ (preserving active inputs)
+function updateTaskRow(row, si, ti, task, allTasks) {
+  var active = document.activeElement;
+  var activeIsInRow = row.contains(active);
+  var activeDataKey = active && active.dataset ? active.dataset.key : null;
+
+  // Patch each field individually
+  patchInput(row, '[data-key="name"]',    task.name        || '');
+  patchInput(row, '[data-key="start"]',   task.start       || '');
+  patchInput(row, '[data-key="end"]',     task.end         || '');
+  patchInput(row, '[data-key="resp"]',    respVal(task)    || '');
+  patchInput(row, '[data-key="comment"]', task.comment     || '');
+
+  // Gap + duration badge (non-input area)
+  var gapCell = row.querySelector('.gap-zone');
+  if (gapCell) {
+    var newGap = gapAndDurHTML(si, ti, task, allTasks);
+    if (gapCell.innerHTML !== newGap) gapCell.innerHTML = newGap;
+  }
+
+  // Update drag handle si/ti
+  var h = row.querySelector('.drag-handle');
+  if (h) {
+    var newH = h.cloneNode(true);
+    newH.addEventListener('pointerdown', function(e) { startDrag(e, si, ti); });
+    h.parentNode.replaceChild(newH, h);
+  }
+
+  // Update delete button
+  var delBtn = row.querySelector('.row-del');
+  if (delBtn) delBtn.setAttribute('onclick', 'removeTask(' + si + ',' + ti + ')');
+}
+
+function patchInput(row, selector, value) {
+  var el = row.querySelector(selector);
+  if (!el) return;
+  if (document.activeElement === el) return; // never overwrite focused input
+  if (el.value !== value) {
+    el.value = value;
+    if (el.tagName === 'TEXTAREA') autoResize(el);
+  }
+}
+
+// Resolve %user token → plan.responsible at render time
+function resolveResp(raw) {
+  if (!raw || raw === '%user') {
+    var p = plan();
+    return p ? (p.responsible || '') : '';
+  }
+  return raw;
+}
+
+function respVal(task) {
+  return resolveResp(task.responsible);
+}
+
+// When user edits the responsible field:
+// empty or same as global → store '%user' (stays synced with settings)
+// anything custom → store literally
+function encodeResp(value) {
+  var p = plan();
+  if (!value || !value.trim()) return '%user';
+  if (p && value.trim() === (p.responsible || '').trim()) return '%user';
+  return value;
+}
+
+function taskRowHTML(si, ti, task, allTasks) {
+  var durOptions = [5,10,15,20,25,30,35,40,45,50,55,60,75,90,105,120,150,180,210,240];
+  var durSelect = durOptions.map(function(m) {
+    var h = Math.floor(m/60), mn = m%60;
+    return '<option value="' + m + '">' + (h>0?(mn>0?h+'ч '+mn+'м':h+'ч'):m+'м') + '</option>';
+  }).join('');
+
+  var nameErr = (!task.name||!task.name.trim()) ? '<div class="field-err-msg">⚠ Обязательное поле</div>' : '';
+  var rv = respVal(task);
+
+  return (
+    '<div class="task-cell col-drag" style="align-items:center;justify-content:center">' +
+      '<div class="drag-handle"><svg width="11" height="15" viewBox="0 0 12 16" fill="none">' +
+        '<circle cx="4" cy="3" r="1.5" fill="currentColor"/><circle cx="8" cy="3" r="1.5" fill="currentColor"/>' +
+        '<circle cx="4" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/>' +
+        '<circle cx="4" cy="13" r="1.5" fill="currentColor"/><circle cx="8" cy="13" r="1.5" fill="currentColor"/></svg></div>' +
+    '</div>' +
+    '<div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">' +
+      '<textarea class="cell-input ' + (!task.name||!task.name.trim()?'field-err':'') + '" rows="1"' +
+        ' data-key="name" placeholder="Название работы *"' +
+        ' oninput="autoResize(this);setField(\'stages\',' + si + ',' + ti + ',\'name\',this.value)"' +
+        ' onchange="setField(\'stages\',' + si + ',' + ti + ',\'name\',this.value)">' + esc(task.name||'') + '</textarea>' +
+      nameErr +
+    '</div>' +
+    '<div class="task-cell col-dt" style="align-items:center">' +
+      '<input class="cell-input" type="datetime-local" data-key="start" value="' + esc(task.start||'') + '"' +
+        ' onchange="onStartChange(' + si + ',' + ti + ',this.value)" style="font-size:11px;width:100%">' +
+    '</div>' +
+    '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 7px">' +
+      '<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 3px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"' +
+        ' onchange="onDurChange(' + si + ',' + ti + ',this.value)">' +
+        '<option value="">—</option>' + durSelect +
+      '</select>' +
+      '<div class="gap-zone">' + gapAndDurHTML(si, ti, task, allTasks) + '</div>' +
+    '</div>' +
+    '<div class="task-cell col-dt" style="align-items:center">' +
+      '<input class="cell-input" type="datetime-local" data-key="end" value="' + esc(task.end||'') + '"' +
+        ' onchange="onEndChange(' + si + ',' + ti + ',this.value)" style="font-size:11px;width:100%">' +
+    '</div>' +
+    '<div class="task-cell col-resp" style="align-items:flex-start">' +
+      '<textarea class="cell-input" rows="1" data-key="resp" placeholder="Исполнитель"' +
+        ' oninput="autoResize(this);setField(\'stages\',' + si + ',' + ti + ',\'responsible\',this.value)"' +
+        ' onchange="setField(\'stages\',' + si + ',' + ti + ',\'responsible\',this.value)">' + esc(rv) + '</textarea>' +
+    '</div>' +
+    '<div class="task-cell col-comment" style="align-items:flex-start">' +
+      '<div class="comment-wrap">' +
+        '<textarea class="cell-input" rows="1" data-key="comment" placeholder="Комментарий"' +
+          ' oninput="autoResize(this);setField(\'stages\',' + si + ',' + ti + ',\'comment\',this.value)"' +
+          ' onchange="setField(\'stages\',' + si + ',' + ti + ',\'comment\',this.value)"' +
+          ' onfocus="openCommentPopup(this,' + si + ',' + ti + ')">' + esc(task.comment||'') + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="task-cell col-del">' +
+      '<button class="row-del" onclick="removeTask(' + si + ',' + ti + ')" title="Удалить">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+    '</div>'
+  );
+}
+
+function gapAndDurHTML(si, ti, task, allTasks) {
+  var html = '';
+  // Duration badge
+  if (task.start && task.end) {
+    var diffMs = new Date(task.end) - new Date(task.start);
+    if (diffMs > 0) {
+      var tm = Math.round(diffMs/60000), hh=Math.floor(tm/60), mm=tm%60;
+      html += '<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px">⏱ ' + (hh>0?(mm>0?hh+'ч '+mm+'м':hh+'ч'):mm+'м') + '</div>';
+    } else if (diffMs < 0) {
+      var tm2=Math.round(Math.abs(diffMs)/60000),hh2=Math.floor(tm2/60),mm2=tm2%60;
+      html += '<div style="font-size:11px;color:var(--red);font-weight:700;margin-top:2px">⚠ −' + (hh2>0?(mm2>0?hh2+'ч '+mm2+'м':hh2+'ч'):mm2+'м') + '</div>';
+    }
+  }
+  // Gap warning
+  if (ti > 0) {
+    var prev = allTasks[ti-1];
+    if (prev && prev.end && task.start && prev.end !== task.start) {
+      var dm = Math.round((new Date(task.start)-new Date(prev.end))/60000);
+      html +=
+        '<div class="gap-warn">⚠ Разрыв ' + (dm>0?'+':'')+dm+'м: '+fmtTime(prev.end)+'→'+fmtTime(task.start)+'</div>' +
+        '<div class="gap-actions">' +
+          '<button class="gap-btn" onclick="fixGapShrinkPrev('+si+','+(ti-1)+','+ti+')">↑ Конец пред.</button>' +
+          '<button class="gap-btn" onclick="fixGapShiftNext('+si+','+ti+')">↓ Начало след.</button>' +
+        '</div>';
+    }
+  }
+  return html;
+}
+
+// ─── FIELD SETTER (for inline inputs — no full rerender) ─────────
+function setField(section, si, ti, field, value) {
+  var p = plan(); if (!p) return;
+  var target;
+  if (section === 'stages') target = p.stages[si] && p.stages[si].tasks[ti];
+  if (!target) return;
+  // Encode responsible: empty/same-as-global → %user
+  var storeValue = (field === 'responsible') ? encodeResp(value) : value;
+  if (target[field] === storeValue) return; // no change
+  target[field] = storeValue;
+  // Only re-render gap zone (non-input area), not the full table
+  var rowEl = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+  if (rowEl) {
+    var gz = rowEl.querySelector('.gap-zone');
+    if (gz) {
+      var newHtml = gapAndDurHTML(si, ti, target, p.stages[si].tasks);
+      if (gz.innerHTML !== newHtml) gz.innerHTML = newHtml;
+    }
+    // Validate name
+    if (field === 'name') {
+      var ta = rowEl.querySelector('[data-key="name"]');
+      if (ta) validateTaskName(ta);
+    }
+  }
+  // Debounced undo push for typing (push after 1s pause)
+  clearTimeout(p._typingTimer);
+  p._typingTimer = setTimeout(function() { pushUndo(); saveToStorage(); }, 1000);
+}
+
+// ─── ROLLBACK ─────────────────────────────────────────
+// Time model: row.startMin / row.endMin — integer minutes from "Час X"
+// Display: "Час X + 0:00", "Час X + 0:30", etc.
+
+function fmtRollbackTime(min) {
+  if (min === undefined || min === null || min === '') return '—';
+  var m = parseInt(min);
+  var h = Math.floor(m / 60), mm = m % 60;
+  return 'Час X + ' + String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+}
+
+function renderRollback() {
+  var p = plan(); if (!p) return;
+  var c = document.getElementById('rollbackTasks');
+  c.innerHTML = '';
+
+  // Ensure first row always starts at 0
+  if (p.rollback && p.rollback.length > 0) {
+    p.rollback[0].startMin = 0;
+  }
+
+  var durOptions = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
+
+  (p.rollback||[]).forEach(function(row, ri) {
+    var isFirst = ri === 0;
+    var startMin = (row.startMin !== undefined && row.startMin !== null) ? parseInt(row.startMin) : 0;
+    var endMin   = (row.endMin   !== undefined && row.endMin   !== null) ? parseInt(row.endMin)   : '';
+    var durMin   = (endMin !== '' && !isNaN(endMin)) ? (endMin - startMin) : '';
+
+    var durSelect = durOptions.map(function(m) {
+      var h = Math.floor(m/60), mn = m%60;
+      var label = h > 0 ? (mn > 0 ? h+'ч '+mn+'м' : h+'ч') : m+'м';
+      return '<option value="'+m+'"'+(durMin===m?' selected':'')+'>'+label+'</option>';
+    }).join('');
+
+    var durBadge = '';
+    if (durMin !== '' && !isNaN(durMin) && durMin > 0) {
+      var dh = Math.floor(durMin/60), dm = durMin%60;
+      durBadge = '<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px">⏱ '+(dh>0?(dm>0?dh+'ч '+dm+'м':dh+'ч'):dm+'м')+'</div>';
+    }
+
+    var el = document.createElement('div');
+    el.className = 'task-row ' + (ri%2===0?'even':'odd');
+    el.dataset.ri = ri;
+
+    el.innerHTML =
+      '<div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">' +
+        '<textarea class="cell-input" rows="1" placeholder="Работа"' +
+          ' oninput="autoResize(this);setRollbackField('+ri+',\'name\',this.value)">' + esc(row.name||'') + '</textarea>' +
+      '</div>' +
+      // Start — always readonly display (auto-chained)
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<div style="font-size:12px;font-weight:600;color:'+(isFirst?'var(--accent)':'var(--text-muted)')+'">'+fmtRollbackTime(startMin)+'</div>' +
+        (isFirst ? '<div style="font-size:10px;color:var(--text-light);margin-top:2px">Старт отката</div>' : '') +
+      '</div>' +
+      // Duration selector → auto-sets endMin
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 3px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"' +
+          ' onchange="onRollbackDurChange('+ri+',this.value)">' +
+          '<option value="">— длит. —</option>' + durSelect +
+        '</select>' +
+        durBadge +
+      '</div>' +
+      // End — readonly display
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<div style="font-size:12px;color:var(--text-muted)">' + (endMin !== '' && !isNaN(endMin) ? fmtRollbackTime(endMin) : '—') + '</div>' +
+      '</div>' +
+      '<div class="task-cell col-resp"><input class="cell-input" placeholder="Исполнитель" value="' + esc(resolveResp(row.responsible)) + '" onchange="setRollbackField('+ri+',\'responsible\',encodeResp(this.value))"></div>' +
+      '<div class="task-cell col-comment"><input class="cell-input" placeholder="Комментарий" value="' + esc(row.comment||'') + '" onchange="setRollbackField('+ri+',\'comment\',this.value)"></div>' +
+      '<div class="task-cell col-del"><button class="row-del" onclick="removeRollback('+ri+')" title="Удалить"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+
+    setTimeout(function(){ var ta=el.querySelector('textarea'); if(ta) autoResize(ta); }, 0);
+    c.appendChild(el);
+  });
+}
+
+function onRollbackDurChange(ri, minutes) {
+  if (!minutes) return;
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var row = p.rollback[ri]; if (!row) return;
+    var startMin = (row.startMin !== undefined && row.startMin !== null) ? parseInt(row.startMin) : 0;
+    var endMin = startMin + parseInt(minutes);
+    row.endMin = endMin;
+    // Propagate: next row's startMin = this row's endMin
+    if (ri + 1 < p.rollback.length) {
+      p.rollback[ri+1].startMin = endMin;
+      // Cascade further if next rows already have durations set
+      for (var i = ri+1; i < p.rollback.length - 1; i++) {
+        var cur = p.rollback[i];
+        if (cur.endMin !== undefined && cur.endMin !== null && cur.endMin !== '') {
+          var dur = parseInt(cur.endMin) - parseInt(cur.startMin);
+          if (!isNaN(dur) && dur > 0) {
+            p.rollback[i+1].startMin = parseInt(cur.startMin) + dur;
+            p.rollback[i+1].endMin   = parseInt(cur.startMin) + dur + dur; // keep same duration
+          }
+        }
+      }
+    }
+    renderRollback();
+  });
+}
+
+function setRollbackField(ri, field, value) {
+  var p = plan(); if (!p || !p.rollback[ri]) return;
+  p.rollback[ri][field] = value;
+  clearTimeout(p._typingTimer);
+  p._typingTimer = setTimeout(function(){ pushUndo(); saveToStorage(); }, 1000);
+}
+
+// ─── CONTACTS ─────────────────────────────────────────
+function renderContacts() {
+  var p = plan(); if (!p) return;
+  var c = document.getElementById('contactsTasks');
+  c.innerHTML = '';
+  (p.contacts||[]).forEach(function(row, ci) {
+    var el = document.createElement('div');
+    el.className = 'task-row';
+    el.innerHTML =
+      '<div class="task-cell col-name"><input class="cell-input" placeholder="ФИО / название" value="' + esc(row.name||'') + '" onchange="setContactField('+ci+',\'name\',this.value)"></div>' +
+      '<div class="task-cell col-comment"><input class="cell-input" placeholder="Роль" value="' + esc(row.role||'') + '" onchange="setContactField('+ci+',\'role\',this.value)"></div>' +
+      '<div class="task-cell col-resp"><input class="cell-input" placeholder="8-xxx-xxx-xxxx" value="' + esc(row.phone||'') + '" onchange="setContactField('+ci+',\'phone\',this.value)"></div>' +
+      '<div class="task-cell col-comment"><input class="cell-input" placeholder="Примечание" value="' + esc(row.note||'') + '" onchange="setContactField('+ci+',\'note\',this.value)"></div>' +
+      '<div class="task-cell col-del"><button class="row-del" onclick="removeContact('+ci+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+    c.appendChild(el);
+  });
+}
+
+function setContactField(ci, field, value) {
+  var p = plan(); if (!p || !p.contacts[ci]) return;
+  p.contacts[ci][field] = value;
+  clearTimeout(p._typingTimer);
+  p._typingTimer = setTimeout(function(){ pushUndo(); saveToStorage(); }, 1000);
+}
+
+// ─── COMMS ────────────────────────────────────────────
+function renderComms() {
+  var p = plan(); if (!p) return;
+  var c = document.getElementById('commsTasks');
+  c.innerHTML = '';
+  (p.communications||[]).forEach(function(row, ci) {
+    var partsVal  = Array.isArray(row.participants) ? row.participants.join(', ') : (row.participants||'');
+    var hasSms     = !!(row.channels && row.channels.sms);
+    var hasOutlook = !!(row.channels && row.channels.outlook);
+    var hasSberchat= !!(row.channels && row.channels.sberchat);
+    var toolText = getToolText(row.channels);
+    var el = document.createElement('div');
+    el.className = 'task-row';
+    el.innerHTML =
+      '<div class="task-cell col-resp" style="align-items:flex-start"><textarea class="cell-input" rows="1" placeholder="Событие"' +
+        ' oninput="autoResize(this);setCommField('+ci+',\'event\',this.value)"' +
+        ' onchange="setCommField('+ci+',\'event\',this.value)">' + esc(row.event||'') + '</textarea></div>' +
+      '<div class="task-cell col-channels" style="flex-direction:column;align-items:flex-start;gap:3px;padding-top:7px">' +
+        '<div class="ch-tags">' +
+          '<span class="ch-tag sms '+(hasSms?'active':'')+'" onclick="toggleChannel('+ci+',\'sms\')">📱 SMS</span>' +
+          '<span class="ch-tag outlook '+(hasOutlook?'active':'')+'" onclick="toggleChannel('+ci+',\'outlook\')">📧 Outlook</span>' +
+          '<span class="ch-tag sberchat '+(hasSberchat?'active':'')+'" onclick="toggleChannel('+ci+',\'sberchat\')">💚 СберЧат</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="task-cell col-tool" style="align-items:flex-start"><div class="tool-display">' + esc(toolText) + '</div></div>' +
+      '<div class="task-cell col-name" style="align-items:flex-start"><textarea class="cell-input" rows="1" placeholder="Участники"' +
+        ' oninput="autoResize(this);setCommField('+ci+',\'participants\',this.value)"' +
+        ' onchange="setCommField('+ci+',\'participants\',this.value)">' + esc(partsVal) + '</textarea></div>' +
+      '<div class="task-cell col-resp" style="align-items:flex-start"><input class="cell-input" placeholder="Ответственный" value="' + esc(row.responsible||'') + '" onchange="setCommField('+ci+',\'responsible\',this.value)"></div>' +
+      '<div class="task-cell col-del"><button class="row-del" onclick="removeComm('+ci+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+    setTimeout(function(){ el.querySelectorAll('textarea').forEach(function(ta){ autoResize(ta); }); },0);
+    c.appendChild(el);
+  });
+}
+
+function setCommField(ci, field, value) {
+  var p = plan(); if (!p || !p.communications[ci]) return;
+  p.communications[ci][field] = value;
+  clearTimeout(p._typingTimer);
+  p._typingTimer = setTimeout(function(){ pushUndo(); saveToStorage(); }, 1000);
+}
+
+function toggleChannel(ci, ch) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    if (!p.communications[ci].channels) p.communications[ci].channels = {};
+    p.communications[ci].channels[ch] = !p.communications[ci].channels[ch];
+    renderComms();
+  });
+}
+
+function getToolText(channels) {
+  if (!channels) return '—';
+  var t = [];
+  if (channels.sms)      t.push('Сервер SMS');
+  if (channels.outlook)  t.push('Outlook');
+  if (channels.sberchat) t.push('СберЧат');
+  return t.length ? t.join(', ') : '—';
+}
+
+// ═══════════════════════════════════════════════════════
+// CRUD
+// ═══════════════════════════════════════════════════════
+function addTask(si) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var tasks = p.stages[si].tasks;
+    var startVal = tasks.length ? (tasks[tasks.length-1].end||'') : (si===1 ? p.start||'' : '');
+    tasks.push({name:'', start:startVal, end:'', responsible:'%user', comment:''});
+    renderStages();
+  });
+}
+function insertTaskAt(si, insertAt) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var tasks = p.stages[si].tasks;
+    // inherit start from previous task's end if available
+    var startVal = (insertAt > 0 && tasks[insertAt-1]) ? (tasks[insertAt-1].end||'') : '';
+    tasks.splice(insertAt, 0, {name:'', start:startVal, end:'', responsible:'%user', comment:''});
+    renderStages();
+  });
+  // focus the name field of the newly inserted row
+  setTimeout(function() {
+    var row = document.querySelector('[data-si="'+si+'"][data-ti="'+insertAt+'"]');
+    if (row) { var ta = row.querySelector('[data-key="name"]'); if (ta) ta.focus(); }
+  }, 50);
+}
+function removeTask(si, ti) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.stages[si].tasks.splice(ti, 1);
+    renderStages();
+  });
+}
+function fixGapShrinkPrev(si, prevTi, thisTi) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.stages[si].tasks[prevTi].end = p.stages[si].tasks[thisTi].start;
+    renderStages();
+  });
+  toast('Окончание пред. задачи скорректировано','✅');
+}
+function fixGapShiftNext(si, thisTi) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.stages[si].tasks[thisTi].start = p.stages[si].tasks[thisTi-1].end;
+    renderStages();
+  });
+  toast('Начало задачи скорректировано','✅');
+}
+
+function addRollbackTask() {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var rb = p.rollback;
+    var startMin = 0;
+    if (rb.length > 0) {
+      var prev = rb[rb.length - 1];
+      startMin = (prev.endMin !== undefined && prev.endMin !== null && prev.endMin !== '') ? parseInt(prev.endMin) : (parseInt(prev.startMin)||0);
+    }
+    rb.push({name:'', startMin: startMin, endMin:'', responsible:'%user', comment:''});
+    renderRollback();
+  });
+}
+function removeRollback(ri) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.rollback.splice(ri, 1);
+    renderRollback();
+  });
+}
+function addContact() {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.contacts.push({name:'', role:'', phone:'', note:''});
+    renderContacts();
+  });
+}
+function removeContact(ci) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.contacts.splice(ci, 1);
+    renderContacts();
+  });
+}
+function addComm() {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.communications.push({event:'', channels:{sms:false,outlook:false,sberchat:false}, participants:'', responsible:''});
+    renderComms();
+  });
+}
+function removeComm(ci) {
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    p.communications.splice(ci, 1);
+    renderComms();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DATE LOGIC
+// ═══════════════════════════════════════════════════════
+function padDT(n) { return String(n).padStart(2,'0'); }
+function toDatetimeLocal(d) {
+  return d.getFullYear()+'-'+padDT(d.getMonth()+1)+'-'+padDT(d.getDate())+'T'+padDT(d.getHours())+':'+padDT(d.getMinutes());
+}
+function propagateNext(si, ti, endVal) {
+  var p = plan(); if (!p) return;
+  var tasks = p.stages[si].tasks;
+  if (ti + 1 < tasks.length) tasks[ti+1].start = endVal;
+}
+function onEndChange(si, ti, val) {
+  var p = plan(); if (!p) return;
+  var task = p.stages[si].tasks[ti];
+  if (val && task.start && val < task.start) { toast('Окончание не может быть раньше начала','⚠️'); renderStages(); return; }
+  mutate(function() { task.end = val; propagateNext(si, ti, val); renderStages(); });
+}
+function onStartChange(si, ti, val) {
+  var p = plan(); if (!p) return;
+  var task = p.stages[si].tasks[ti];
+  if (val && task.end && val > task.end) { toast('Начало не может быть позже окончания','⚠️'); renderStages(); return; }
+  mutate(function() { task.start = val; renderStages(); });
+}
+function onDurChange(si, ti, minutes) {
+  if (!minutes) return;
+  var p = plan(); if (!p) return;
+  var task = p.stages[si].tasks[ti];
+  if (!task.start) { toast('Сначала укажите время начала','⚠️'); return; }
+  var endDate = new Date(new Date(task.start).getTime() + parseInt(minutes)*60000);
+  var endVal  = toDatetimeLocal(endDate);
+  mutate(function() { task.end = endVal; propagateNext(si, ti, endVal); renderStages(); });
+}
+
+// ═══════════════════════════════════════════════════════
+// SETUP MODAL
+// ═══════════════════════════════════════════════════════
+function openSetupModal() {
+  var p = plan();
+  if (p) {
+    document.getElementById('f_project').value     = p.project    || '';
+    document.getElementById('f_ci_stand').value    = p.ci_stand   || '';
+    document.getElementById('f_ci_project').value  = p.ci_project || '';
+    document.getElementById('f_start').value       = p.start      || '';
+    document.getElementById('f_responsible').value = p.responsible|| '';
+  }
+  var tzSel = document.getElementById('f_timezone');
+  tzSel.value = localStorage.getItem('user_tz') || 'auto';
+  document.getElementById('setupModal').classList.add('open');
+}
+
+function applySetup() {
+  var project = document.getElementById('f_project').value.trim();
+  if (!project) { toast('Введите название проекта','⚠️'); return; }
+
+  if (!plan()) {
+    // Create first plan
+    var newPlan = normalizePlan({
+      project:     project,
+      ci_stand:    document.getElementById('f_ci_stand').value.trim(),
+      ci_project:  document.getElementById('f_ci_project').value.trim(),
+      start:       document.getElementById('f_start').value,
+      responsible: document.getElementById('f_responsible').value.trim()
+    });
+    plans.push(newPlan);
+    activePlanId = newPlan.id;
+  } else {
+    var newResp = document.getElementById('f_responsible').value.trim();
+    mutate(function() {
+      var p = plan();
+      p.project     = project;
+      p.ci_stand    = document.getElementById('f_ci_stand').value.trim();
+      p.ci_project  = document.getElementById('f_ci_project').value.trim();
+      p.start       = document.getElementById('f_start').value;
+      p.responsible = newResp;
+      delete p._isNew;
+    });
+    // Patch %user resp fields in DOM without losing focus
+    patchUserRespFields(newResp);
+  }
+
+  if (!getUndoState(activePlanId).stack.length) pushUndo();
+  // Save timezone preference
+  var tzVal = document.getElementById('f_timezone').value;
+  localStorage.setItem('user_tz', tzVal);
+  renderAll();
+  saveToStorage();
+  startNowTicker();
+  closeModal('setupModal');
+  toast('Настройки сохранены','✅');
+}
+
+// Update only the textarea/input fields that display %user responsible
+function patchUserRespFields(newResp) {
+  var p = plan(); if (!p) return;
+  // Stage tasks
+  p.stages.forEach(function(stage, si) {
+    stage.tasks.forEach(function(task, ti) {
+      if (!task.responsible || task.responsible === '%user') {
+        var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+        if (row) {
+          var ta = row.querySelector('[data-key="resp"]');
+          if (ta && document.activeElement !== ta) {
+            ta.value = newResp;
+            autoResize(ta);
+          }
+        }
+      }
+    });
+  });
+  // Rollback rows — they get re-rendered fully so no need to patch
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════
+// NOTIFY
+// ═══════════════════════════════════════════════════════
+function openNotifyModal() {
+  if (!plan()) { toast('Сначала создайте план','⚠️'); return; }
+  notifyEvent='start'; notifyChannel='chat';
+  ['ev-start','ev-close','ev-rollback'].forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+  ['ch-chat','ch-outlook','ch-sms'].forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+  document.getElementById('ev-start').classList.add('active');
+  document.getElementById('ch-chat').classList.add('active');
+  updateNotifyText();
+  document.getElementById('notifyModal').classList.add('open');
+}
+function switchEvent(ev) {
+  notifyEvent=ev;
+  ['ev-start','ev-close','ev-rollback'].forEach(function(id){ document.getElementById(id).classList.toggle('active',id==='ev-'+ev); });
+  updateNotifyText();
+}
+function switchChannel(ch) {
+  notifyChannel=ch;
+  ['ch-chat','ch-outlook','ch-sms'].forEach(function(id){ document.getElementById(id).classList.toggle('active',id==='ch-'+ch); });
+  updateNotifyText();
+}
+function getRecipients(channelFilter) {
+  var p = plan(); if (!p) return [];
+  var all = new Set();
+  (p.communications||[]).forEach(function(c) {
+    if (channelFilter && (!c.channels||!c.channels[channelFilter])) return;
+    var parts = Array.isArray(c.participants) ? c.participants : (c.participants||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    parts.forEach(function(pt){ if(pt) all.add(pt); });
+  });
+  return Array.from(all);
+}
+function updateNotifyText() {
+  var p = plan(); if (!p) return;
+  var startFmt = p.start ? new Date(p.start).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '[не указано]';
+  var rovNum = (document.getElementById('rovNumber')||{}).value||'';
+  var rovLine = rovNum ? '\nРоВ № ' + rovNum + '.' : '';
+  var prj=p.project||'—', cs=p.ci_stand||'—', cp=p.ci_project||'—', resp=p.responsible||'Команда', nl='\n';
+  var recipRow = document.getElementById('recipientsRow');
+  if (notifyChannel==='outlook'||notifyChannel==='sms') {
+    var rec=getRecipients(notifyChannel), lbl=notifyChannel==='outlook'?'📧 Outlook':'📱 SMS';
+    recipRow.style.display=rec.length?'block':'none';
+    recipRow.innerHTML=rec.length?'<b>'+lbl+' Кому:</b> '+rec.join('; '):'';
+  } else { recipRow.style.display='none'; }
+  var text='';
+  if (notifyEvent==='start') {
+    if (notifyChannel==='chat') text='🔧 *Начало регламентных работ*'+nl+nl+'📋 *Проект:* '+prj+nl+'🖥 *CI стенда:* '+cs+nl+'📦 *CI проекта:* '+cp+nl+'⏰ *Начало:* '+startFmt+' МСК'+nl+'👤 *Ответственный:* '+resp+nl+nl+'⚠️ Возможна временная недоступность сервиса.';
+    else if (notifyChannel==='outlook') text='Уважаемые коллеги,'+nl+nl+'Информируем о начале регламентных работ.'+nl+nl+'Проект: '+prj+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Начало: '+startFmt+' (МСК)'+nl+'Ответственный: '+resp+nl+nl+'Возможна временная недоступность сервиса.'+rovLine+nl+nl+'С уважением,'+nl+resp;
+    else text='Начало работ '+startFmt+' МСК. '+prj+' ('+cp+'). Стенд: '+cs+'. Отв: '+resp+'.'+(rovNum?' РоВ №'+rovNum+'.':'');
+  } else if (notifyEvent==='close') {
+    if (notifyChannel==='chat') text='✅ *Регламентные работы завершены*'+nl+nl+'📋 *Проект:* '+prj+nl+'🖥 *CI стенда:* '+cs+nl+'📦 *CI проекта:* '+cp+nl+'👤 *Ответственный:* '+resp+nl+nl+'🟢 Работы завершены успешно. Сервис в штатном режиме.';
+    else if (notifyChannel==='outlook') text='Уважаемые коллеги,'+nl+nl+'Регламентные работы завершены.'+nl+nl+'Проект: '+prj+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Ответственный: '+resp+nl+nl+'Сервис доступен в штатном режиме.'+rovLine+nl+nl+'С уважением,'+nl+resp;
+    else text='Работы завершены. '+prj+' ('+cp+'). Стенд: '+cs+'. Сервис доступен.'+(rovNum?' РоВ №'+rovNum+'.':'');
+  } else {
+    if (notifyChannel==='chat') text='🔴 *Применён план отката*'+nl+nl+'📋 *Проект:* '+prj+nl+'🖥 *CI стенда:* '+cs+nl+'📦 *CI проекта:* '+cp+nl+'👤 *Ответственный:* '+resp+nl+nl+'⚠️ Возникли проблемы. Применён откат.'+nl+'🔄 Сервис восстановлен на предыдущую версию.';
+    else if (notifyChannel==='outlook') text='Уважаемые коллеги,'+nl+nl+'Регламентные работы завершены с применением отката.'+nl+nl+'Проект: '+prj+nl+'CI стенда: '+cs+nl+'CI проекта: '+cp+nl+'Ответственный: '+resp+nl+nl+'Возникли проблемы, применён план отката. Сервис восстановлен.'+rovLine+nl+nl+'С уважением,'+nl+resp;
+    else text='Откат. '+prj+' ('+cp+'). Стенд: '+cs+'.'+(rovNum?' РоВ №'+rovNum+'.':'');
+  }
+  document.getElementById('notifyText').textContent=text;
+}
+function copyNotify() {
+  var text=document.getElementById('notifyText').textContent;
+  var rec=getRecipients(notifyChannel==='outlook'?'outlook':notifyChannel==='sms'?'sms':null);
+  if ((notifyChannel==='outlook'||notifyChannel==='sms') && rec.length) text=(notifyChannel==='outlook'?'Outlook':'SMS')+' Кому: '+rec.join('; ')+'\n\n'+text;
+  navigator.clipboard.writeText(text).then(function(){ toast('Скопировано','📋'); });
+}
+
+// ═══════════════════════════════════════════════════════
+// WORD TABLE
+// ═══════════════════════════════════════════════════════
+function openWordModal() {
+  if (!plan()) { toast('Сначала создайте план','⚠️'); return; }
+  document.getElementById('wordPreview').innerHTML = buildWordHTML();
+  document.getElementById('wordModal').classList.add('open');
+}
+function buildWordHTML() {
+  var p=plan();
+  var title='План-график работ по обновлению '+(p.project||'[проект]')+' ('+(p.ci_project||'CI проекта')+') на стенде '+(p.ci_stand||'CI стенда')+' ПРОМ.';
+  var h='<div class="word-page"><p class="word-page-title">'+esc(title)+'</p><table class="word-table"><colgroup><col style="width:4%"><col style="width:28%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%"></colgroup><thead><tr><th>№</th><th>Работы</th><th>Начало (МСК)</th><th>Окончание (МСК)</th><th>Исполнитель</th><th>Влияние</th><th>Комментарий</th></tr></thead><tbody>';
+  p.stages.forEach(function(stage){ h+='<tr class="stage-row"><td colspan="7">'+esc(stage.title)+'</td></tr>'; stage.tasks.forEach(function(t){ h+='<tr><td></td><td>'+esc(t.name||'')+'</td><td>'+fmtDT(t.start)+'</td><td>'+fmtDT(t.end)+'</td><td>'+esc(t.responsible||'')+'</td><td></td><td>'+esc(t.comment||'')+'</td></tr>'; }); });
+  h+='</tbody></table>';
+  if ((p.rollback||[]).length) { h+='<p class="word-section-label">План отката</p><table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup><thead><tr><th>Работы</th><th>Начало (Час X +)</th><th>Окончание (Час X +)</th><th>Исполнитель</th><th>Комментарий</th></tr></thead><tbody>'; p.rollback.forEach(function(r){ h+='<tr><td>'+esc(r.name||'')+'</td><td>'+esc(fmtRollbackTime(r.startMin||0))+'</td><td>'+esc(r.endMin!==''&&r.endMin!==undefined?fmtRollbackTime(r.endMin):'—')+'</td><td>'+esc(resolveResp(r.responsible))+'</td><td>'+esc(r.comment||'')+'</td></tr>'; }); h+='</tbody></table>'; }
+  if ((p.contacts||[]).length) { h+='<p class="word-section-label">Контактная информация</p><table class="word-table"><colgroup><col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%"></colgroup><thead><tr><th>ФИО</th><th>Роль</th><th>Контакт</th><th>Примечание</th></tr></thead><tbody>'; p.contacts.forEach(function(c){ h+='<tr><td>'+esc(c.name||'')+'</td><td>'+esc(c.role||'')+'</td><td>'+esc(c.phone||'')+'</td><td>'+esc(c.note||'')+'</td></tr>'; }); h+='</tbody></table>'; }
+  if ((p.communications||[]).length) { h+='<p class="word-section-label">План коммуникаций</p><table class="word-table"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:22%"><col style="width:28%"><col style="width:16%"></colgroup><thead><tr><th>Событие</th><th>Вид</th><th>Средство</th><th>Участники</th><th>Ответственный</th></tr></thead><tbody>'; p.communications.forEach(function(c){ var parts=Array.isArray(c.participants)?c.participants.join(', '):(c.participants||''); var v=[],t=[]; if(c.channels&&c.channels.sms){v.push('SMS');t.push('Сервер SMS');} if(c.channels&&c.channels.outlook){v.push('Outlook');t.push('Outlook');} h+='<tr><td>'+esc(c.event||'')+'</td><td>'+esc(v.join(', ')||'—')+'</td><td>'+esc(t.join(', ')||'—')+'</td><td>'+esc(parts)+'</td><td>'+esc(c.responsible||'')+'</td></tr>'; }); h+='</tbody></table>'; }
+  return h+'</div>';
+}
+function copyWordTable() {
+  var el=document.getElementById('wordPreview');
+  var range=document.createRange(); range.selectNode(el);
+  window.getSelection().removeAllRanges(); window.getSelection().addRange(range);
+  document.execCommand('copy'); window.getSelection().removeAllRanges();
+  toast('Скопировано — вставьте в Word (Ctrl+V)','📋');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════
+function exportJSON() {
+  var p=plan(); if(!p){toast('Нет плана','⚠️');return;}
+  var blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='work_plan_'+(p.project||'plan').replace(/[^а-яёa-z0-9]/gi,'_').toLowerCase()+'.json';
+  a.click(); toast('JSON экспортирован','✅');
+}
+function importJSON(event) {
+  var file=event.target.files[0]; if(!file) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try {
+      var data=JSON.parse(e.target.result);
+      var newPlan=normalizePlan(data);
+      // If current active plan is a freshly created empty plan — replace it
+      var cur = plan();
+      if (cur && cur._isNew) {
+        var idx = plans.findIndex(function(p){ return p.id === activePlanId; });
+        plans[idx] = newPlan;
+        delete _undoRegistry[activePlanId];
+      } else {
+        plans.push(newPlan);
+      }
+      activePlanId = newPlan.id;
+      pushUndo(); renderAll(); saveToStorage();
+      closeModal('setupModal');
+      toast('План загружен','✅');
+    } catch(err){ toast('Ошибка чтения JSON','❌'); }
+  };
+  r.readAsText(file); event.target.value='';
+}
+
+// ═══════════════════════════════════════════════════════
+// COMMENT POPUP
+// ═══════════════════════════════════════════════════════
+var _popupDocListener=null;
+function getOrCreatePopup(){
+  var p=document.getElementById('__commentPopup');
+  if(!p){p=document.createElement('div');p.id='__commentPopup';p.className='comment-popup';document.body.appendChild(p);}
+  return p;
+}
+function openCommentPopup(ta,si,ti){
+  var popup=getOrCreatePopup();
+  var html='<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны</div>';
+  COMMENT_SNIPPETS.forEach(function(s,idx){ html+='<div class="comment-snippet" onpointerdown="insertComment('+si+','+ti+','+idx+')">'+esc(s)+'</div>'; });
+  popup.innerHTML=html;
+  var rect=ta.getBoundingClientRect(), popW=270, popH=300;
+  var top=rect.bottom+4, left=rect.left;
+  if(left+popW>window.innerWidth-8) left=window.innerWidth-popW-8;
+  if(top+popH>window.innerHeight-8) top=rect.top-popH-4;
+  popup.style.top=top+'px'; popup.style.left=left+'px';
+  popup.style.display='flex'; popup.classList.add('open');
+  if(_popupDocListener) document.removeEventListener('pointerdown',_popupDocListener,true);
+  _popupDocListener=function(e){if(!popup.contains(e.target)) closeAllPopups();};
+  setTimeout(function(){document.addEventListener('pointerdown',_popupDocListener,true);},0);
+}
+function closeAllPopups(){
+  var p=document.getElementById('__commentPopup');
+  if(p){p.classList.remove('open');p.style.display='none';}
+  if(_popupDocListener){document.removeEventListener('pointerdown',_popupDocListener,true);_popupDocListener=null;}
+}
+function insertComment(si,ti,idx){
+  var text = COMMENT_SNIPPETS[idx];
+  var p = plan(); if(!p) return;
+  p.stages[si].tasks[ti].comment = text;
+  // Always update DOM — don't skip based on activeElement
+  var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+  if (row) { var ta = row.querySelector('[data-key="comment"]'); if (ta) { ta.value = text; autoResize(ta); } }
+  closeAllPopups();
+  pushUndo();
+  saveToStorage();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDT(val){ if(!val) return '—'; try{ return new Date(val).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return val;} }
+function fmtTime(val){ if(!val) return ''; try{ return new Date(val).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }catch(e){return val;} }
+function autoResize(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+function validateCI(input){ var v=input.value.trim(); input.classList.toggle('field-err',v!==''&&!/^CI\d{8}$/.test(v)); }
+function validateTaskName(ta){ var ok=ta.value.trim().length>0; ta.classList.toggle('field-err',!ok); var msg=ta.parentElement.querySelector('.field-err-msg'); if(msg) msg.style.display=ok?'none':''; }
+
+// (buildRollbackSelect removed — rollback now uses onRollbackDurChange)
+
+// ═══════════════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════════════
+var _drag=null;
+function startDrag(e,si,ti){
+  e.preventDefault();
+  var srcRow=e.currentTarget.closest('.task-row'); if(!srcRow) return;
+  _drag={si:si,ti:ti,srcRow:srcRow};
+  srcRow.classList.add('dragging');
+  document.addEventListener('pointermove',onDragMove,{passive:false});
+  document.addEventListener('pointerup',onDragEnd,{once:true});
+}
+function onDragMove(e){
+  if(!_drag) return; e.preventDefault();
+  var el=document.elementFromPoint(e.clientX,e.clientY);
+  var targetRow=el&&el.closest('.task-row');
+  document.querySelectorAll('.drop-above,.drop-below').forEach(function(r){r.classList.remove('drop-above','drop-below');});
+  if(!targetRow||targetRow===_drag.srcRow) return;
+  var rect=targetRow.getBoundingClientRect();
+  targetRow.classList.add(e.clientY<rect.top+rect.height/2?'drop-above':'drop-below');
+}
+function onDragEnd(e){
+  document.removeEventListener('pointermove',onDragMove);
+  if(!_drag) return;
+  var si=_drag.si,fromTi=_drag.ti,srcRow=_drag.srcRow;
+  _drag=null; srcRow.classList.remove('dragging');
+  document.querySelectorAll('.drop-above,.drop-below').forEach(function(r){r.classList.remove('drop-above','drop-below');});
+  var el=document.elementFromPoint(e.clientX,e.clientY);
+  var targetRow=el&&el.closest('.task-row[data-ti]'); if(!targetRow) return;
+  var toSi=parseInt(targetRow.dataset.si), toTi=parseInt(targetRow.dataset.ti);
+  if(toSi!==si||toTi===fromTi) return;
+  mutate(function(){
+    var p=plan(); if(!p) return;
+    var tasks=p.stages[si].tasks;
+    var snap=tasks.map(function(t){return Object.assign({},t);});
+    var rect=targetRow.getBoundingClientRect();
+    var insertAt=e.clientY>=rect.top+rect.height/2?toTi+1:toTi;
+    var moved=snap.splice(fromTi,1)[0];
+    if(insertAt>fromTi) insertAt--;
+    snap.splice(insertAt,0,moved);
+    tasks.length=0; snap.forEach(function(t){tasks.push(t);});
+    renderStages();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════
+function toggleTheme(){
+  var isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',isDark?'light':'dark');
+  var icon=document.getElementById('themeIcon');
+  if(icon) icon.innerHTML=isDark?'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>':'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  localStorage.setItem('theme',isDark?'light':'dark');
+}
+(function(){
+  var t=localStorage.getItem('theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  var icon=document.getElementById('themeIcon');
+  if(icon&&t==='dark') icon.innerHTML='<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+})();
+
+// ═══════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  var tag = document.activeElement && document.activeElement.tagName;
+  var inInput = (tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT');
+  // Escape — close modals
+  if (e.key==='Escape') {
+    ['setupModal','notifyModal','wordModal'].forEach(function(id){ document.getElementById(id).classList.remove('open'); });
+    closeAllPopups();
+    return;
+  }
+  // Ctrl+Z / Ctrl+Y — undo/redo (not when typing)
+  if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key==='z') { e.preventDefault(); undo(); return; }
+  if ((e.ctrlKey||e.metaKey) && (e.key==='y'||(e.shiftKey&&e.key==='z'))) { e.preventDefault(); redo(); return; }
+  // Ctrl+S — export
+  if ((e.ctrlKey||e.metaKey) && e.key==='s') { e.preventDefault(); exportJSON(); return; }
+});
+
+// Modal close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o) o.classList.remove('open');});
+});
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg,icon){
+  icon=icon||'ℹ️';
+  var c=document.getElementById('toastContainer');
+  var t=document.createElement('div'); t.className='toast';
+  t.innerHTML='<span>'+icon+'</span> '+msg;
+  c.appendChild(t); setTimeout(function(){t.remove();},2800);
+}
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+(function boot() {
+  updateCacheBadge();
+  var loaded = loadFromStorage();
+
+  // Migrate old single-plan format if present
+  if (!loaded) {
+    try {
+      var old = localStorage.getItem('work_plan_v1');
+      if (old) {
+        var oldData = JSON.parse(old);
+        if (oldData && oldData.project) {
+          var migrated = normalizePlan(oldData);
+          plans = [migrated];
+          activePlanId = migrated.id;
+          loaded = true;
+          toast('План перенесён из старого формата','✅');
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (loaded) {
+    renderAll();
+    plans.forEach(function(p){ pushUndoFor(p.id); });
+    toast('Планы загружены','💾');
+  }
+
+  updateUndoUI();
+  startNowTicker();
+})();
+
+function pushUndoFor(id) {
+  var p = plans.find(function(pl){ return pl.id===id; });
+  if (!p) return;
+  var us = getUndoState(id);
+  if (!us.stack.length) { us.stack.push(JSON.stringify(p)); us.pos=0; }
+}
+</script>
+</body>
+</html>
