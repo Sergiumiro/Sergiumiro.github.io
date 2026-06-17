@@ -145,12 +145,11 @@ textarea.cell-input{min-height:20px;}
 .ch-tag.sberchat.active{background:#2e7d32;border-color:#1b5e20;color:#fff;}
 
 /* ── INSERT ROW DIVIDER ── */
-.insert-divider{position:relative;height:6px;margin:0;z-index:2;display:flex;align-items:center;cursor:pointer;}
-.insert-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--accent);opacity:0;transition:opacity .15s;transform:translateY(-50%);}
+.insert-divider{position:relative;height:8px;margin:0;z-index:2;display:flex;align-items:center;cursor:pointer;flex-shrink:0;}
+.insert-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--accent);opacity:0;transition:opacity .12s;transform:translateY(-50%);pointer-events:none;}
 .insert-divider:hover::before{opacity:1;}
-.insert-divider .ins-btn{position:absolute;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;line-height:1;box-shadow:var(--shadow);border:2px solid var(--surface);z-index:3;font-weight:700;}
-.insert-divider:hover .ins-btn{display:flex;}
-.insert-divider:hover{height:20px;}
+.insert-divider .ins-btn{position:absolute;left:50%;transform:translateX(-50%) scale(.6);width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;box-shadow:var(--shadow);border:2px solid var(--surface);z-index:3;font-weight:400;opacity:0;transition:opacity .12s,transform .12s;pointer-events:none;}
+.insert-divider:hover .ins-btn{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto;}
 
 .gap-warn{font-size:10px;color:var(--orange);display:flex;align-items:flex-start;gap:3px;margin-top:3px;width:100%;flex-wrap:wrap;}
 .gap-actions{display:flex;flex-direction:column;gap:2px;margin-top:2px;width:100%;}
@@ -660,6 +659,7 @@ function normalizePlan(meta) {
 
 function createNewPlan() {
   var p = normalizePlan({ project: 'Новый план' });
+  p._isNew = true; // mark as not-yet-configured
   plans.push(p);
   activePlanId = p.id;
   pushUndo();
@@ -1324,6 +1324,7 @@ function applySetup() {
       p.ci_project  = document.getElementById('f_ci_project').value.trim();
       p.start       = document.getElementById('f_start').value;
       p.responsible = document.getElementById('f_responsible').value.trim();
+      delete p._isNew; // user configured it — no longer a blank new plan
     });
   }
 
@@ -1448,7 +1449,16 @@ function importJSON(event) {
     try {
       var data=JSON.parse(e.target.result);
       var newPlan=normalizePlan(data);
-      plans.push(newPlan); activePlanId=newPlan.id;
+      // If current active plan is a freshly created empty plan — replace it
+      var cur = plan();
+      if (cur && cur._isNew) {
+        var idx = plans.findIndex(function(p){ return p.id === activePlanId; });
+        plans[idx] = newPlan;
+        delete _undoRegistry[activePlanId];
+      } else {
+        plans.push(newPlan);
+      }
+      activePlanId = newPlan.id;
       pushUndo(); renderAll(); saveToStorage();
       closeModal('setupModal');
       toast('План загружен','✅');
