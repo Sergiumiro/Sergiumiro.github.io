@@ -41,7 +41,7 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 
 /* ── HEADER ── */
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);gap:12px;}
-.header-left{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0;}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1;overflow:hidden;}
 .logo{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;}
 .header-title{font-size:15px;font-weight:600;flex-shrink:0;}
 .header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
@@ -56,7 +56,7 @@ body::after{content:'';position:fixed;left:0;bottom:0;width:150px;height:150px;b
 .plan-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
 .plan-tab-close{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
 .plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
-.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:20px;border:none;background:none;transition:color .15s;height:100%;flex-shrink:0;}
+.plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;color:var(--text-light);cursor:pointer;font-size:18px;line-height:1;border:none;background:none;transition:color .15s;height:100%;flex-shrink:0;vertical-align:middle;}
 .plan-tab-add:hover{color:var(--accent);background:var(--surface2);}
 
 /* ── UNDO indicator ── */
@@ -235,9 +235,10 @@ textarea.cell-input{min-height:20px;}
 .word-section-label{font-weight:bold;font-size:11pt;margin:12px 0 5px;}
 
 /* ── CURRENT TASK BANNER ── */
-.current-task-banner{display:none;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 12px;font-size:12px;color:var(--green);font-weight:600;max-width:340px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex-shrink:1;min-width:0;}
+.current-task-banner{display:none;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 10px;font-size:12px;color:var(--green);font-weight:600;min-width:0;flex:1;overflow:hidden;}
 .current-task-banner.visible{display:flex;}
 .current-task-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;}
+.current-task-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
 /* ── TASK TEMPLATES MODAL ── */
@@ -273,7 +274,7 @@ textarea.cell-input{min-height:20px;}
     <span class="cache-badge" id="cacheBadge" style="display:none"></span>
     <div class="current-task-banner" id="currentTaskBanner">
       <span class="current-task-dot"></span>
-      <span id="currentTaskText"></span>
+      <span class="current-task-text" id="currentTaskText"></span>
     </div>
   </div>
   <div class="header-actions">
@@ -565,7 +566,7 @@ textarea.cell-input{min-height:20px;}
     <div class="modal-body" style="gap:12px">
       <div class="form-group">
         <label class="form-label">Добавить в этап</label>
-        <select class="tpl-stage-select" id="tplStageSelect">
+        <select class="tpl-stage-select" id="tplStageSelect" onchange="renderTemplateGroups()">
           <option value="0">Этап 1 — Подготовительные работы</option>
           <option value="1">Этап 2 — Основные работы</option>
           <option value="2">Этап 3 — Заключительные мероприятия</option>
@@ -605,36 +606,76 @@ var COMMENT_SNIPPETS = [
 var STORAGE_KEY = 'work_plans_v2';
 var UNDO_LIMIT  = 50;
 
-// Built-in task templates
-var TASK_TEMPLATES = [
-  { group: 'Подготовка', items: [
-    { name: 'Резервное копирование данных',         dur: 30 },
-    { name: 'Проверка свободного места на диске',   dur: 5  },
-    { name: 'Уведомление команды о начале работ',   dur: 5  },
-    { name: 'Снятие конфигурации (бэкап конфига)',  dur: 10 },
-    { name: 'Проверка доступности зависимых систем',dur: 10 }
-  ]},
-  { group: 'Деплой', items: [
-    { name: 'Остановка сервиса',                    dur: 5  },
-    { name: 'Применение обновления',                dur: 20 },
-    { name: 'Запуск сервиса',                       dur: 5  },
-    { name: 'Применение миграции БД',               dur: 15 },
-    { name: 'Перезапуск зависимых сервисов',        dur: 10 }
-  ]},
-  { group: 'Проверка', items: [
-    { name: 'Проверка логов на ошибки',             dur: 10 },
-    { name: 'Функциональная проверка сервиса',      dur: 15 },
-    { name: 'Нагрузочный тест',                     dur: 20 },
-    { name: 'Проверка интеграций',                  dur: 10 },
-    { name: 'Мониторинг метрик (15 мин)',            dur: 15 }
-  ]},
-  { group: 'Завершение', items: [
-    { name: 'Уведомление об успешном завершении',   dur: 5  },
-    { name: 'Закрытие РоВ',                         dur: 5  },
-    { name: 'Обновление документации',              dur: 10 },
-    { name: 'Архивирование логов',                  dur: 10 }
-  ]}
-];
+// Built-in task templates — keyed by stage index (0, 1, 2)
+var TASK_TEMPLATES = {
+  0: [ // Этап 1 — Подготовительные работы
+    { group: 'Уведомления', items: [
+      { name: 'Рассылка уведомления о начале работ',       dur: 5  },
+      { name: 'Подтверждение готовности команды',          dur: 5  },
+      { name: 'Фиксация участников в чате РоВ',            dur: 5  }
+    ]},
+    { group: 'Проверки перед стартом', items: [
+      { name: 'Проверка доступности стенда',               dur: 5  },
+      { name: 'Проверка доступности зависимых систем',     dur: 10 },
+      { name: 'Проверка свободного места на диске',        dur: 5  },
+      { name: 'Проверка актуальности резервной копии',     dur: 10 }
+    ]},
+    { group: 'Резервирование', items: [
+      { name: 'Резервное копирование БД',                  dur: 30 },
+      { name: 'Резервное копирование конфигурации',        dur: 10 },
+      { name: 'Снятие снапшота виртуальной машины',        dur: 15 },
+      { name: 'Экспорт текущих настроек приложения',       dur: 10 }
+    ]},
+    { group: 'Подготовка среды', items: [
+      { name: 'Перевод сервиса в режим обслуживания',      dur: 5  },
+      { name: 'Блокировка входящих запросов',              dur: 5  },
+      { name: 'Ожидание завершения активных сессий',       dur: 10 },
+      { name: 'Остановка планировщиков и джобов',          dur: 5  }
+    ]}
+  ],
+  1: [ // Этап 2 — Основные работы
+    { group: 'Деплой', items: [
+      { name: 'Остановка сервиса',                         dur: 5  },
+      { name: 'Применение обновления / патча',             dur: 20 },
+      { name: 'Запуск сервиса',                            dur: 5  },
+      { name: 'Применение миграции БД',                    dur: 15 },
+      { name: 'Перезапуск зависимых сервисов',             dur: 10 }
+    ]},
+    { group: 'Конфигурация', items: [
+      { name: 'Применение новой конфигурации',             dur: 10 },
+      { name: 'Обновление переменных окружения',           dur: 5  },
+      { name: 'Настройка сетевых правил / firewall',       dur: 10 },
+      { name: 'Обновление SSL-сертификатов',               dur: 15 }
+    ]},
+    { group: 'Инфраструктура', items: [
+      { name: 'Масштабирование / добавление узлов',        dur: 20 },
+      { name: 'Изменение балансировщика нагрузки',         dur: 10 },
+      { name: 'Переключение DNS / маршрутизации',          dur: 10 },
+      { name: 'Обновление схемы БД',                       dur: 20 }
+    ]}
+  ],
+  2: [ // Этап 3 — Заключительные мероприятия
+    { group: 'Проверка после работ', items: [
+      { name: 'Проверка логов на ошибки',                  dur: 10 },
+      { name: 'Функциональная проверка сервиса',           dur: 15 },
+      { name: 'Проверка интеграций со смежными системами', dur: 10 },
+      { name: 'Нагрузочный тест',                          dur: 20 },
+      { name: 'Мониторинг метрик (15 мин)',                 dur: 15 }
+    ]},
+    { group: 'Снятие ограничений', items: [
+      { name: 'Снятие режима обслуживания',                dur: 5  },
+      { name: 'Разблокировка входящих запросов',           dur: 5  },
+      { name: 'Запуск планировщиков и джобов',             dur: 5  }
+    ]},
+    { group: 'Завершение и документирование', items: [
+      { name: 'Уведомление об успешном завершении работ',  dur: 5  },
+      { name: 'Закрытие РоВ',                              dur: 5  },
+      { name: 'Обновление документации / Wiki',            dur: 15 },
+      { name: 'Архивирование логов работ',                 dur: 10 },
+      { name: 'Ретроспектива / фиксация замечаний',        dur: 10 }
+    ]}
+  ]
+};
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -908,11 +949,17 @@ function openTemplatesModal() {
 }
 
 function renderTemplateGroups() {
+  var si = parseInt(document.getElementById('tplStageSelect').value) || 0;
+  var groups = TASK_TEMPLATES[si] || [];
   var container = document.getElementById('tplGroups');
   container.innerHTML = '';
-  TASK_TEMPLATES.forEach(function(group) {
+  if (!groups.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0">Нет шаблонов для этого этапа</div>';
+    return;
+  }
+  groups.forEach(function(group) {
     var g = document.createElement('div');
-    g.innerHTML = '<div class="tpl-group-label">' + esc(group.group) + '</div><div class="tpl-items" id="tplg-' + esc(group.group) + '"></div>';
+    g.innerHTML = '<div class="tpl-group-label">' + esc(group.group) + '</div><div class="tpl-items"></div>';
     container.appendChild(g);
     var itemsEl = g.querySelector('.tpl-items');
     group.items.forEach(function(item) {
@@ -935,12 +982,25 @@ function addTemplateTask(item) {
   mutate(function() {
     var p = plan(); if (!p) return;
     var tasks = p.stages[si].tasks;
-    // Auto-fill start from last task's end
-    var startVal = tasks.length ? (tasks[tasks.length-1].end || '') : '';
+    // Start = end of last task, or start of plan if no tasks yet
+    var startVal = '';
+    if (tasks.length > 0) {
+      startVal = tasks[tasks.length-1].end || tasks[tasks.length-1].start || '';
+    }
+    if (!startVal) {
+      // Walk all previous stages for a time anchor
+      for (var s = si; s >= 0; s--) {
+        var stg = p.stages[s].tasks;
+        if (stg.length > 0) {
+          startVal = stg[stg.length-1].end || stg[stg.length-1].start || '';
+          if (startVal) break;
+        }
+      }
+    }
+    if (!startVal) startVal = p.start || '';
     var endVal = '';
     if (startVal) {
-      var endDate = new Date(new Date(startVal).getTime() + item.dur * 60000);
-      endVal = toDatetimeLocal(endDate);
+      endVal = toDatetimeLocal(new Date(new Date(startVal).getTime() + item.dur * 60000));
     }
     tasks.push({ name: item.name, start: startVal, end: endVal, responsible: '', comment: '' });
     renderStages();
@@ -1789,7 +1849,14 @@ function buildWordHTML() {
   var h='<div class="word-page"><p class="word-page-title">'+esc(title)+'</p><table class="word-table"><colgroup><col style="width:4%"><col style="width:28%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%"></colgroup><thead><tr><th>№</th><th>Работы</th><th>Начало (МСК)</th><th>Окончание (МСК)</th><th>Исполнитель</th><th>Влияние</th><th>Комментарий</th></tr></thead><tbody>';
   p.stages.forEach(function(stage){ h+='<tr class="stage-row"><td colspan="7">'+esc(stage.title)+'</td></tr>'; stage.tasks.forEach(function(t){ h+='<tr><td></td><td>'+esc(t.name||'')+'</td><td>'+fmtDT(t.start)+'</td><td>'+fmtDT(t.end)+'</td><td>'+esc(t.responsible||'')+'</td><td></td><td>'+esc(t.comment||'')+'</td></tr>'; }); });
   h+='</tbody></table>';
-  if ((p.rollback||[]).length) { h+='<p class="word-section-label">План отката</p><table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup><thead><tr><th>Работы</th><th>Начало (Час X +)</th><th>Окончание (Час X +)</th><th>Исполнитель</th><th>Комментарий</th></tr></thead><tbody>'; p.rollback.forEach(function(r){ h+='<tr><td>'+esc(r.name||'')+'</td><td>'+esc(fmtRollbackTime(r.startMin||0))+'</td><td>'+esc(r.endMin!==''&&r.endMin!==undefined?fmtRollbackTime(r.endMin):'—')+'</td><td>'+esc(resolveResp(r.responsible))+'</td><td>'+esc(r.comment||'')+'</td></tr>'; }); h+='</tbody></table>'; }
+  h+='<p class="word-section-label">План отката</p>';
+  if ((p.rollback||[]).length) {
+    h+='<table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup><thead><tr><th>Работы</th><th>Начало (Час X +)</th><th>Окончание (Час X +)</th><th>Исполнитель</th><th>Комментарий</th></tr></thead><tbody>';
+    p.rollback.forEach(function(r){ h+='<tr><td>'+esc(r.name||'')+'</td><td>'+esc(fmtRollbackTime(r.startMin||0))+'</td><td>'+esc(r.endMin!==''&&r.endMin!==undefined?fmtRollbackTime(r.endMin):'—')+'</td><td>'+esc(resolveResp(r.responsible))+'</td><td>'+esc(r.comment||'')+'</td></tr>'; });
+    h+='</tbody></table>';
+  } else {
+    h+='<p style="font-size:10pt;color:#555;font-style:italic;margin:4px 0 10px">План отката не предусмотрен.</p>';
+  }
   if ((p.contacts||[]).length) { h+='<p class="word-section-label">Контактная информация</p><table class="word-table"><colgroup><col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%"></colgroup><thead><tr><th>ФИО</th><th>Роль</th><th>Контакт</th><th>Примечание</th></tr></thead><tbody>'; p.contacts.forEach(function(c){ h+='<tr><td>'+esc(c.name||'')+'</td><td>'+esc(c.role||'')+'</td><td>'+esc(c.phone||'')+'</td><td>'+esc(c.note||'')+'</td></tr>'; }); h+='</tbody></table>'; }
   if ((p.communications||[]).length) { h+='<p class="word-section-label">План коммуникаций</p><table class="word-table"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:22%"><col style="width:28%"><col style="width:16%"></colgroup><thead><tr><th>Событие</th><th>Вид</th><th>Средство</th><th>Участники</th><th>Ответственный</th></tr></thead><tbody>'; p.communications.forEach(function(c){ var parts=Array.isArray(c.participants)?c.participants.join(', '):(c.participants||''); var v=[],t=[]; if(c.channels&&c.channels.sms){v.push('SMS');t.push('Сервер SMS');} if(c.channels&&c.channels.outlook){v.push('Outlook');t.push('Outlook');} h+='<tr><td>'+esc(c.event||'')+'</td><td>'+esc(v.join(', ')||'—')+'</td><td>'+esc(t.join(', ')||'—')+'</td><td>'+esc(parts)+'</td><td>'+esc(c.responsible||'')+'</td></tr>'; }); h+='</tbody></table>'; }
   return h+'</div>';
