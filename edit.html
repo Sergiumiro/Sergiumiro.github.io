@@ -322,6 +322,7 @@ textarea.cell-input{min-height:20px;}
         <div class="tasks-header">
           <div class="th-cell col-name">Работы</div>
           <div class="th-cell col-dur">Начало (Час X +)</div>
+          <div class="th-cell col-dur">Длительность</div>
           <div class="th-cell col-dur">Окончание (Час X +)</div>
           <div class="th-cell col-resp">Исполнитель</div>
           <div class="th-cell col-comment">Комментарий</div>
@@ -923,10 +924,27 @@ function patchInput(row, selector, value) {
   }
 }
 
+// Resolve %user token → plan.responsible at render time
+function resolveResp(raw) {
+  if (!raw || raw === '%user') {
+    var p = plan();
+    return p ? (p.responsible || '') : '';
+  }
+  return raw;
+}
+
 function respVal(task) {
+  return resolveResp(task.responsible);
+}
+
+// When user edits the responsible field:
+// empty or same as global → store '%user' (stays synced with settings)
+// anything custom → store literally
+function encodeResp(value) {
   var p = plan();
-  return (task.responsible !== undefined && task.responsible !== null && task.responsible !== '')
-    ? task.responsible : (p ? p.responsible||'' : '');
+  if (!value || !value.trim()) return '%user';
+  if (p && value.trim() === (p.responsible || '').trim()) return '%user';
+  return value;
 }
 
 function taskRowHTML(si, ti, task, allTasks) {
@@ -1024,8 +1042,10 @@ function setField(section, si, ti, field, value) {
   var target;
   if (section === 'stages') target = p.stages[si] && p.stages[si].tasks[ti];
   if (!target) return;
-  if (target[field] === value) return; // no change
-  target[field] = value;
+  // Encode responsible: empty/same-as-global → %user
+  var storeValue = (field === 'responsible') ? encodeResp(value) : value;
+  if (target[field] === storeValue) return; // no change
+  target[field] = storeValue;
   // Only re-render gap zone (non-input area), not the full table
   var rowEl = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
   if (rowEl) {
@@ -1046,23 +1066,105 @@ function setField(section, si, ti, field, value) {
 }
 
 // ─── ROLLBACK ─────────────────────────────────────────
+// Time model: row.startMin / row.endMin — integer minutes from "Час X"
+// Display: "Час X + 0:00", "Час X + 0:30", etc.
+
+function fmtRollbackTime(min) {
+  if (min === undefined || min === null || min === '') return '—';
+  var m = parseInt(min);
+  var h = Math.floor(m / 60), mm = m % 60;
+  return 'Час X + ' + String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+}
+
 function renderRollback() {
   var p = plan(); if (!p) return;
   var c = document.getElementById('rollbackTasks');
   c.innerHTML = '';
+
+  // Ensure first row always starts at 0
+  if (p.rollback && p.rollback.length > 0) {
+    p.rollback[0].startMin = 0;
+  }
+
+  var durOptions = [5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
+
   (p.rollback||[]).forEach(function(row, ri) {
+    var isFirst = ri === 0;
+    var startMin = (row.startMin !== undefined && row.startMin !== null) ? parseInt(row.startMin) : 0;
+    var endMin   = (row.endMin   !== undefined && row.endMin   !== null) ? parseInt(row.endMin)   : '';
+    var durMin   = (endMin !== '' && !isNaN(endMin)) ? (endMin - startMin) : '';
+
+    var durSelect = durOptions.map(function(m) {
+      var h = Math.floor(m/60), mn = m%60;
+      var label = h > 0 ? (mn > 0 ? h+'ч '+mn+'м' : h+'ч') : m+'м';
+      return '<option value="'+m+'"'+(durMin===m?' selected':'')+'>'+label+'</option>';
+    }).join('');
+
+    var durBadge = '';
+    if (durMin !== '' && !isNaN(durMin) && durMin > 0) {
+      var dh = Math.floor(durMin/60), dm = durMin%60;
+      durBadge = '<div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px">⏱ '+(dh>0?(dm>0?dh+'ч '+dm+'м':dh+'ч'):dm+'м')+'</div>';
+    }
+
     var el = document.createElement('div');
-    el.className = 'task-row';
+    el.className = 'task-row ' + (ri%2===0?'even':'odd');
+    el.dataset.ri = ri;
+
     el.innerHTML =
-      '<div class="task-cell col-name"><textarea class="cell-input" rows="1" placeholder="Работа"' +
-        ' oninput="autoResize(this);setRollbackField('+ri+',\'name\',this.value)">' + esc(row.name||'') + '</textarea></div>' +
-      '<div class="task-cell col-dur" style="padding:5px 7px">' + buildRollbackSelect(ri,'start',row.start||'') + '</div>' +
-      '<div class="task-cell col-dur" style="padding:5px 7px">' + buildRollbackSelect(ri,'end',row.end||'') + '</div>' +
-      '<div class="task-cell col-resp"><input class="cell-input" placeholder="Исполнитель" value="' + esc(row.responsible||p.responsible||'') + '" onchange="setRollbackField('+ri+',\'responsible\',this.value)"></div>' +
+      '<div class="task-cell col-name" style="flex-direction:column;align-items:flex-start">' +
+        '<textarea class="cell-input" rows="1" placeholder="Работа"' +
+          ' oninput="autoResize(this);setRollbackField('+ri+',\'name\',this.value)">' + esc(row.name||'') + '</textarea>' +
+      '</div>' +
+      // Start — always readonly display (auto-chained)
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<div style="font-size:12px;font-weight:600;color:'+(isFirst?'var(--accent)':'var(--text-muted)')+'">'+fmtRollbackTime(startMin)+'</div>' +
+        (isFirst ? '<div style="font-size:10px;color:var(--text-light);margin-top:2px">Старт отката</div>' : '') +
+      '</div>' +
+      // Duration selector → auto-sets endMin
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 3px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%"' +
+          ' onchange="onRollbackDurChange('+ri+',this.value)">' +
+          '<option value="">— длит. —</option>' + durSelect +
+        '</select>' +
+        durBadge +
+      '</div>' +
+      // End — readonly display
+      '<div class="task-cell col-dur" style="flex-direction:column;align-items:flex-start;padding:6px 8px">' +
+        '<div style="font-size:12px;color:var(--text-muted)">' + (endMin !== '' && !isNaN(endMin) ? fmtRollbackTime(endMin) : '—') + '</div>' +
+      '</div>' +
+      '<div class="task-cell col-resp"><input class="cell-input" placeholder="Исполнитель" value="' + esc(resolveResp(row.responsible)) + '" onchange="setRollbackField('+ri+',\'responsible\',encodeResp(this.value))"></div>' +
       '<div class="task-cell col-comment"><input class="cell-input" placeholder="Комментарий" value="' + esc(row.comment||'') + '" onchange="setRollbackField('+ri+',\'comment\',this.value)"></div>' +
-      '<div class="task-cell col-del"><button class="row-del" onclick="removeRollback('+ri+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
-    setTimeout(function(){ var ta=el.querySelector('textarea'); if(ta) autoResize(ta); },0);
+      '<div class="task-cell col-del"><button class="row-del" onclick="removeRollback('+ri+')" title="Удалить"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+
+    setTimeout(function(){ var ta=el.querySelector('textarea'); if(ta) autoResize(ta); }, 0);
     c.appendChild(el);
+  });
+}
+
+function onRollbackDurChange(ri, minutes) {
+  if (!minutes) return;
+  mutate(function() {
+    var p = plan(); if (!p) return;
+    var row = p.rollback[ri]; if (!row) return;
+    var startMin = (row.startMin !== undefined && row.startMin !== null) ? parseInt(row.startMin) : 0;
+    var endMin = startMin + parseInt(minutes);
+    row.endMin = endMin;
+    // Propagate: next row's startMin = this row's endMin
+    if (ri + 1 < p.rollback.length) {
+      p.rollback[ri+1].startMin = endMin;
+      // Cascade further if next rows already have durations set
+      for (var i = ri+1; i < p.rollback.length - 1; i++) {
+        var cur = p.rollback[i];
+        if (cur.endMin !== undefined && cur.endMin !== null && cur.endMin !== '') {
+          var dur = parseInt(cur.endMin) - parseInt(cur.startMin);
+          if (!isNaN(dur) && dur > 0) {
+            p.rollback[i+1].startMin = parseInt(cur.startMin) + dur;
+            p.rollback[i+1].endMin   = parseInt(cur.startMin) + dur + dur; // keep same duration
+          }
+        }
+      }
+    }
+    renderRollback();
   });
 }
 
@@ -1166,7 +1268,7 @@ function addTask(si) {
     var p = plan(); if (!p) return;
     var tasks = p.stages[si].tasks;
     var startVal = tasks.length ? (tasks[tasks.length-1].end||'') : (si===1 ? p.start||'' : '');
-    tasks.push({name:'', start:startVal, end:'', responsible:'', comment:''});
+    tasks.push({name:'', start:startVal, end:'', responsible:'%user', comment:''});
     renderStages();
   });
 }
@@ -1176,7 +1278,7 @@ function insertTaskAt(si, insertAt) {
     var tasks = p.stages[si].tasks;
     // inherit start from previous task's end if available
     var startVal = (insertAt > 0 && tasks[insertAt-1]) ? (tasks[insertAt-1].end||'') : '';
-    tasks.splice(insertAt, 0, {name:'', start:startVal, end:'', responsible:'', comment:''});
+    tasks.splice(insertAt, 0, {name:'', start:startVal, end:'', responsible:'%user', comment:''});
     renderStages();
   });
   // focus the name field of the newly inserted row
@@ -1212,7 +1314,13 @@ function fixGapShiftNext(si, thisTi) {
 function addRollbackTask() {
   mutate(function() {
     var p = plan(); if (!p) return;
-    p.rollback.push({name:'', start:'', end:'', responsible:p.responsible||'', comment:''});
+    var rb = p.rollback;
+    var startMin = 0;
+    if (rb.length > 0) {
+      var prev = rb[rb.length - 1];
+      startMin = (prev.endMin !== undefined && prev.endMin !== null && prev.endMin !== '') ? parseInt(prev.endMin) : (parseInt(prev.startMin)||0);
+    }
+    rb.push({name:'', startMin: startMin, endMin:'', responsible:'%user', comment:''});
     renderRollback();
   });
 }
@@ -1317,15 +1425,18 @@ function applySetup() {
     plans.push(newPlan);
     activePlanId = newPlan.id;
   } else {
+    var newResp = document.getElementById('f_responsible').value.trim();
     mutate(function() {
       var p = plan();
       p.project     = project;
       p.ci_stand    = document.getElementById('f_ci_stand').value.trim();
       p.ci_project  = document.getElementById('f_ci_project').value.trim();
       p.start       = document.getElementById('f_start').value;
-      p.responsible = document.getElementById('f_responsible').value.trim();
-      delete p._isNew; // user configured it — no longer a blank new plan
+      p.responsible = newResp;
+      delete p._isNew;
     });
+    // Patch %user resp fields in DOM without losing focus
+    patchUserRespFields(newResp);
   }
 
   if (!getUndoState(activePlanId).stack.length) pushUndo();
@@ -1333,6 +1444,27 @@ function applySetup() {
   saveToStorage();
   closeModal('setupModal');
   toast('Настройки сохранены','✅');
+}
+
+// Update only the textarea/input fields that display %user responsible
+function patchUserRespFields(newResp) {
+  var p = plan(); if (!p) return;
+  // Stage tasks
+  p.stages.forEach(function(stage, si) {
+    stage.tasks.forEach(function(task, ti) {
+      if (!task.responsible || task.responsible === '%user') {
+        var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+        if (row) {
+          var ta = row.querySelector('[data-key="resp"]');
+          if (ta && document.activeElement !== ta) {
+            ta.value = newResp;
+            autoResize(ta);
+          }
+        }
+      }
+    });
+  });
+  // Rollback rows — they get re-rendered fully so no need to patch
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1419,7 +1551,7 @@ function buildWordHTML() {
   var h='<div class="word-page"><p class="word-page-title">'+esc(title)+'</p><table class="word-table"><colgroup><col style="width:4%"><col style="width:28%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:18%"></colgroup><thead><tr><th>№</th><th>Работы</th><th>Начало (МСК)</th><th>Окончание (МСК)</th><th>Исполнитель</th><th>Влияние</th><th>Комментарий</th></tr></thead><tbody>';
   p.stages.forEach(function(stage){ h+='<tr class="stage-row"><td colspan="7">'+esc(stage.title)+'</td></tr>'; stage.tasks.forEach(function(t){ h+='<tr><td></td><td>'+esc(t.name||'')+'</td><td>'+fmtDT(t.start)+'</td><td>'+fmtDT(t.end)+'</td><td>'+esc(t.responsible||'')+'</td><td></td><td>'+esc(t.comment||'')+'</td></tr>'; }); });
   h+='</tbody></table>';
-  if ((p.rollback||[]).length) { h+='<p class="word-section-label">План отката</p><table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup><thead><tr><th>Работы</th><th>Начало</th><th>Окончание</th><th>Исполнитель</th><th>Комментарий</th></tr></thead><tbody>'; p.rollback.forEach(function(r){ h+='<tr><td>'+esc(r.name||'')+'</td><td>'+esc(r.start||'')+'</td><td>'+esc(r.end||'')+'</td><td>'+esc(r.responsible||'')+'</td><td>'+esc(r.comment||'')+'</td></tr>'; }); h+='</tbody></table>'; }
+  if ((p.rollback||[]).length) { h+='<p class="word-section-label">План отката</p><table class="word-table"><colgroup><col style="width:32%"><col style="width:17%"><col style="width:17%"><col style="width:18%"><col style="width:16%"></colgroup><thead><tr><th>Работы</th><th>Начало (Час X +)</th><th>Окончание (Час X +)</th><th>Исполнитель</th><th>Комментарий</th></tr></thead><tbody>'; p.rollback.forEach(function(r){ h+='<tr><td>'+esc(r.name||'')+'</td><td>'+esc(fmtRollbackTime(r.startMin||0))+'</td><td>'+esc(r.endMin!==''&&r.endMin!==undefined?fmtRollbackTime(r.endMin):'—')+'</td><td>'+esc(resolveResp(r.responsible))+'</td><td>'+esc(r.comment||'')+'</td></tr>'; }); h+='</tbody></table>'; }
   if ((p.contacts||[]).length) { h+='<p class="word-section-label">Контактная информация</p><table class="word-table"><colgroup><col style="width:28%"><col style="width:28%"><col style="width:22%"><col style="width:22%"></colgroup><thead><tr><th>ФИО</th><th>Роль</th><th>Контакт</th><th>Примечание</th></tr></thead><tbody>'; p.contacts.forEach(function(c){ h+='<tr><td>'+esc(c.name||'')+'</td><td>'+esc(c.role||'')+'</td><td>'+esc(c.phone||'')+'</td><td>'+esc(c.note||'')+'</td></tr>'; }); h+='</tbody></table>'; }
   if ((p.communications||[]).length) { h+='<p class="word-section-label">План коммуникаций</p><table class="word-table"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:22%"><col style="width:28%"><col style="width:16%"></colgroup><thead><tr><th>Событие</th><th>Вид</th><th>Средство</th><th>Участники</th><th>Ответственный</th></tr></thead><tbody>'; p.communications.forEach(function(c){ var parts=Array.isArray(c.participants)?c.participants.join(', '):(c.participants||''); var v=[],t=[]; if(c.channels&&c.channels.sms){v.push('SMS');t.push('Сервер SMS');} if(c.channels&&c.channels.outlook){v.push('Outlook');t.push('Outlook');} h+='<tr><td>'+esc(c.event||'')+'</td><td>'+esc(v.join(', ')||'—')+'</td><td>'+esc(t.join(', ')||'—')+'</td><td>'+esc(parts)+'</td><td>'+esc(c.responsible||'')+'</td></tr>'; }); h+='</tbody></table>'; }
   return h+'</div>';
@@ -1497,14 +1629,15 @@ function closeAllPopups(){
   if(_popupDocListener){document.removeEventListener('pointerdown',_popupDocListener,true);_popupDocListener=null;}
 }
 function insertComment(si,ti,idx){
-  mutate(function(){
-    var p=plan(); if(!p) return;
-    p.stages[si].tasks[ti].comment=COMMENT_SNIPPETS[idx];
-    // patch only the comment textarea
-    var row=document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
-    if(row){ var ta=row.querySelector('[data-key="comment"]'); if(ta && document.activeElement!==ta){ ta.value=COMMENT_SNIPPETS[idx]; autoResize(ta); } }
-  });
+  var text = COMMENT_SNIPPETS[idx];
+  var p = plan(); if(!p) return;
+  p.stages[si].tasks[ti].comment = text;
+  // Always update DOM — don't skip based on activeElement
+  var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+  if (row) { var ta = row.querySelector('[data-key="comment"]'); if (ta) { ta.value = text; autoResize(ta); } }
   closeAllPopups();
+  pushUndo();
+  saveToStorage();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1517,11 +1650,7 @@ function autoResize(el){ el.style.height='auto'; el.style.height=el.scrollHeight
 function validateCI(input){ var v=input.value.trim(); input.classList.toggle('field-err',v!==''&&!/^CI\d{8}$/.test(v)); }
 function validateTaskName(ta){ var ok=ta.value.trim().length>0; ta.classList.toggle('field-err',!ok); var msg=ta.parentElement.querySelector('.field-err-msg'); if(msg) msg.style.display=ok?'none':''; }
 
-function buildRollbackSelect(ri, field, val) {
-  var opts=[5,10,15,20,25,30,40,45,60,75,90,105,120,150,180,210,240];
-  var options=opts.map(function(m){ var h=Math.floor(m/60),mn=m%60; var label=h>0?(mn>0?'Час X + '+h+'ч '+mn+'м':'Час X + '+h+'ч'):'Час X + '+m+'м'; var stored='Час X + '+(h>0?(mn>0?h+'ч '+mn+'м':h+'ч'):m+'м'); return '<option value="'+stored+'" '+(val===stored?'selected':'')+'>'+label+'</option>'; }).join('');
-  return '<select class="cell-input" style="cursor:pointer;font-size:12px;padding:2px 3px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);width:100%" onchange="setRollbackField('+ri+',\''+field+'\',this.value)"><option value="">—</option>'+options+'</select>';
-}
+// (buildRollbackSelect removed — rollback now uses onRollbackDurChange)
 
 // ═══════════════════════════════════════════════════════
 // DRAG & DROP
