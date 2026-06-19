@@ -805,7 +805,8 @@ textarea.cell-input{min-height:20px;}
     </button>
   </div>
   <div class="cal-detail-body" id="calDetailBody"></div>
-  <div class="cal-detail-footer">
+  <div class="cal-detail-footer" style="display:flex;flex-direction:column;gap:7px;">
+    <div id="calDetailStatusBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     <button class="btn btn-primary btn-sm" id="calDetailGotoBtn" onclick="calGotoTask()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Перейти к задаче
@@ -1351,6 +1352,7 @@ function tickCurrentTask() {
       for (var ti = 0; ti < tasks.length; ti++) {
         var t = tasks[ti];
         if (!t.start || !t.end) continue;
+        if (t.manualStatus === 'done') continue; // manually marked done — skip in banner
         var startMs = new Date(t.start).getTime();
         var endMs   = new Date(t.end).getTime();
         if (nowMs >= startMs && nowMs < endMs) {
@@ -2569,7 +2571,8 @@ function buildCalEvents() {
           name: task.name || '(без названия)',
           start: task.start, end: task.end,
           startMs: startMs, endMs: endMs,
-          resp: resolveResp(task.responsible), comment: task.comment || ''
+          resp: resolveResp(task.responsible), comment: task.comment || '',
+          manualStatus: task.manualStatus || null
         });
       });
     });
@@ -2734,10 +2737,12 @@ function renderCalAgenda(eventsToday) {
   evs.forEach(function(ev, i){
     // Each event gets its own status check
     var status;
-    if (ev.endMs <= nowMs) {
+    if (ev.manualStatus === 'done') {
+      status = 'done'; // manually marked done
+    } else if (ev.endMs <= nowMs) {
       status = 'done';
     } else if (ev.startMs <= nowMs && nowMs < ev.endMs) {
-      status = 'now';
+      status = ev.manualStatus || 'now';
     } else if (i === nextIdx) {
       status = 'next';
     } else {
@@ -2827,19 +2832,51 @@ function openCalDetail(ev, blockEl, colorClass) {
   var durMin = Math.round((ev.endMs - ev.startMs) / 60000);
   var durStr = durMin >= 60 ? Math.floor(durMin/60)+'ч '+(durMin%60?durMin%60+'м':'') : durMin+'м';
 
+  // Status label with manual override indicator
+  var p = plans.find(function(pl){ return pl.id === ev.planId; });
+  var task = p && p.stages[ev.si] && p.stages[ev.si].tasks[ev.ti];
+  var manualStatus = task && task.manualStatus;
+  var statusLabel = {done:'✅ Выполнено', now:'⏳ Сейчас', next:'➡️ Далее', soon:'🕐 Предстоит'}[colorClass] || colorClass;
+  if (manualStatus) statusLabel += ' <span style="font-size:10px;opacity:.7">(вручную)</span>';
+
   var body = document.getElementById('calDetailBody');
   body.innerHTML =
     detailRow('План', ev.planName) +
     detailRow('Этап', shortStage(ev.stageName)) +
+    detailRowHTML('Статус', statusLabel) +
     detailRow('Начало', fmtDT(ev.start)) +
     detailRow('Окончание', fmtDT(ev.end)) +
     detailRow('Длительность', durStr) +
     detailRow('Исполнитель', ev.resp || '—') +
     (ev.comment ? detailRow('Комментарий', ev.comment) : '');
 
+  // Status control buttons
+  var btnsEl = document.getElementById('calDetailStatusBtns');
+  btnsEl.innerHTML = '';
+  if (colorClass !== 'done' || manualStatus === 'done') {
+    // Show "Mark done" if not already manually done
+    if (manualStatus !== 'done') {
+      var btnDone = document.createElement('button');
+      btnDone.className = 'btn btn-sm';
+      btnDone.style.cssText = 'background:var(--green-bg);color:var(--green);border:1px solid color-mix(in oklab,var(--green) 35%,transparent);';
+      btnDone.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Выполнено';
+      btnDone.onclick = function() { setCalTaskManualStatus(ev, 'done'); };
+      btnsEl.appendChild(btnDone);
+    }
+  }
+  if (manualStatus) {
+    // Show "Reset to auto" button
+    var btnReset = document.createElement('button');
+    btnReset.className = 'btn btn-sm btn-ghost';
+    btnReset.style.cssText = 'color:var(--text-muted);font-size:11px;';
+    btnReset.innerHTML = '↺ Сбросить статус';
+    btnReset.onclick = function() { setCalTaskManualStatus(ev, null); };
+    btnsEl.appendChild(btnReset);
+  }
+
   // Position
   var rect = blockEl.getBoundingClientRect();
-  var popW=340, popH=280;
+  var popW=340, popH=320;
   var left = rect.right + 10;
   var top  = rect.top;
   if (left + popW > window.innerWidth - 10) left = rect.left - popW - 10;
@@ -2850,6 +2887,29 @@ function openCalDetail(ev, blockEl, colorClass) {
 
 function detailRow(key, val) {
   return '<div class="cal-detail-row"><span class="cal-detail-key">'+esc(key)+'</span><span class="cal-detail-val">'+esc(String(val||''))+'</span></div>';
+}
+function detailRowHTML(key, valHtml) {
+  return '<div class="cal-detail-row"><span class="cal-detail-key">'+esc(key)+'</span><span class="cal-detail-val">'+valHtml+'</span></div>';
+}
+
+function setCalTaskManualStatus(ev, status) {
+  var p = plans.find(function(pl){ return pl.id === ev.planId; });
+  if (!p) return;
+  var task = p.stages[ev.si] && p.stages[ev.si].tasks[ev.ti];
+  if (!task) return;
+  mutate(function() {
+    if (status === null) {
+      delete task.manualStatus;
+    } else {
+      task.manualStatus = status;
+    }
+  });
+  // Rebuild calendar in place
+  buildCalEvents();
+  renderCalendar();
+  tickCurrentTask();
+  closeCalDetail();
+  toast(status === 'done' ? 'Задача отмечена выполненной' : 'Статус сброшен', status === 'done' ? '✅' : '↺');
 }
 
 function closeCalDetail() {
