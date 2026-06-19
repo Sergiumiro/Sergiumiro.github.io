@@ -100,6 +100,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
 .plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 15px;color:var(--text-light);cursor:pointer;font-size:17px;line-height:1;border:none;background:none;transition:color .15s,background .15s;align-self:stretch;flex-shrink:0;}
 .plan-tab-add:hover{color:var(--accent);background:var(--surface2);}
+/* Color dot on tab */
+.plan-tab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;cursor:pointer;transition:transform .12s,box-shadow .12s;border:1.5px solid rgba(0,0,0,.08);}
+.plan-tab-dot:hover{transform:scale(1.35);box-shadow:0 0 0 3px rgba(0,0,0,.10);}
+/* Color swatch popup */
+.color-swatch-popup{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);padding:9px;display:none;flex-direction:column;gap:7px;}
+.color-swatch-popup.open{display:flex;}
+.color-swatch-title{font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:0 2px;}
+.color-swatch-grid{display:grid;grid-template-columns:repeat(6,20px);gap:5px;}
+.color-swatch{width:20px;height:20px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s;flex-shrink:0;}
+.color-swatch:hover{transform:scale(1.2);}
+.color-swatch.selected{border-color:var(--text);}
 
 /* ── UNDO ── */
 .undo-indicator{font-size:11px;color:var(--text-light);padding:0 6px;display:flex;align-items:center;gap:4px;flex-shrink:0;}
@@ -746,6 +757,10 @@ textarea.cell-input{min-height:20px;}
 
 <div class="toast-container" id="toastContainer"></div>
 <div id="taskTooltip"></div>
+<div class="color-swatch-popup" id="colorSwatchPopup">
+  <div class="color-swatch-title">Цвет плана</div>
+  <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+</div>
 
 <!-- CALENDAR MODAL -->
 <div class="modal-overlay" id="calendarModal">
@@ -1020,6 +1035,25 @@ function updateCacheBadge() {
 // ═══════════════════════════════════════════════════════
 // PLAN MANAGEMENT
 // ═══════════════════════════════════════════════════════
+
+// 12 distinct oklch hues for plan colors
+var PLAN_PALETTE = [
+  {h:266, label:'Синий'},   {h:220, label:'Голубой'},  {h:158, label:'Зелёный'},
+  {h:125, label:'Лайм'},    {h:90,  label:'Оливковый'},{h:62,  label:'Жёлтый'},
+  {h:40,  label:'Янтарный'},{h:25,  label:'Оранжевый'},{h:10,  label:'Красный'},
+  {h:330, label:'Розовый'}, {h:295, label:'Фиолетовый'},{h:200, label:'Циановый'}
+];
+
+function planHueFor(p) {
+  if (p.color !== undefined && p.color !== null) return p.color;
+  // fallback: assign by index for legacy plans
+  var idx = plans.indexOf(p);
+  return PLAN_PALETTE[Math.max(0,idx) % PLAN_PALETTE.length].h;
+}
+function planColorStr(hue, lightness, chroma) {
+  return 'oklch(' + (lightness||0.58) + ' ' + (chroma||0.16) + ' ' + hue + ')';
+}
+
 function normalizePlan(meta) {
   var incoming = meta.stages || [];
   var stages = STAGE_TITLES.map(function(title, i) {
@@ -1032,6 +1066,7 @@ function normalizePlan(meta) {
     ci_project:     meta.ci_project     || '',
     start:          meta.start          || '',
     responsible:    meta.responsible    || '',
+    color:          meta.color          !== undefined ? meta.color : null,
     stages:         stages,
     rollback:       meta.rollback       || [],
     contacts:       meta.contacts       || [],
@@ -1041,7 +1076,11 @@ function normalizePlan(meta) {
 
 function createNewPlan() {
   var p = normalizePlan({ project: 'Новый план' });
-  p._isNew = true; // mark as not-yet-configured
+  // Auto-assign next unused palette color
+  var usedHues = plans.map(function(pl){ return pl.color; }).filter(function(c){ return c !== null && c !== undefined; });
+  var pick = PLAN_PALETTE.find(function(c){ return usedHues.indexOf(c.h) < 0; }) || PLAN_PALETTE[plans.length % PLAN_PALETTE.length];
+  p.color = pick.h;
+  p._isNew = true;
   plans.push(p);
   activePlanId = p.id;
   pushUndo();
@@ -1148,26 +1187,28 @@ function metaItemRename(label, value, mono) {
 function renderTabs() {
   var bar = document.getElementById('planTabs');
   bar.innerHTML = '';
-  plans.forEach(function(p, pi) {
-    var hue = PLAN_HUES[pi % PLAN_HUES.length];
-    var planColor = 'oklch(0.58 0.16 ' + hue + ')';
-    var planColorActive = 'oklch(0.52 0.18 ' + hue + ')';
+  plans.forEach(function(p) {
+    var hue = planHueFor(p);
+    var planColor       = planColorStr(hue);
+    var planColorActive = planColorStr(hue, 0.50, 0.19);
+    var planColorBg     = planColorStr(hue, 0.96, 0.025);
     var isActive = p.id === activePlanId;
 
     var tab = document.createElement('button');
     tab.className = 'plan-tab' + (isActive ? ' active' : '');
     tab.dataset.planId = p.id;
-    // Apply plan color: active gets full color, inactive gets muted
     if (isActive) {
       tab.style.color = planColorActive;
       tab.style.borderBottomColor = planColorActive;
-    } else {
-      tab.style.setProperty('--tab-plan-color', planColor);
+      tab.style.background = planColorBg;
     }
 
-    // Small color dot indicator
+    // Clickable color dot
     var dotSpan = document.createElement('span');
-    dotSpan.style.cssText = 'width:7px;height:7px;border-radius:50%;background:'+planColor+';flex-shrink:0;display:inline-block;';
+    dotSpan.className = 'plan-tab-dot';
+    dotSpan.title = 'Изменить цвет плана';
+    dotSpan.style.background = planColor;
+    dotSpan.onclick = function(e) { e.stopPropagation(); openColorPicker(p.id, dotSpan); };
 
     var nameSpan = document.createElement('span');
     nameSpan.className = 'plan-tab-name';
@@ -1190,7 +1231,6 @@ function renderTabs() {
     tab.appendChild(cloneSpan);
     tab.appendChild(closeSpan);
 
-    // Hover: show plan color
     tab.addEventListener('mouseenter', function() {
       if (!tab.classList.contains('active')) tab.style.color = planColor;
     });
@@ -1198,24 +1238,72 @@ function renderTabs() {
       if (!tab.classList.contains('active')) tab.style.color = '';
     });
 
-    // Click: switch plan. Dblclick: rename. Use flag to suppress switch on dblclick.
+    // Single click → switch, double click → rename
     (function(pid, ns) {
-      var isDbl = false;
-      tab.addEventListener('dblclick', function(e) {
-        isDbl = true;
-        e.stopPropagation();
-        startTabRename(pid, ns);
-        setTimeout(function(){ isDbl = false; }, 300);
-      });
+      var clickTimer = null;
       tab.addEventListener('click', function(e) {
-        if (isDbl) return;
-        switchPlan(pid);
+        if (e.target.classList.contains('plan-tab-dot')) return; // handled by dot
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
+        clickTimer = setTimeout(function() { clickTimer = null; switchPlan(pid); }, 220);
+      });
+      tab.addEventListener('dblclick', function(e) {
+        if (e.target.classList.contains('plan-tab-dot')) return;
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        startTabRename(pid, ns);
       });
     })(p.id, nameSpan);
 
     bar.appendChild(tab);
   });
 }
+
+// ─── COLOR PICKER ─────────────────────────────────────
+var _colorPickerPlanId = null;
+function openColorPicker(planId, dotEl) {
+  _colorPickerPlanId = planId;
+  var popup = document.getElementById('colorSwatchPopup');
+  var grid  = document.getElementById('colorSwatchGrid');
+  var p = plans.find(function(pl){ return pl.id === planId; });
+  var currentHue = p ? planHueFor(p) : null;
+
+  grid.innerHTML = '';
+  PLAN_PALETTE.forEach(function(c) {
+    var sw = document.createElement('div');
+    sw.className = 'color-swatch' + (c.h === currentHue ? ' selected' : '');
+    sw.title = c.label;
+    sw.style.background = planColorStr(c.h);
+    sw.onclick = function(e) {
+      e.stopPropagation();
+      setPlanColor(planId, c.h);
+      closeColorPicker();
+    };
+    grid.appendChild(sw);
+  });
+
+  // Position below the dot
+  var rect = dotEl.getBoundingClientRect();
+  popup.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.classList.add('open');
+}
+function closeColorPicker() {
+  document.getElementById('colorSwatchPopup').classList.remove('open');
+  _colorPickerPlanId = null;
+}
+function setPlanColor(planId, hue) {
+  var p = plans.find(function(pl){ return pl.id === planId; });
+  if (!p) return;
+  mutate(function() { p.color = hue; });
+  renderTabs();
+  buildCalEvents();
+  renderCalendar();
+  toast('Цвет плана изменён', '🎨');
+}
+document.addEventListener('click', function(e) {
+  var popup = document.getElementById('colorSwatchPopup');
+  if (popup && popup.classList.contains('open') && !popup.contains(e.target)) closeColorPicker();
+});
 
 function startTabRename(id, nameSpan) {
   // Switch to this plan first
@@ -1274,7 +1362,11 @@ function clonePlan(id) {
   copy.id = 'plan_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   copy.project = src.project + ' (копия)';
   delete copy._isNew;
-  plans.push(copy);
+  // Assign next unused palette color
+  plans.push(copy); // push first so planHueFor works
+  var usedHues = plans.map(function(pl){ return pl.color; }).filter(function(c){ return c !== null && c !== undefined; });
+  var pick = PLAN_PALETTE.find(function(c){ return usedHues.filter(function(h){return h===c.h;}).length <= 0; }) || PLAN_PALETTE[plans.length % PLAN_PALETTE.length];
+  copy.color = pick.h;
   activePlanId = copy.id;
   pushUndo();
   renderAll();
@@ -2585,6 +2677,7 @@ var PLAN_HUES    = [266,158,25,295,62,200,330,100];
 function buildCalEvents() {
   _calEvents = [];
   plans.forEach(function(p, pi) {
+    var hue = planHueFor(p);
     p.stages.forEach(function(stage, si) {
       stage.tasks.forEach(function(task, ti) {
         if (!task.start || !task.end) return;
@@ -2593,6 +2686,7 @@ function buildCalEvents() {
         if (isNaN(startMs) || isNaN(endMs) || endMs <= startMs) return;
         _calEvents.push({
           planId: p.id, planIdx: pi, planName: p.project || 'Без названия',
+          planHue: hue,
           si: si, ti: ti, stageName: STAGE_TITLES[si] || ('Этап '+(si+1)),
           name: task.name || '(без названия)',
           start: task.start, end: task.end,
@@ -2786,7 +2880,7 @@ function renderCalAgenda(eventsToday) {
               : status==='next' ? 'Далее' : 'Предстоит';
 
     var multiPlan = plans.length > 1;
-    var planHue = PLAN_HUES[ev.planIdx % PLAN_HUES.length];
+    var planHue = ev.planHue;
 
     var progressHtml = '';
     if (status==='now'){
