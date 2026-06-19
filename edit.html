@@ -95,7 +95,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 #planTabs{display:flex;align-items:stretch;flex-direction:row;gap:2px;padding:0 4px;}
 .plan-tab{display:inline-flex;align-items:center;gap:7px;padding:0 13px;font-size:12.5px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none;border-top:none;border-left:none;border-right:none;background:none;font-family:var(--font);transition:color .15s,background .15s;height:100%;position:relative;}
 .plan-tab:hover{color:var(--text);background:var(--surface2);}
-.plan-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.plan-tab.active{font-weight:600;}
 .plan-tab-close{width:17px;height:17px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-light);transition:background .12s,color .12s;flex-shrink:0;}
 .plan-tab-close:hover{background:var(--red-bg);color:var(--red);}
 .plan-tab-add{display:inline-flex;align-items:center;justify-content:center;padding:0 15px;color:var(--text-light);cursor:pointer;font-size:17px;line-height:1;border:none;background:none;transition:color .15s,background .15s;align-self:stretch;flex-shrink:0;}
@@ -1148,10 +1148,26 @@ function metaItemRename(label, value, mono) {
 function renderTabs() {
   var bar = document.getElementById('planTabs');
   bar.innerHTML = '';
-  plans.forEach(function(p) {
+  plans.forEach(function(p, pi) {
+    var hue = PLAN_HUES[pi % PLAN_HUES.length];
+    var planColor = 'oklch(0.58 0.16 ' + hue + ')';
+    var planColorActive = 'oklch(0.52 0.18 ' + hue + ')';
+    var isActive = p.id === activePlanId;
+
     var tab = document.createElement('button');
-    tab.className = 'plan-tab' + (p.id === activePlanId ? ' active' : '');
+    tab.className = 'plan-tab' + (isActive ? ' active' : '');
     tab.dataset.planId = p.id;
+    // Apply plan color: active gets full color, inactive gets muted
+    if (isActive) {
+      tab.style.color = planColorActive;
+      tab.style.borderBottomColor = planColorActive;
+    } else {
+      tab.style.setProperty('--tab-plan-color', planColor);
+    }
+
+    // Small color dot indicator
+    var dotSpan = document.createElement('span');
+    dotSpan.style.cssText = 'width:7px;height:7px;border-radius:50%;background:'+planColor+';flex-shrink:0;display:inline-block;';
 
     var nameSpan = document.createElement('span');
     nameSpan.className = 'plan-tab-name';
@@ -1169,15 +1185,24 @@ function renderTabs() {
     closeSpan.innerHTML = '&#x2715;';
     closeSpan.onclick = function(e) { e.stopPropagation(); deletePlanFromTab(p.id); };
 
+    tab.appendChild(dotSpan);
     tab.appendChild(nameSpan);
     tab.appendChild(cloneSpan);
     tab.appendChild(closeSpan);
+
+    // Hover: show plan color
+    tab.addEventListener('mouseenter', function() {
+      if (!tab.classList.contains('active')) tab.style.color = planColor;
+    });
+    tab.addEventListener('mouseleave', function() {
+      if (!tab.classList.contains('active')) tab.style.color = '';
+    });
 
     // Use click delay to distinguish single vs double click
     (function(pid, ns) {
       var clickTimer = null;
       tab.addEventListener('click', function(e) {
-        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; } // second click of dblclick — ignore
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
         clickTimer = setTimeout(function() { clickTimer = null; switchPlan(pid); }, 220);
       });
       tab.addEventListener('dblclick', function(e) {
@@ -2804,7 +2829,24 @@ function renderCalAgenda(eventsToday) {
       if (tag) {
         e.stopPropagation();
         startCalPlanRename(tag, tag.dataset.planId);
+        return;
       }
+      // Double-click on task → navigate directly to it
+      e.stopPropagation();
+      closeCalDetail();
+      if (ev.planId !== activePlanId) switchPlan(ev.planId);
+      closeModal('calendarModal');
+      setTimeout(function() {
+        var row = document.querySelector('[data-si="'+ev.si+'"][data-ti="'+ev.ti+'"]');
+        if (row) {
+          row.scrollIntoView({behavior:'smooth', block:'center'});
+          row.style.outline = '2.5px solid var(--accent)';
+          row.style.boxShadow = '0 0 0 5px var(--accent-ring)';
+          row.style.borderRadius = '6px';
+          row.style.transition = 'outline .1s,box-shadow .1s';
+          setTimeout(function(){ row.style.outline=''; row.style.boxShadow=''; }, 2200);
+        } else { toast('Задача не найдена','⚠️'); }
+      }, 200);
     });
     agenda.appendChild(item);
   });
