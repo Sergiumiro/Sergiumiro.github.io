@@ -1198,17 +1198,18 @@ function renderTabs() {
       if (!tab.classList.contains('active')) tab.style.color = '';
     });
 
-    // Use click delay to distinguish single vs double click
+    // Click: switch plan. Dblclick: rename. Use flag to suppress switch on dblclick.
     (function(pid, ns) {
-      var clickTimer = null;
-      tab.addEventListener('click', function(e) {
-        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
-        clickTimer = setTimeout(function() { clickTimer = null; switchPlan(pid); }, 220);
-      });
+      var isDbl = false;
       tab.addEventListener('dblclick', function(e) {
+        isDbl = true;
         e.stopPropagation();
-        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
         startTabRename(pid, ns);
+        setTimeout(function(){ isDbl = false; }, 300);
+      });
+      tab.addEventListener('click', function(e) {
+        if (isDbl) return;
+        switchPlan(pid);
       });
     })(p.id, nameSpan);
 
