@@ -1843,11 +1843,27 @@ function getToolText(channels) {
 // ═══════════════════════════════════════════════════════
 // CRUD
 // ═══════════════════════════════════════════════════════
+function stageAnchorStart(p, si) {
+  // Returns the appropriate start time for the first task of a stage.
+  // Stage 2 (si=1): anchored to plan start time.
+  // Stage 3 (si=2): anchored to end of last task of Stage 2.
+  // Stage 1 (si=0): no auto-anchor.
+  if (si === 1) return p.start || '';
+  if (si === 2) {
+    var s2tasks = p.stages[1] && p.stages[1].tasks;
+    if (s2tasks && s2tasks.length > 0) {
+      return s2tasks[s2tasks.length - 1].end || s2tasks[s2tasks.length - 1].start || '';
+    }
+    return '';
+  }
+  return '';
+}
+
 function addTask(si) {
   mutate(function() {
     var p = plan(); if (!p) return;
     var tasks = p.stages[si].tasks;
-    var startVal = tasks.length ? (tasks[tasks.length-1].end||'') : (si===1 ? p.start||'' : '');
+    var startVal = tasks.length ? (tasks[tasks.length-1].end||'') : stageAnchorStart(p, si);
     tasks.push({name:'', start:startVal, end:'', responsible:'%user', comment:''});
     renderStages();
   });
@@ -1856,8 +1872,8 @@ function insertTaskAt(si, insertAt) {
   mutate(function() {
     var p = plan(); if (!p) return;
     var tasks = p.stages[si].tasks;
-    // inherit start from previous task's end if available
-    var startVal = (insertAt > 0 && tasks[insertAt-1]) ? (tasks[insertAt-1].end||'') : '';
+    // inherit start from previous task's end, or stage anchor if inserting at position 0
+    var startVal = (insertAt > 0 && tasks[insertAt-1]) ? (tasks[insertAt-1].end||'') : stageAnchorStart(p, si);
     tasks.splice(insertAt, 0, {name:'', start:startVal, end:'', responsible:'%user', comment:''});
     renderStages();
   });
@@ -1952,11 +1968,78 @@ function propagateNext(si, ti, endVal) {
   var tasks = p.stages[si].tasks;
   if (ti + 1 < tasks.length) tasks[ti+1].start = endVal;
 }
+
+// Re-anchor stage 2 first task to p.start, then propagate stage 2 chain,
+// then re-anchor stage 3 first task to end of last stage 2 task.
+// Only shifts tasks that are already timed (have start+end).
+function reanchorStages(p, oldStart) {
+  var newStart = p.start;
+  if (!newStart) return; // no start set — nothing to anchor
+
+  // ── Stage 2: shift the whole chain by the delta ──
+  var s2 = p.stages[1] && p.stages[1].tasks;
+  if (s2 && s2.length > 0 && s2[0].start) {
+    var delta = 0;
+    if (oldStart) {
+      delta = new Date(newStart).getTime() - new Date(oldStart).getTime();
+    } else {
+      // no old anchor — just pin first task to newStart if it was blank or stale
+      delta = new Date(newStart).getTime() - new Date(s2[0].start).getTime();
+    }
+    if (delta !== 0) {
+      s2.forEach(function(task) {
+        if (task.start) task.start = toDatetimeLocal(new Date(new Date(task.start).getTime() + delta));
+        if (task.end)   task.end   = toDatetimeLocal(new Date(new Date(task.end).getTime()   + delta));
+      });
+    }
+  } else if (s2 && s2.length > 0 && !s2[0].start) {
+    // First task has no time yet — just set it
+    s2[0].start = newStart;
+  }
+
+  // ── Stage 3: re-anchor first task to end of last stage 2 task ──
+  var s3 = p.stages[2] && p.stages[2].tasks;
+  var s2LastEnd = s2 && s2.length > 0 ? (s2[s2.length-1].end || s2[s2.length-1].start || '') : '';
+  if (s3 && s3.length > 0 && s2LastEnd) {
+    var s3OldStart = s3[0].start;
+    if (s3OldStart && s3OldStart !== s2LastEnd) {
+      var delta3 = new Date(s2LastEnd).getTime() - new Date(s3OldStart).getTime();
+      if (delta3 !== 0) {
+        s3.forEach(function(task) {
+          if (task.start) task.start = toDatetimeLocal(new Date(new Date(task.start).getTime() + delta3));
+          if (task.end)   task.end   = toDatetimeLocal(new Date(new Date(task.end).getTime()   + delta3));
+        });
+      }
+    } else if (!s3OldStart) {
+      s3[0].start = s2LastEnd;
+    }
+  }
+}
 function onEndChange(si, ti, val) {
   var p = plan(); if (!p) return;
   var task = p.stages[si].tasks[ti];
   if (val && task.start && val < task.start) { toast('Окончание не может быть раньше начала','⚠️'); renderStages(); return; }
-  mutate(function() { task.end = val; propagateNext(si, ti, val); renderStages(); });
+  mutate(function() {
+    task.end = val;
+    propagateNext(si, ti, val);
+    // If this is the last task of stage 2, re-anchor stage 3
+    if (si === 1 && ti === p.stages[1].tasks.length - 1) {
+      var s3 = p.stages[2] && p.stages[2].tasks;
+      if (s3 && s3.length > 0) {
+        var oldS3Start = s3[0].start;
+        if (oldS3Start && oldS3Start !== val) {
+          var delta3 = new Date(val).getTime() - new Date(oldS3Start).getTime();
+          s3.forEach(function(t3) {
+            if (t3.start) t3.start = toDatetimeLocal(new Date(new Date(t3.start).getTime() + delta3));
+            if (t3.end)   t3.end   = toDatetimeLocal(new Date(new Date(t3.end).getTime()   + delta3));
+          });
+        } else if (!oldS3Start) {
+          s3[0].start = val;
+        }
+      }
+    }
+    renderStages();
+  });
   tickCurrentTask();
 }
 function onStartChange(si, ti, val) {
@@ -2013,12 +2096,15 @@ function applySetup() {
     var newResp = document.getElementById('f_responsible').value.trim();
     mutate(function() {
       var p = plan();
+      var oldStart = p.start;
       p.project     = project;
       p.ci_stand    = document.getElementById('f_ci_stand').value.trim();
       p.ci_project  = document.getElementById('f_ci_project').value.trim();
       p.start       = document.getElementById('f_start').value;
       p.responsible = newResp;
       delete p._isNew;
+      // Re-anchor stage 2 to new start time, stage 3 to end of stage 2
+      if (p.start !== oldStart) reanchorStages(p, oldStart);
     });
     // Patch %user resp fields in DOM without losing focus
     patchUserRespFields(newResp);
