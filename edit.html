@@ -81,7 +81,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 ::selection{background:var(--accent-ring);}
 
 /* ── HEADER ── */
-.app-header{background:color-mix(in oklab,var(--surface) 82%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;min-height:54px;position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap;}
+.app-header{background:color-mix(in oklab,var(--surface) 82%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100;gap:12px;}
 .header-left{display:flex;align-items:center;gap:11px;min-width:0;flex:1;overflow:hidden;}
 .logo{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;box-shadow:0 2px 6px var(--accent-ring),inset 0 1px 0 rgba(255,255,255,.22);letter-spacing:-.02em;}
 .header-title{font-size:14px;font-weight:650;letter-spacing:-.01em;flex-shrink:0;}
@@ -284,14 +284,16 @@ textarea.cell-input{min-height:20px;}
 .word-section-label{font-weight:bold;font-size:11pt;margin:12px 0 5px;}
 
 /* ── CURRENT TASK BANNER ── */
-.current-task-banner{display:none;align-items:center;gap:5px;min-width:0;flex:1;flex-wrap:wrap;row-gap:3px;}
+.current-task-banner{display:none;align-items:center;gap:5px;min-width:0;flex:1;overflow:hidden;}
 .current-task-banner.visible{display:flex;}
-.current-task-item{display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:7px;padding:3px 9px;font-size:11.5px;color:var(--green);font-weight:600;white-space:nowrap;min-width:0;}
+.current-task-item{position:relative;display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:7px;padding:3px 9px;font-size:11.5px;color:var(--green);font-weight:600;white-space:nowrap;overflow:hidden;min-width:0;max-width:220px;flex-shrink:1;cursor:default;}
 .current-task-item.urgent{background:var(--orange-bg);border-color:color-mix(in oklab,var(--orange) 32%,transparent);color:var(--orange);}
 .current-task-item.urgent .current-task-dot{background:var(--orange);box-shadow:0 0 0 0 color-mix(in oklab,var(--orange) 60%,transparent);}
 .current-task-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 color-mix(in oklab,var(--green) 60%,transparent);}
-.current-task-text{white-space:nowrap;min-width:0;}
+.current-task-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;}
 .current-task-sep{color:var(--border2);font-size:13px;flex-shrink:0;user-select:none;}
+/* Task chip tooltip */
+#taskTooltip{position:fixed;z-index:9999;background:var(--text);color:var(--surface);font-size:11.5px;font-weight:500;padding:6px 11px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.5;max-width:480px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
 /* ── TEMPLATES MODAL ── */
@@ -743,6 +745,7 @@ textarea.cell-input{min-height:20px;}
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+<div id="taskTooltip"></div>
 
 <!-- CALENDAR MODAL -->
 <div class="modal-overlay" id="calendarModal">
@@ -1169,8 +1172,19 @@ function renderTabs() {
     tab.appendChild(cloneSpan);
     tab.appendChild(closeSpan);
 
-    tab.onclick = function() { switchPlan(p.id); };
-    tab.ondblclick = function(e) { e.stopPropagation(); startTabRename(p.id, nameSpan); };
+    // Use click delay to distinguish single vs double click
+    (function(pid, ns) {
+      var clickTimer = null;
+      tab.addEventListener('click', function(e) {
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; } // second click of dblclick — ignore
+        clickTimer = setTimeout(function() { clickTimer = null; switchPlan(pid); }, 220);
+      });
+      tab.addEventListener('dblclick', function(e) {
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        startTabRename(pid, ns);
+      });
+    })(p.id, nameSpan);
 
     bar.appendChild(tab);
   });
@@ -1361,23 +1375,41 @@ function tickCurrentTask() {
     banner.innerHTML = '';
   } else {
     banner.classList.add('visible');
-    var multiPlan = plans.length > 1;
+    var multiPlan = active.length > 1;
     var html = '';
     active.forEach(function(item, idx) {
       if (idx > 0) html += '<span class="current-task-sep">·</span>';
-      var label = item.task.name || 'Без названия';
-      // urgent = ≤15 min left
+      var fullName = item.task.name || 'Без названия';
+      var shortName = fullName.length > 28 ? fullName.slice(0, 26) + '…' : fullName;
       var isUrgent = item.minsLeft <= 15;
-      var planTag = (multiPlan && active.length > 1)
-        ? ' <span style="opacity:.75;font-weight:500">[' + esc(item.planName) + ']</span>'
-        : '';
+      // Tooltip: full task name + plan name + time left
+      var tipText = fullName + ' · ' + item.minsLeft + ' мин';
+      if (multiPlan) tipText += '\n' + item.planName;
+      var chipText = shortName + ' · ' + item.minsLeft + 'м';
+      if (multiPlan) chipText = shortName + ' · ' + item.minsLeft + 'м';
       html +=
-        '<span class="current-task-item' + (isUrgent ? ' urgent' : '') + '">' +
+        '<span class="current-task-item' + (isUrgent ? ' urgent' : '') + '" data-tip="' + esc(tipText) + '">' +
           '<span class="current-task-dot"></span>' +
-          '<span class="current-task-text">' + esc(label) + ' · ' + item.minsLeft + ' мин' + planTag + '</span>' +
+          '<span class="current-task-text">' + esc(chipText) + '</span>' +
         '</span>';
     });
     banner.innerHTML = html;
+    // Wire up tooltip
+    var tip = document.getElementById('taskTooltip');
+    banner.querySelectorAll('.current-task-item').forEach(function(chip) {
+      chip.addEventListener('mouseenter', function(e) {
+        var text = chip.getAttribute('data-tip');
+        if (!text || !tip) return;
+        tip.innerHTML = text.replace(/\n/g, '<br>');
+        tip.style.opacity = '1';
+        var r = chip.getBoundingClientRect();
+        tip.style.left = Math.min(r.left, window.innerWidth - tip.offsetWidth - 12) + 'px';
+        tip.style.top  = (r.bottom + 7) + 'px';
+      });
+      chip.addEventListener('mouseleave', function() {
+        if (tip) tip.style.opacity = '0';
+      });
+    });
   }
 
   if (typeof calLiveTick === 'function') calLiveTick();
