@@ -2801,6 +2801,7 @@ function renderCalAgenda(eventsToday) {
 
     var item = document.createElement('div');
     item.className = 'cal-item ' + status;
+    item.title = 'Клик — детали · Двойной клик — перейти к задаче';
     item.innerHTML =
       '<div class="cal-node-col"><div class="cal-node">'+nodeInner+'</div></div>' +
       '<div class="cal-time">' +
@@ -2821,34 +2822,39 @@ function renderCalAgenda(eventsToday) {
         progressHtml +
       '</div>';
 
-    item.addEventListener('click', function(e){
-      e.stopPropagation();
-      openCalDetail(ev, item, status);
-    });
-    item.addEventListener('dblclick', function(e){
-      var tag = e.target.closest('.cal-plan-tag-rename');
-      if (tag) {
+    (function(evSnap, itemEl, statusSnap) {
+      var clickTimer = null;
+      itemEl.addEventListener('click', function(e) {
         e.stopPropagation();
-        startCalPlanRename(tag, tag.dataset.planId);
-        return;
-      }
-      // Double-click on task → navigate directly to it
-      e.stopPropagation();
-      closeCalDetail();
-      if (ev.planId !== activePlanId) switchPlan(ev.planId);
-      closeModal('calendarModal');
-      setTimeout(function() {
-        var row = document.querySelector('[data-si="'+ev.si+'"][data-ti="'+ev.ti+'"]');
-        if (row) {
-          row.scrollIntoView({behavior:'smooth', block:'center'});
-          row.style.outline = '2.5px solid var(--accent)';
-          row.style.boxShadow = '0 0 0 5px var(--accent-ring)';
-          row.style.borderRadius = '6px';
-          row.style.transition = 'outline .1s,box-shadow .1s';
-          setTimeout(function(){ row.style.outline=''; row.style.boxShadow=''; }, 2200);
-        } else { toast('Задача не найдена','⚠️'); }
-      }, 200);
-    });
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
+        clickTimer = setTimeout(function() {
+          clickTimer = null;
+          openCalDetail(evSnap, itemEl, statusSnap);
+        }, 220);
+      });
+      itemEl.addEventListener('dblclick', function(e) {
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        // If clicking on plan rename tag — rename instead
+        var tag = e.target.closest('.cal-plan-tag-rename');
+        if (tag) { startCalPlanRename(tag, tag.dataset.planId); return; }
+        // Navigate to task
+        closeCalDetail();
+        if (evSnap.planId !== activePlanId) switchPlan(evSnap.planId);
+        closeModal('calendarModal');
+        setTimeout(function() {
+          var row = document.querySelector('[data-si="'+evSnap.si+'"][data-ti="'+evSnap.ti+'"]');
+          if (row) {
+            row.scrollIntoView({behavior:'smooth', block:'center'});
+            row.style.outline = '2.5px solid var(--accent)';
+            row.style.boxShadow = '0 0 0 5px var(--accent-ring)';
+            row.style.borderRadius = '6px';
+            row.style.transition = 'outline .1s,box-shadow .1s';
+            setTimeout(function(){ row.style.outline=''; row.style.boxShadow=''; }, 2200);
+          } else { toast('Задача не найдена','⚠️'); }
+        }, 200);
+      });
+    })(ev, item, status);
     agenda.appendChild(item);
   });
 }
