@@ -283,10 +283,14 @@ textarea.cell-input{min-height:20px;}
 .word-section-label{font-weight:bold;font-size:11pt;margin:12px 0 5px;}
 
 /* ── CURRENT TASK BANNER ── */
-.current-task-banner{display:none;align-items:center;gap:8px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:8px;padding:5px 11px;font-size:12px;color:var(--green);font-weight:600;min-width:0;flex:1;max-width:420px;overflow:hidden;}
+.current-task-banner{display:none;align-items:center;gap:5px;min-width:0;flex:1;max-width:600px;overflow:hidden;flex-wrap:nowrap;}
 .current-task-banner.visible{display:flex;}
+.current-task-item{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;overflow:hidden;min-width:0;flex-shrink:1;}
+.current-task-item.urgent{background:var(--orange-bg);border-color:color-mix(in oklab,var(--orange) 32%,transparent);color:var(--orange);}
+.current-task-item.urgent .current-task-dot{background:var(--orange);box-shadow:0 0 0 0 color-mix(in oklab,var(--orange) 60%,transparent);}
 .current-task-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 color-mix(in oklab,var(--green) 60%,transparent);}
 .current-task-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;}
+.current-task-sep{color:var(--border2);font-size:13px;flex-shrink:0;user-select:none;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
 /* ── TEMPLATES MODAL ── */
@@ -428,10 +432,7 @@ textarea.cell-input{min-height:20px;}
     <div class="logo">П</div>
     <span class="header-title">План работ</span>
     <span class="cache-badge" id="cacheBadge" style="display:none"></span>
-    <div class="current-task-banner" id="currentTaskBanner">
-      <span class="current-task-dot"></span>
-      <span class="current-task-text" id="currentTaskText"></span>
-    </div>
+    <div class="current-task-banner" id="currentTaskBanner"></div>
   </div>
   <div class="header-actions">
     <!-- Undo / Redo -->
@@ -1306,37 +1307,59 @@ function getNowMs() {
 }
 
 function tickCurrentTask() {
-  var banner  = document.getElementById('currentTaskBanner');
-  var textEl  = document.getElementById('currentTaskText');
-  var p = plan();
-  if (!p || !p.start) { banner.classList.remove('visible'); return; }
+  var banner = document.getElementById('currentTaskBanner');
+  var nowMs  = getNowMs();
+  var active = []; // collect active tasks from ALL plans
 
-  var nowMs = getNowMs();
-  var found = null;
-
-  for (var si = 0; si < p.stages.length; si++) {
-    var tasks = p.stages[si].tasks;
-    for (var ti = 0; ti < tasks.length; ti++) {
-      var t = tasks[ti];
-      if (!t.start || !t.end) continue;
-      var startMs = new Date(t.start).getTime();
-      var endMs   = new Date(t.end).getTime();
-      if (nowMs >= startMs && nowMs < endMs) {
-        found = { task: t, si: si, ti: ti, endMs: endMs };
-        break;
+  plans.forEach(function(p) {
+    if (!p.start) return;
+    for (var si = 0; si < p.stages.length; si++) {
+      var tasks = p.stages[si].tasks;
+      for (var ti = 0; ti < tasks.length; ti++) {
+        var t = tasks[ti];
+        if (!t.start || !t.end) continue;
+        var startMs = new Date(t.start).getTime();
+        var endMs   = new Date(t.end).getTime();
+        if (nowMs >= startMs && nowMs < endMs) {
+          active.push({
+            task: t,
+            planName: p.project || 'Без названия',
+            planId: p.id,
+            endMs: endMs,
+            minsLeft: Math.ceil((endMs - nowMs) / 60000)
+          });
+          break; // one active task per plan
+        }
       }
     }
-    if (found) break;
-  }
+  });
 
-  if (found) {
-    var minsLeft = Math.ceil((found.endMs - nowMs) / 60000);
-    var label = found.task.name || 'Без названия';
-    if (label.length > 40) label = label.slice(0, 38) + '…';
-    textEl.textContent = 'Сейчас: ' + label + ' · осталось ' + minsLeft + ' мин';
-    banner.classList.add('visible');
-  } else {
+  // Sort: least time remaining first (most urgent at top)
+  active.sort(function(a, b) { return a.minsLeft - b.minsLeft; });
+
+  if (active.length === 0) {
     banner.classList.remove('visible');
+    banner.innerHTML = '';
+  } else {
+    banner.classList.add('visible');
+    var multiPlan = plans.length > 1;
+    var html = '';
+    active.forEach(function(item, idx) {
+      if (idx > 0) html += '<span class="current-task-sep">·</span>';
+      var label = item.task.name || 'Без названия';
+      if (label.length > 38) label = label.slice(0, 36) + '…';
+      // urgent = ≤15 min left
+      var isUrgent = item.minsLeft <= 15;
+      var planTag = (multiPlan && active.length > 1)
+        ? ' <span style="opacity:.75;font-weight:500">[' + esc(item.planName) + ']</span>'
+        : '';
+      html +=
+        '<span class="current-task-item' + (isUrgent ? ' urgent' : '') + '">' +
+          '<span class="current-task-dot"></span>' +
+          '<span class="current-task-text">' + esc(label) + ' · ' + item.minsLeft + ' мин' + planTag + '</span>' +
+        '</span>';
+    });
+    banner.innerHTML = html;
   }
 
   if (typeof calLiveTick === 'function') calLiveTick();
