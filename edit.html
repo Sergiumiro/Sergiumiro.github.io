@@ -81,10 +81,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 ::selection{background:var(--accent-ring);}
 
 /* ── HEADER ── */
-.app-header{background:color-mix(in oklab,var(--surface) 82%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100;gap:12px;}
+.app-header{background:color-mix(in oklab,var(--surface) 82%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;min-height:54px;position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap;}
 .header-left{display:flex;align-items:center;gap:11px;min-width:0;flex:1;overflow:hidden;}
 .logo{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;box-shadow:0 2px 6px var(--accent-ring),inset 0 1px 0 rgba(255,255,255,.22);letter-spacing:-.02em;}
 .header-title{font-size:14px;font-weight:650;letter-spacing:-.01em;flex-shrink:0;}
+.current-task-banner.visible ~ * .header-title, .header-left:has(.current-task-banner.visible) .header-title{display:none;}
 .header-actions{display:flex;gap:5px;align-items:center;flex-shrink:0;}
 .cache-badge{font-size:11px;font-family:var(--font-mono);color:var(--green);background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 30%,transparent);border-radius:20px;padding:3px 9px;white-space:nowrap;flex-shrink:0;font-weight:500;}
 
@@ -283,13 +284,13 @@ textarea.cell-input{min-height:20px;}
 .word-section-label{font-weight:bold;font-size:11pt;margin:12px 0 5px;}
 
 /* ── CURRENT TASK BANNER ── */
-.current-task-banner{display:none;align-items:center;gap:5px;min-width:0;flex:1;max-width:600px;overflow:hidden;flex-wrap:nowrap;}
+.current-task-banner{display:none;align-items:center;gap:5px;min-width:0;flex:1;flex-wrap:wrap;row-gap:3px;}
 .current-task-banner.visible{display:flex;}
-.current-task-item{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;overflow:hidden;min-width:0;flex-shrink:1;}
+.current-task-item{display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);border:1px solid color-mix(in oklab,var(--green) 32%,transparent);border-radius:7px;padding:3px 9px;font-size:11.5px;color:var(--green);font-weight:600;white-space:nowrap;min-width:0;}
 .current-task-item.urgent{background:var(--orange-bg);border-color:color-mix(in oklab,var(--orange) 32%,transparent);color:var(--orange);}
 .current-task-item.urgent .current-task-dot{background:var(--orange);box-shadow:0 0 0 0 color-mix(in oklab,var(--orange) 60%,transparent);}
-.current-task-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 color-mix(in oklab,var(--green) 60%,transparent);}
-.current-task-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;}
+.current-task-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 color-mix(in oklab,var(--green) 60%,transparent);}
+.current-task-text{white-space:nowrap;min-width:0;}
 .current-task-sep{color:var(--border2);font-size:13px;flex-shrink:0;user-select:none;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
@@ -1100,12 +1101,26 @@ function renderAll(skipUndo) {
   document.getElementById('planTabsBar').style.display = '';
 
   // Meta bar
-  document.getElementById('metaBar').innerHTML =
-    metaItem('Проект', esc(p.project||'—'), false) +
+  var metaBar = document.getElementById('metaBar');
+  metaBar.innerHTML =
+    metaItemRename('Проект', esc(p.project||'—'), false) +
     metaItem('CI стенда', esc(p.ci_stand||'—'), true) +
     metaItem('CI проекта', esc(p.ci_project||'—'), true) +
     metaItem('Начало работ', fmtDT(p.start), false) +
     metaItem('Ответственный', esc(p.responsible||'—'), false);
+  // Wire up dblclick rename on project name
+  var projVal = metaBar.querySelector('.meta-project-val');
+  if (projVal) {
+    projVal.title = 'Двойной клик — переименовать';
+    projVal.style.cursor = 'pointer';
+    projVal.addEventListener('dblclick', function() {
+      // find the active tab name span and trigger rename
+      var activeTab = document.querySelector('.plan-tab.active');
+      if (!activeTab) return;
+      var nameSpan = activeTab.querySelector('.plan-tab-name');
+      if (nameSpan) startTabRename(activePlanId, nameSpan);
+    });
+  }
 
   renderStages();
   renderRollback();
@@ -1119,6 +1134,10 @@ function renderAll(skipUndo) {
 function metaItem(label, value, mono) {
   return '<div class="meta-item"><div class="meta-label">' + label + '</div>' +
          '<div class="meta-value' + (mono?' mono':'') + '">' + value + '</div></div>';
+}
+function metaItemRename(label, value, mono) {
+  return '<div class="meta-item"><div class="meta-label">' + label + '</div>' +
+         '<div class="meta-value meta-project-val' + (mono?' mono':'') + '">' + value + '</div></div>';
 }
 
 // ─── TABS ─────────────────────────────────────────────
@@ -1347,7 +1366,6 @@ function tickCurrentTask() {
     active.forEach(function(item, idx) {
       if (idx > 0) html += '<span class="current-task-sep">·</span>';
       var label = item.task.name || 'Без названия';
-      if (label.length > 38) label = label.slice(0, 36) + '…';
       // urgent = ≤15 min left
       var isUrgent = item.minsLeft <= 15;
       var planTag = (multiPlan && active.length > 1)
@@ -2675,10 +2693,24 @@ function renderCalAgenda(eventsToday) {
     statItem(liveLbl, liveVal, liveCls);
 
   // ── items ──
+  // Find the single "next" event: first not yet started (startMs > nowMs)
+  var nextIdx = -1;
+  for (var k=0; k<evs.length; k++){
+    if (evs[k].startMs > nowMs && evs[k].endMs > nowMs){ nextIdx = k; break; }
+  }
+
   evs.forEach(function(ev, i){
-    var status = ev.endMs <= nowMs ? 'done'
-               : (i===nowIdx ? 'now'
-               : (i===nextIdx ? 'next' : 'soon'));
+    // Each event gets its own status check
+    var status;
+    if (ev.endMs <= nowMs) {
+      status = 'done';
+    } else if (ev.startMs <= nowMs && nowMs < ev.endMs) {
+      status = 'now';
+    } else if (i === nextIdx) {
+      status = 'next';
+    } else {
+      status = 'soon';
+    }
 
     var nodeInner = status==='done'
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"/></svg>'
@@ -2721,7 +2753,7 @@ function renderCalAgenda(eventsToday) {
         '<div class="cal-item-meta">' +
           '<span class="cal-stage-tag">'+esc(shortStage(ev.stageName))+'</span>' +
           (ev.resp ? '<span class="cal-plan-tag" style="color:var(--text-muted)">'+esc(ev.resp)+'</span>' : '') +
-          (multiPlan ? '<span class="cal-plan-tag" style="color:oklch(0.58 0.16 '+planHue+')">'+esc(ev.planName)+'</span>' : '') +
+          (multiPlan ? '<span class="cal-plan-tag cal-plan-tag-rename" data-plan-id="'+ev.planId+'" title="Двойной клик — переименовать план" style="color:oklch(0.58 0.16 '+planHue+');cursor:pointer">'+esc(ev.planName)+'</span>' : '') +
         '</div>' +
         progressHtml +
       '</div>';
@@ -2729,6 +2761,13 @@ function renderCalAgenda(eventsToday) {
     item.addEventListener('click', function(e){
       e.stopPropagation();
       openCalDetail(ev, item, status);
+    });
+    item.addEventListener('dblclick', function(e){
+      var tag = e.target.closest('.cal-plan-tag-rename');
+      if (tag) {
+        e.stopPropagation();
+        startCalPlanRename(tag, tag.dataset.planId);
+      }
     });
     agenda.appendChild(item);
   });
@@ -2807,7 +2846,36 @@ function calGotoTask() {
   }, 200);
 }
 
-// Global close handlers
+// ── Inline plan rename from calendar plan tag ──────────
+function startCalPlanRename(tagEl, planId) {
+  var p = plans.find(function(pl){ return pl.id === planId; });
+  if (!p) return;
+  var currentName = p.project || '';
+  var input = document.createElement('input');
+  input.value = currentName;
+  input.style.cssText = 'font-size:11px;font-weight:600;border:none;outline:none;background:var(--surface);border-radius:4px;padding:1px 5px;width:'+ Math.max(80, currentName.length * 7 + 20) +'px;color:var(--accent);box-shadow:0 0 0 2px var(--accent-ring);font-family:var(--font);';
+  tagEl.replaceWith(input);
+  input.focus(); input.select();
+  function commit() {
+    var newName = input.value.trim() || currentName;
+    p.project = newName;
+    pushUndo(); saveToStorage();
+    // rebuild calendar and tabs
+    buildCalEvents();
+    renderCalendar();
+    renderTabs();
+    toast('План переименован: ' + newName, '✏️');
+  }
+  input.onblur = commit;
+  input.onkeydown = function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = currentName; input.blur(); }
+    e.stopPropagation();
+  };
+  input.onclick = function(e) { e.stopPropagation(); };
+}
+
+
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeCalDetail(); }, true);
 document.addEventListener('click', function(e){
   var popup = document.getElementById('calDetail');
