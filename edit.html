@@ -2137,7 +2137,8 @@ function removeContact(ci) {
 function addComm() {
   mutate(function() {
     var p = plan(); if (!p) return;
-    p.communications.push({event:'', channels:{sms:false,outlook:false,sberchat:false}, participants:'', responsible:''});
+    var defaultResp = p.responsible || '';
+    p.communications.push({event:'', channels:{sms:false,outlook:false,sberchat:false}, participants:'', responsible:defaultResp});
     renderComms();
   });
 }
@@ -2504,11 +2505,19 @@ function openCommentPopup(ta,si,ti){
   popup.style.display='flex'; popup.classList.add('open');
   // Focus filter input
   setTimeout(function(){ var f=document.getElementById('__commentFilter'); if(f) f.focus(); },60);
-  if(_popupDocListener) document.removeEventListener('pointerdown',_popupDocListener,true);
-  _popupDocListener=function(e){
-    if(!popup.contains(e.target) && e.target!==ta) closeAllPopups();
-  };
-  setTimeout(function(){document.addEventListener('pointerdown',_popupDocListener,true);},0);
+  // Close on any click outside popup AND outside the textarea
+  if(_popupDocListener) document.removeEventListener('click',_popupDocListener,true);
+  setTimeout(function() {
+    _popupDocListener = function(e) {
+      if (!popup.contains(e.target) && e.target !== ta) closeAllPopups();
+    };
+    document.addEventListener('click', _popupDocListener, true);
+  }, 0);
+}
+function closeAllPopups(){
+  var p=document.getElementById('__commentPopup');
+  if(p){p.classList.remove('open');p.style.display='none';}
+  if(_popupDocListener){document.removeEventListener('click',_popupDocListener,true);_popupDocListener=null;}
 }
 function renderSnippetList(filter, si, ti) {
   var list = document.getElementById('__snippetList');
