@@ -604,13 +604,13 @@ textarea.cell-input{min-height:20px;}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-group">
-          <label class="form-label">CI стенда</label>
-          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <label class="form-label">CI проекта</label>
+          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
           <div class="form-hint">CI + 8 цифр</div>
         </div>
         <div class="form-group">
-          <label class="form-label">CI проекта</label>
-          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <label class="form-label">CI стенда</label>
+          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
           <div class="form-hint">CI + 8 цифр</div>
         </div>
       </div>
@@ -1147,8 +1147,8 @@ function renderAll(skipUndo) {
   var metaBar = document.getElementById('metaBar');
   metaBar.innerHTML =
     metaItemRename('Проект', esc(p.project||'—'), false) +
-    metaItem('CI стенда', esc(p.ci_stand||'—'), true) +
     metaItem('CI проекта', esc(p.ci_project||'—'), true) +
+    metaItem('CI стенда', esc(p.ci_stand||'—'), true) +
     metaItem('Начало работ', fmtDT(p.start), false) +
     metaItem('Ответственный', esc(p.responsible||'—'), false);
   // Wire up dblclick rename on project name
@@ -2484,34 +2484,72 @@ function getOrCreatePopup(){
 }
 function openCommentPopup(ta,si,ti){
   var popup=getOrCreatePopup();
-  var html='<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">Шаблоны</div>';
-  COMMENT_SNIPPETS.forEach(function(s,idx){ html+='<div class="comment-snippet" onpointerdown="insertComment('+si+','+ti+','+idx+')">'+esc(s)+'</div>'; });
-  popup.innerHTML=html;
-  var rect=ta.getBoundingClientRect(), popW=270, popH=300;
+  var filterHtml =
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
+      '<input id="__commentFilter" type="text" placeholder="Поиск шаблона…" ' +
+        'style="flex:1;font-size:11.5px;padding:4px 8px;border:1px solid var(--border2);border-radius:5px;background:var(--surface);color:var(--text);outline:none;" ' +
+        'oninput="filterCommentSnippets(this.value,'+si+','+ti+')" ' +
+        'onpointerdown="event.stopPropagation()" ' +
+        'onfocus="event.stopPropagation()">' +
+    '</div>' +
+    '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px">Нажмите — заменить · Shift+клик — добавить</div>' +
+    '<div id="__snippetList" style="display:flex;flex-direction:column;gap:4px"></div>';
+  popup.innerHTML = filterHtml;
+  renderSnippetList('', si, ti);
+  var rect=ta.getBoundingClientRect(), popW=290, popH=330;
   var top=rect.bottom+4, left=rect.left;
   if(left+popW>window.innerWidth-8) left=window.innerWidth-popW-8;
   if(top+popH>window.innerHeight-8) top=rect.top-popH-4;
   popup.style.top=top+'px'; popup.style.left=left+'px';
   popup.style.display='flex'; popup.classList.add('open');
+  // Focus filter input
+  setTimeout(function(){ var f=document.getElementById('__commentFilter'); if(f) f.focus(); },60);
   if(_popupDocListener) document.removeEventListener('pointerdown',_popupDocListener,true);
-  _popupDocListener=function(e){if(!popup.contains(e.target)) closeAllPopups();};
+  _popupDocListener=function(e){
+    if(!popup.contains(e.target) && e.target!==ta) closeAllPopups();
+  };
   setTimeout(function(){document.addEventListener('pointerdown',_popupDocListener,true);},0);
 }
-function closeAllPopups(){
-  var p=document.getElementById('__commentPopup');
-  if(p){p.classList.remove('open');p.style.display='none';}
-  if(_popupDocListener){document.removeEventListener('pointerdown',_popupDocListener,true);_popupDocListener=null;}
+function renderSnippetList(filter, si, ti) {
+  var list = document.getElementById('__snippetList');
+  if (!list) return;
+  var q = filter.toLowerCase();
+  var items = COMMENT_SNIPPETS.filter(function(s){ return !q || s.toLowerCase().indexOf(q)>=0; });
+  if (!items.length) { list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:6px">Не найдено</div>'; return; }
+  list.innerHTML = '';
+  items.forEach(function(s) {
+    var realIdx = COMMENT_SNIPPETS.indexOf(s);
+    var div = document.createElement('div');
+    div.className = 'comment-snippet';
+    div.textContent = s;
+    div.onpointerdown = function(e) {
+      e.preventDefault();
+      if (e.shiftKey) { appendComment(si, ti, s); } else { insertCommentText(si, ti, s); }
+    };
+    list.appendChild(div);
+  });
 }
-function insertComment(si,ti,idx){
-  var text = COMMENT_SNIPPETS[idx];
+function filterCommentSnippets(val, si, ti) { renderSnippetList(val, si, ti); }
+function insertCommentText(si, ti, text) {
   var p = plan(); if(!p) return;
   p.stages[si].tasks[ti].comment = text;
-  // Always update DOM — don't skip based on activeElement
   var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
   if (row) { var ta = row.querySelector('[data-key="comment"]'); if (ta) { ta.value = text; autoResize(ta); } }
   closeAllPopups();
-  pushUndo();
-  saveToStorage();
+  pushUndo(); saveToStorage();
+}
+function appendComment(si, ti, text) {
+  var p = plan(); if(!p) return;
+  var cur = p.stages[si].tasks[ti].comment || '';
+  var newVal = cur ? cur + '; ' + text : text;
+  p.stages[si].tasks[ti].comment = newVal;
+  var row = document.querySelector('[data-si="'+si+'"][data-ti="'+ti+'"]');
+  if (row) { var ta = row.querySelector('[data-key="comment"]'); if (ta) { ta.value = newVal; autoResize(ta); } }
+  closeAllPopups();
+  pushUndo(); saveToStorage();
+}
+function insertComment(si,ti,idx){
+  insertCommentText(si, ti, COMMENT_SNIPPETS[idx]);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2520,6 +2558,39 @@ function insertComment(si,ti,idx){
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDT(val){ if(!val) return '—'; try{ return new Date(val).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return val;} }
 function fmtTime(val){ if(!val) return ''; try{ return new Date(val).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }catch(e){return val;} }
+
+// Display time shifted from MSK (UTC+3) to user's selected timezone
+// Plan times are stored as datetime-local (interpreted as local browser time),
+// but semantically they are MSK. We shift them to user's selected tz for display.
+function getUserTzOffsetMin() {
+  var tzVal = localStorage.getItem('user_tz') || 'auto';
+  if (tzVal === 'auto') return new Date().getTimezoneOffset() * -1; // browser local offset
+  return parseInt(tzVal);
+}
+var MSK_OFFSET_MIN = 180; // UTC+3
+function mskToUserMs(ms) {
+  // Stored as MSK datetime-local → UTC = ms - MSK*60000 (browser interprets naive time as local)
+  // We re-display in user's tz
+  var userOff = getUserTzOffsetMin();
+  var delta = (userOff - MSK_OFFSET_MIN) * 60000;
+  return ms + delta;
+}
+function fmtDTtz(val) {
+  if (!val) return '—';
+  try {
+    var ms = new Date(val).getTime();
+    var shifted = new Date(mskToUserMs(ms));
+    return shifted.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return val; }
+}
+function fmtTimeTz(val) {
+  if (!val) return '';
+  try {
+    var ms = new Date(val).getTime();
+    var shifted = new Date(mskToUserMs(ms));
+    return shifted.toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return val; }
+}
 function autoResize(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 function validateCI(input){ var v=input.value.trim(); input.classList.toggle('field-err',v!==''&&!/^CI\d{8}$/.test(v)); }
 function validateTaskName(ta){ var ok=ta.value.trim().length>0; ta.classList.toggle('field-err',!ok); var msg=ta.parentElement.querySelector('.field-err-msg'); if(msg) msg.style.display=ok?'none':''; }
@@ -2737,7 +2808,26 @@ function calGoToday() {
 }
 function calGoFirstEvent() {
   if (!_calEvents.length) { toast('Нет задач с датами','⚠️'); return; }
-  _calDate = new Date(_calEvents[0].startMs); _calDate.setHours(0,0,0,0);
+  var nowMs = getNowMs();
+  var today = new Date(nowMs); today.setHours(0,0,0,0);
+  var todayMs = today.getTime();
+  var tomorrowMs = todayMs + 86400000;
+
+  // Check if any events fall today
+  var hasToday = _calEvents.some(function(ev){ return ev.startMs < tomorrowMs && ev.endMs > todayMs; });
+  if (hasToday) {
+    _calDate = today;
+  } else {
+    // Find nearest future event
+    var future = _calEvents.filter(function(ev){ return ev.startMs >= todayMs; });
+    if (future.length) {
+      _calDate = new Date(future[0].startMs); _calDate.setHours(0,0,0,0);
+    } else {
+      // All in the past — go to last event
+      var last = _calEvents[_calEvents.length - 1];
+      _calDate = new Date(last.startMs); _calDate.setHours(0,0,0,0);
+    }
+  }
   renderCalendar();
   setTimeout(calScrollToActive, 60);
 }
@@ -2834,7 +2924,7 @@ function renderCalAgenda(eventsToday) {
     liveVal = 'осталось ' + Math.max(1, Math.ceil((evs[nowIdx].endMs - nowMs)/60000)) + ' мин';
   } else if (nextIdx >= 0){
     liveLbl = 'Следующая задача';
-    liveVal = 'в ' + fmtTime(evs[nextIdx].start);
+    liveVal = 'в ' + fmtTimeTz(evs[nextIdx].start);
   } else {
     liveCls = '';
     liveLbl = 'Статус дня';
@@ -2844,7 +2934,7 @@ function renderCalAgenda(eventsToday) {
   statEl.innerHTML =
     statItem('Задач в плане', String(total), '') +
     statItem('Выполнено', doneCount + ' / ' + total, doneCount===total?'accent':'') +
-    statItem('Период работ', fmtTime(new Date(firstStart)) + '–' + fmtTime(new Date(lastEnd)), 'mono') +
+    statItem('Период работ', fmtTimeTz(new Date(firstStart)) + '–' + fmtTimeTz(new Date(lastEnd)), 'mono') +
     statItem(liveLbl, liveVal, liveCls);
 
   // ── items ──
@@ -2899,8 +2989,8 @@ function renderCalAgenda(eventsToday) {
     item.innerHTML =
       '<div class="cal-node-col"><div class="cal-node">'+nodeInner+'</div></div>' +
       '<div class="cal-time">' +
-        '<div class="cal-time-start">'+fmtTime(ev.start)+'</div>' +
-        '<div class="cal-time-end">'+fmtTime(ev.end)+'</div>' +
+        '<div class="cal-time-start">'+fmtTimeTz(ev.start)+'</div>' +
+        '<div class="cal-time-end">'+fmtTimeTz(ev.end)+'</div>' +
         '<div class="cal-dur">'+fmtDur(ev.endMs - ev.startMs)+'</div>' +
       '</div>' +
       '<div class="cal-main">' +
@@ -2987,8 +3077,8 @@ function openCalDetail(ev, blockEl, colorClass) {
     detailRow('План', ev.planName) +
     detailRow('Этап', shortStage(ev.stageName)) +
     detailRowHTML('Статус', statusLabel) +
-    detailRow('Начало', fmtDT(ev.start)) +
-    detailRow('Окончание', fmtDT(ev.end)) +
+    detailRow('Начало', fmtDTtz(ev.start)) +
+    detailRow('Окончание', fmtDTtz(ev.end)) +
     detailRow('Длительность', durStr) +
     detailRow('Исполнитель', ev.resp || '—') +
     (ev.comment ? detailRow('Комментарий', ev.comment) : '');
