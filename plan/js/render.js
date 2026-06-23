@@ -545,7 +545,7 @@ function getToolText(ch) {
 // ── Active task banner (header ticker) ──
 function tickCurrentTask() {
   var banner = document.getElementById('currentTaskBanner');
-  var nowMs  = getNowMs();
+  var nowMs  = getNowMsMsk();
   var active = [];
   plans.forEach(function(p) {
     if (!p.start) return;
