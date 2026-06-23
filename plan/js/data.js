@@ -264,9 +264,19 @@ function mskToUserMs(utcMs) {
 }
 function fmtDTtz(val) {
   if (!val) return '—';
-  try { return new Date(mskToUserMs(new Date(val).getTime())).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e) { return val; }
+  try {
+    var utcMs = parseMskMs(val);
+    if (isNaN(utcMs)) return val;
+    var userMs = utcMs + getUserTzOffsetMin() * 60000;
+    return new Date(userMs).toLocaleString('ru-RU', {timeZone:'UTC', day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return val; }
 }
 function fmtTimeTz(val) {
   if (!val) return '';
-  try { return new Date(mskToUserMs(new Date(val).getTime())).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}); } catch(e) { return val; }
+  try {
+    var utcMs = (typeof val === 'number') ? val : parseMskMs(val);
+    if (isNaN(utcMs)) return '';
+    var userMs = utcMs + getUserTzOffsetMin() * 60000;
+    return new Date(userMs).toLocaleString('ru-RU', {timeZone:'UTC', hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return val; }
 }
