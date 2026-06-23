@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Редактор плана работ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <div class="logo">П</div>
+    <span class="header-title">План работ</span>
+    <span class="cache-badge" id="cacheBadge" style="display:none"></span>
+    <div class="current-task-banner" id="currentTaskBanner"></div>
+  </div>
+  <div class="header-actions">
+    <!-- Undo / Redo -->
+    <button class="undo-btn" id="undoBtn" onclick="undo()" title="Отменить (Ctrl+Z)" disabled>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13C5.3 7.4 11 4 17 5.3a10 10 0 016 9"/></svg>
+    </button>
+    <button class="undo-btn" id="redoBtn" onclick="redo()" title="Повторить (Ctrl+Y)" disabled>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M21 13C18.7 7.4 13 4 7 5.3a10 10 0 00-6 9"/></svg>
+    </button>
+    <div style="width:1px;height:22px;background:var(--border);margin:0 2px;"></div>
+    <button class="btn btn-ghost btn-sm" onclick="openCalendarModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Календарь
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openTemplatesModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Шаблоны
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openWordModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Word
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openNotifyModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63 19.79 19.79 0 01.92 5.18 2 2 0 012.92 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Рассылка
+    </button>
+    <button class="btn btn-secondary btn-sm" onclick="exportJSON()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      JSON
+    </button>
+    <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Тема">
+      <svg id="themeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="openSetupModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Настройки
+    </button>
+  </div>
+</header>
+
+<!-- Plan tabs -->
+<div class="plan-tabs-bar" id="planTabsBar" style="display:none">
+  <div id="planTabs"></div>
+  <button class="plan-tab-add" onclick="createNewPlan()" title="Новый план">＋</button>
+</div>
+
+<main class="main">
+  <div id="appContent">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Нет плана работ</div>
+      <div class="empty-sub">Создайте новый план или загрузите из JSON</div>
+      <div class="empty-actions">
+        <button class="btn btn-primary" onclick="openSetupModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Создать план
+        </button>
+        <label class="btn btn-secondary" style="cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Импорт JSON
+          <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+        </label>
+        <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Тема">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="planView" style="display:none">
+      <div class="meta-bar" id="metaBar"></div>
+      <div id="stagesContainer"></div>
+
+      <div class="section-card" style="margin-top:6px">
+        <div class="section-header">
+          <div class="section-icon icon-rollback">&#x21A9;</div>
+          <span class="section-title-static">План отката</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">Работы</div>
+          <div class="th-cell col-dur">Начало (Час X +)</div>
+          <div class="th-cell col-dur">Длительность</div>
+          <div class="th-cell col-dur">Окончание (Час X +)</div>
+          <div class="th-cell col-resp">Исполнитель</div>
+          <div class="th-cell col-comment">Комментарий</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="rollbackTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addRollbackTask()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить шаг отката
+          </button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-contacts">&#x1F464;</div>
+          <span class="section-title-static">Контактная информация</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-name">ФИО / контакт</div>
+          <div class="th-cell col-comment">Роль</div>
+          <div class="th-cell col-resp">Телефон / контакт</div>
+          <div class="th-cell col-comment">Примечание</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="contactsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addContact()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить контакт
+          </button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon icon-comms">&#x1F4AC;</div>
+          <span class="section-title-static">План коммуникаций</span>
+        </div>
+        <div class="tasks-header">
+          <div class="th-cell col-resp">Событие</div>
+          <div class="th-cell col-channels">Вид коммуникации</div>
+          <div class="th-cell col-tool">Средство</div>
+          <div class="th-cell col-name">Участники</div>
+          <div class="th-cell col-resp">Ответственный</div>
+          <div class="th-cell col-del"></div>
+        </div>
+        <div id="commsTasks"></div>
+        <div class="add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addComm()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить событие
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#x2699;&#xFE0F; Настройки плана</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('setupModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Название проекта</label>
+        <input class="form-input" id="f_project" placeholder="Например: Обновление сервиса X">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label class="form-label">CI проекта</label>
+          <input class="form-input" id="f_ci_project" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <div class="form-hint">CI + 8 цифр</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">CI стенда</label>
+          <input class="form-input" id="f_ci_stand" placeholder="CI00000000" maxlength="10" oninput="validateCI(this)">
+          <div class="form-hint">CI + 8 цифр</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Начало работ (МСК)</label>
+        <input class="form-input" id="f_start" type="datetime-local">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <input class="form-input" id="f_responsible" placeholder="Иванов И.И.">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Часовой пояс</label>
+        <select class="form-input" id="f_timezone">
+          <option value="auto">Автоматически (системный)</option>
+          <option value="180">МСК — UTC+3</option>
+          <option value="240">МСК+1 — UTC+4</option>
+          <option value="300">МСК+2 — UTC+5</option>
+          <option value="360">МСК+3 — UTC+6</option>
+          <option value="420">МСК+4 — UTC+7</option>
+          <option value="480">МСК+5 — UTC+8</option>
+          <option value="0">UTC+0</option>
+          <option value="60">UTC+1</option>
+          <option value="120">UTC+2</option>
+        </select>
+        <div class="form-hint">Используется для определения текущей задачи</div>
+      </div>
+      <div class="form-divider">или загрузить из JSON</div>
+      <label class="import-area">
+        <input type="file" accept=".json" onchange="importJSON(event)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-light)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Нажмите для выбора JSON-файла</p>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="confirmDeletePlan()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Удалить
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="cloneCurrentPlan()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Дублировать
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('setupModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="applySetup()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Применить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFY MODAL -->
+<div class="modal-overlay" id="notifyModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4E8; Рассылка</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('notifyModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:0;padding:0;flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:10px 18px 0;border-bottom:1px solid var(--border)">
+        <div class="rov-row" style="padding:0 0 8px;margin:0">
+          <span class="rov-label">№ РоВ:</span>
+          <input class="rov-input" id="rovNumber" placeholder="12345" oninput="updateNotifyText()">
+        </div>
+        <div class="notify-tabs">
+          <button class="notify-tab active" onclick="switchEvent('start')" id="ev-start">&#x1F527; Начало</button>
+          <button class="notify-tab" onclick="switchEvent('close')" id="ev-close">&#x2705; Завершение</button>
+          <button class="notify-tab" onclick="switchEvent('rollback')" id="ev-rollback" style="color:var(--red)">&#x21A9; Откат</button>
+        </div>
+      </div>
+      <div class="notify-body">
+        <div class="notify-channels">
+          <div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:4px 4px 6px">Канал</div>
+          <button class="notify-ch-btn active" onclick="switchChannel('chat')" id="ch-chat">&#x1F4AC; Чат</button>
+          <button class="notify-ch-btn" onclick="switchChannel('outlook')" id="ch-outlook">&#x1F4E7; Outlook</button>
+          <button class="notify-ch-btn" onclick="switchChannel('sms')" id="ch-sms">&#x1F4F1; SMS</button>
+        </div>
+        <div class="notify-content">
+          <div id="recipientsRow" style="font-size:12px;color:var(--text-muted);display:none"></div>
+          <div class="notify-text" id="notifyText"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('notifyModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyNotify()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WORD TABLE MODAL -->
+<div class="modal-overlay" id="wordModal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4CA; Таблица для Word</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('wordModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px">
+      <div class="word-preview" id="wordPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('wordModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="copyWordTable()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Скопировать в Word
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templatesModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title">&#x1F4CB; Шаблоны задач</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('templatesModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:12px">
+      <div class="form-group">
+        <label class="form-label">Добавить в этап</label>
+        <select class="tpl-stage-select" id="tplStageSelect" onchange="renderTemplateGroups()">
+          <option value="0">Этап 1 — Подготовительные работы</option>
+          <option value="1">Этап 2 — Основные работы</option>
+          <option value="2">Этап 3 — Заключительные мероприятия</option>
+        </select>
+      </div>
+      <div class="tpl-groups" id="tplGroups"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('templatesModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<div id="taskTooltip"></div>
+<div class="color-swatch-popup" id="colorSwatchPopup">
+  <div class="color-swatch-title">Цвет плана</div>
+  <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+</div>
+
+<!-- CALENDAR MODAL -->
+<div class="modal-overlay" id="calendarModal">
+  <div class="modal cal-modal" style="height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-header" style="flex-shrink:0">
+      <span class="modal-title">📅 Календарь событий</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('calendarModal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calShiftDay(-7)" title="−7 дней">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+        </button>
+        <button class="cal-nav-btn" onclick="calShiftDay(-1)" title="Предыдущий день">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="cal-date-label" id="calDateLabel">—</div>
+        <button class="cal-nav-btn" onclick="calShiftDay(1)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button class="cal-nav-btn" onclick="calShiftDay(7)" title="+7 дней">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+        </button>
+      </div>
+      <button class="cal-pill-btn" onclick="calGoToday()">Сегодня</button>
+      <button class="cal-pill-btn muted" onclick="calGoFirstEvent()">
+        ⏱ К работам
+      </button>
+      <div class="cal-legend" id="calLegend">
+        <div class="cal-legend-item"><span class="cal-legend-dot done"></span>Выполнено</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot now"></span>Сейчас</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot next"></span>Далее</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot soon"></span>Предстоит</div>
+      </div>
+    </div>
+    <!-- Agenda timeline -->
+    <div class="cal-agenda-wrap" id="calAgendaWrap">
+      <div class="cal-daystat" id="calDayStat"></div>
+      <div class="cal-agenda" id="calAgenda"></div>
+    </div>
+    <div class="modal-footer" style="flex-shrink:0">
+      <span style="font-size:11px;color:var(--text-muted)" id="calFooterHint">Нажмите на задачу для просмотра деталей</span>
+      <button class="btn btn-secondary" onclick="closeModal('calendarModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR EVENT DETAIL POPUP -->
+<div class="cal-detail" id="calDetail">
+  <div class="cal-detail-header">
+    <div class="cal-detail-dot" id="calDetailDot"></div>
+    <div class="cal-detail-title" id="calDetailTitle"></div>
+    <button class="cal-detail-close" onclick="closeCalDetail()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cal-detail-body" id="calDetailBody"></div>
+  <div class="cal-detail-footer" style="display:flex;flex-direction:column;gap:7px;">
+    <div id="calDetailStatusBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    <button class="btn btn-primary btn-sm" id="calDetailGotoBtn" onclick="calGotoTask()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Перейти к задаче
+    </button>
+  </div>
+</div>
+
+
+<div class="toast-container" id="toastContainer"></div>
+<div id="taskTooltip"></div>
+<div class="color-swatch-popup" id="colorSwatchPopup">
+  <div class="color-swatch-title">Цвет плана</div>
+  <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
