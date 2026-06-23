@@ -69,7 +69,7 @@ function calGoToday() {
 }
 function calGoFirstEvent() {
   if (!_calEvents.length) { toast('Нет задач с датами','⚠️'); return; }
-  var nowMs=getNowMs(), today=new Date(nowMs); today.setHours(0,0,0,0);
+  var nowMs=getNowMsMsk(), today=new Date(nowMs); today.setHours(0,0,0,0);
   var todayMs=today.getTime(), tomorrowMs=todayMs+86400000;
   var hasToday=_calEvents.some(function(ev){ return ev.startMs<tomorrowMs&&ev.endMs>todayMs; });
   if (hasToday) { _calDate=today; }
