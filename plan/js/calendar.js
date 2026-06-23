@@ -126,7 +126,7 @@ function renderCalAgenda(eventsToday) {
     return;
   }
   statEl.style.display='';
-  var nowMs=getNowMs();
+  var nowMs=getNowMs() - (getUserTzOffsetMin() - MSK_OFFSET_MIN) * 60000;
   var evs=eventsToday.slice().sort(function(a,b){ return a.startMs-b.startMs; });
 
   // Day stats
