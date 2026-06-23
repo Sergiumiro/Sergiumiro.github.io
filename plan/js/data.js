@@ -251,7 +251,9 @@ function parseMskMs(val) {
   var d = new Date(val);
   if (isNaN(d.getTime())) return NaN;
   var browserOffsetMs = d.getTimezoneOffset() * 60000;
-  return d.getTime() + browserOffsetMs - MSK_OFFSET_MIN * 60000;
+  var naiveMs d.getTime() + browserOffsetMs;
+  var userOffMin = getUserTzOffsetMin();
+  return naiveMs - userOffMin * 60000;
 }
 function mskToUserMs(utcMs) {
   var tzVal = localStorage.getItem('user_tz') || 'auto';
