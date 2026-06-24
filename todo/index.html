@@ -13,14 +13,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#05070f}
+body{background:#070b15;margin:0}
 .scr::-webkit-scrollbar{width:0;height:0}
 .scr{scrollbar-width:none}
 </style>
 </helmet>
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:26px;background:radial-gradient(1100px 760px at 50% -5%,#0d1730,#05070f);font-family:Rubik,system-ui,sans-serif">
-<div style="position:relative;width:384px;border-radius:46px;padding:11px;background:linear-gradient(160deg,#23232b,#000);box-shadow:0 34px 90px rgba(0,0,0,.65),inset 0 0 0 2px #30303a">
-<div style="position:relative;width:362px;height:768px;border-radius:36px;overflow:hidden;background:#070b15;display:flex;flex-direction:column">
+<div style="min-height:100vh;background:#070b15;font-family:Rubik,system-ui,sans-serif;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative">
 
 <!-- STATUS BAR -->
 <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 26px;color:#e8ecf6;font-weight:600;font-size:14px;z-index:6">
@@ -60,17 +58,7 @@ body{background:#05070f}
 <div style="font-family:'Pixelify Sans';font-size:18px;color:#e8ecf6;margin:3px 0 11px">Мусорный Дракон</div>
 <div style="position:relative;height:150px;border-radius:11px;overflow:hidden;background:linear-gradient(180deg,#16233f,#0b1322);box-shadow:inset 0 0 0 1px #243049">
 <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(86,116,176,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(86,116,176,.06) 1px,transparent 1px);background-size:12px 12px"></div>
-<svg viewBox="0 0 220 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:relative">
-<rect x="16" y="80" width="22" height="30" fill="#39414f"/><rect x="13" y="75" width="28" height="7" rx="2" fill="#4a525f"/><rect x="22" y="68" width="10" height="8" fill="#5a3a2a"/>
-<rect x="182" y="84" width="20" height="26" fill="#343c49"/><rect x="179" y="79" width="26" height="7" rx="2" fill="#48505d"/>
-<path d="M64 104 q-10 -42 32 -54 q44 -12 60 18 q14 24 -8 42 q-34 18 -84 -6z" fill="#5e7d3a"/>
-<path d="M150 60 q26 -8 32 8 q-6 16 -28 8z" fill="#516e31"/>
-<path d="M82 100 q28 12 60 -2 q-28 16 -60 2z" fill="#86a64f"/>
-<path d="M92 52 l9 -18 9 18z M114 48 l9 -18 9 18z M136 50 l9 -16 9 16z" fill="#3f5527"/>
-<rect x="78" y="98" width="7" height="14" fill="#4a6230"/><rect x="118" y="100" width="7" height="14" fill="#4a6230"/>
-<circle cx="150" cy="56" r="7" fill="#f4e04d"/><circle cx="152" cy="56" r="3" fill="#1a1a0a"/>
-<path d="M160 48 l11 -11 -2 14z" fill="#cdb98a"/>
-</svg>
+<img src="./assets/boss_trash_dragon.png" alt="Мусорный Дракон" style="position:relative;width:100%;height:100%;object-fit:contain;image-rendering:pixelated"/>
 </div>
 <div style="display:flex;justify-content:flex-end;font-family:'Pixelify Sans';font-size:12px;color:#cdb1b1;margin:13px 0 6px">{{ bossHpFmt }} HP</div>
 <div style="display:flex;align-items:center;gap:8px">
@@ -174,18 +162,7 @@ body{background:#05070f}
 </div>
 <div style="position:relative;height:178px;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,#241a12,#140d08);box-shadow:inset 0 0 0 1px #3a2a1c">
 <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(180,140,90,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(180,140,90,.05) 1px,transparent 1px);background-size:12px 12px"></div>
-<svg viewBox="0 0 220 178" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:relative">
-<rect x="0" y="0" width="220" height="40" fill="#3a2a1a"/><rect x="60" y="8" width="100" height="22" rx="3" fill="#1a120a"/><text x="110" y="24" font-family="Pixelify Sans" font-size="15" fill="#f0b54a" text-anchor="middle">SHOP</text>
-<ellipse cx="110" cy="40" rx="22" ry="30" fill="#ffe39a" opacity=".18"/>
-<rect x="14" y="46" width="58" height="86" rx="3" fill="#2a1d12"/><rect x="148" y="46" width="58" height="86" rx="3" fill="#2a1d12"/>
-<rect x="20" y="54" width="46" height="3" fill="#4a3420"/><rect x="20" y="74" width="46" height="3" fill="#4a3420"/><rect x="20" y="94" width="46" height="3" fill="#4a3420"/><rect x="154" y="54" width="46" height="3" fill="#4a3420"/><rect x="154" y="74" width="46" height="3" fill="#4a3420"/><rect x="154" y="94" width="46" height="3" fill="#4a3420"/>
-<rect x="24" y="58" width="8" height="14" fill="#c0533a"/><rect x="36" y="58" width="8" height="14" fill="#4a9e6b"/><rect x="48" y="60" width="8" height="12" fill="#d2a23a"/><rect x="158" y="58" width="8" height="14" fill="#6a8fd2"/><rect x="172" y="60" width="8" height="12" fill="#c84a8a"/><rect x="184" y="58" width="8" height="14" fill="#4a9e6b"/>
-<rect x="86" y="132" width="48" height="8" rx="2" fill="#3a2a1a"/>
-<rect x="98" y="78" width="24" height="18" fill="#e0b48a"/><rect x="100" y="70" width="20" height="10" fill="#6b4a2b"/><rect x="103" y="84" width="4" height="4" fill="#222"/><rect x="113" y="84" width="4" height="4" fill="#222"/>
-<rect x="92" y="96" width="36" height="26" fill="#3f7d4a"/><rect x="84" y="98" width="9" height="20" fill="#3f7d4a"/><rect x="127" y="98" width="9" height="20" fill="#3f7d4a"/>
-<rect x="96" y="122" width="12" height="14" fill="#2f4a6b"/><rect x="112" y="122" width="12" height="14" fill="#2f4a6b"/>
-<rect x="130" y="104" width="20" height="16" rx="2" fill="none" stroke="#caa24a" stroke-width="2"/>
-</svg>
+<img src="./assets/task_detail_shop_scene.png" alt="Магазин" style="position:relative;width:100%;height:100%;object-fit:contain;image-rendering:pixelated"/>
 </div>
 <div style="display:flex;align-items:center;gap:9px;margin:15px 0 5px">
 <span style="font-family:'Pixelify Sans';font-size:20px;color:#e8ecf6">{{ dt.title }}</span>
@@ -279,7 +256,7 @@ body{background:#05070f}
 <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#131a2e;border:1px solid #232d49;border-radius:11px;padding:11px"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M13 3h8v8l-2-2-7 7 2 2-2 2-2-2-2 2-2-2 2-2 7-7-2-2z" fill="#c3ccdf"/></svg><span style="font-family:'Pixelify Sans';font-size:15px;color:#e8ecf6">{{ hero.atk }}</span></div>
 <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#131a2e;border:1px solid #232d49;border-radius:11px;padding:11px"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z" fill="#6fb0e8"/></svg><span style="font-family:'Pixelify Sans';font-size:15px;color:#e8ecf6">{{ hero.def }}</span></div>
 </div>
-<button style="width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(180deg,#caa24a,#a9842f);color:#2a1e08;font-family:'Pixelify Sans';font-size:14px;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 0 #7a5e1f">Сменить экипировку</button>
+<button onClick="{{ openNew }}" style="width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(180deg,#caa24a,#a9842f);color:#2a1e08;font-family:'Pixelify Sans';font-size:14px;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 0 #7a5e1f">Сменить экипировку</button>
 </div>
 </sc-if>
 
@@ -299,7 +276,7 @@ body{background:#05070f}
 <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #1e2740"><span style="font-size:14px;color:#c2cce0">Бонус к опыту</span><span style="font-family:'Pixelify Sans';font-size:14px;color:#6fd06a">{{ pet.b1 }}</span></div>
 <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0"><span style="font-size:14px;color:#c2cce0">Шанс найти монеты</span><span style="font-family:'Pixelify Sans';font-size:14px;color:#6fd06a">{{ pet.b2 }}</span></div>
 </div>
-<button style="width:100%;padding:13px;border:1px solid #5a4a26;border-radius:13px;background:#2a2414;color:#e0c98a;font-family:'Pixelify Sans';font-size:14px;letter-spacing:.5px;cursor:pointer;margin-bottom:16px">Сменить питомца</button>
+<button onClick="{{ openNew }}" style="width:100%;padding:13px;border:1px solid #5a4a26;border-radius:13px;background:#2a2414;color:#e0c98a;font-family:'Pixelify Sans';font-size:14px;letter-spacing:.5px;cursor:pointer;margin-bottom:16px">Сменить питомца</button>
 <div style="display:flex;gap:10px">
 <sc-for list="{{ petThumbs }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="width:52px;height:52px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;background: {{ p.bg }};box-shadow:inset 0 0 0 2px {{ p.border }}">{{ p.figEl }}</div></sc-for>
 <div style="width:52px;height:52px;border-radius:11px;border:2px dashed #2a3450;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a6party" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14" stroke="#5a6a8a"/></svg></div>
@@ -358,8 +335,6 @@ body{background:#05070f}
 </div>
 
 </div>
-</div>
-</div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:408,&quot;height&quot;:846},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2f5fb0&quot;,&quot;options&quot;:[&quot;#2f5fb0&quot;,&quot;#7a4ad9&quot;,&quot;#1f8a5b&quot;,&quot;#c0533a&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;showRewards&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
@@ -404,27 +379,18 @@ class Component extends DCLogic {
   }
 
   heroFig(h) {
-    const r = [
-      [18,8,28,8,h.hair],[14,12,8,12,h.hair],[42,12,8,12,h.hair],
-      [20,14,24,18,h.skin],[25,22,4,4,'#26211c'],[35,22,4,4,'#26211c'],[24,28,16,3,'#c98f6a'],
-      [16,34,32,26,h.shirt],[8,34,8,22,h.shirt],[48,34,8,22,h.shirt],
-      [8,56,8,6,h.skin],[48,56,8,6,h.skin],
-      [18,60,12,22,'#2f4a6b'],[34,60,12,22,'#2f4a6b'],
-      [16,82,14,6,'#caa24a'],[34,82,14,6,'#caa24a'],
-    ];
-    return React.createElement('svg', { viewBox: '0 0 64 90', width: 92, height: 130, style: { display: 'block' } },
-      r.map((x, i) => React.createElement('rect', { key: i, x: x[0], y: x[1], width: x[2], height: x[3], fill: x[4] })));
+    const src = h.name === 'Артём' ? './assets/hero_artem.png' : './assets/hero_anya.png';
+    return React.createElement('img', { src, alt: h.name, width: 92, height: 130, style: { display:'block', imageRendering:'pixelated' } });
   }
 
   petFig(col, sz) {
-    const dk = 'rgba(0,0,0,.20)', lt = 'rgba(255,255,255,.28)';
-    const r = [
-      [20,30,42,22,col],[8,20,26,24,col],[6,14,9,12,dk],[2,32,11,8,lt],
-      [16,27,4,4,'#1c1c1c'],[2,34,4,4,'#1c1c1c'],
-      [24,50,7,12,col],[38,50,7,12,col],[50,50,7,12,col],[58,24,12,6,col],
-    ];
-    return React.createElement('svg', { viewBox: '0 0 76 64', width: sz || 110, height: (sz || 110) * 0.84, style: { display: 'block' } },
-      r.map((x, i) => React.createElement('rect', { key: i, x: x[0], y: x[1], width: x[2], height: x[3], fill: x[4] })));
+    // Map color to asset filename
+    const colStr = typeof col === 'string' ? col : col;
+    let src = './assets/pet_pixel.png';
+    if (col === '#6a7180') src = './assets/pet_shadow.png';
+    else if (col === '#d27a3a') src = './assets/pet_ryzhik.png';
+    const w = sz || 110;
+    return React.createElement('img', { src, alt: 'Питомец', width: w, height: Math.round(w*0.84), style: { display:'block', imageRendering:'pixelated' } });
   }
 
   renderVals() {
